@@ -254,7 +254,7 @@ textarea.mono {
   color: var(--color-text);
 }
 
-#save-api-key { margin-top: 10px; align-self: flex-start; }
+.api-key-actions { display: flex; gap: 8px; margin-top: 10px; }
 
 .status-message {
   font-size: 13px;

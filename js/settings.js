@@ -183,6 +183,33 @@ const Settings = (() => {
         status.className   = 'status-message';
       }, 3000);
     });
+
+    const testBtn = document.getElementById('test-api-key');
+    testBtn.addEventListener('click', async () => {
+      const key = input.value.trim();
+      if (!key) {
+        status.textContent = 'Enter an API key first.';
+        status.className   = 'status-message error';
+        return;
+      }
+
+      testBtn.disabled     = true;
+      testBtn.textContent  = 'Testing…';
+      status.textContent   = '';
+      status.className     = 'status-message';
+
+      try {
+        await Api.test(key);
+        status.textContent = 'Connection successful — API key is working.';
+        status.className   = 'status-message success';
+      } catch (err) {
+        status.textContent = 'Test failed: ' + err.message;
+        status.className   = 'status-message error';
+      } finally {
+        testBtn.disabled    = false;
+        testBtn.textContent = 'Test API Key';
+      }
+    });
   }
 
   function initProfilesSection() {

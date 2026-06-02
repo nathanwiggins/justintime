@@ -67,5 +67,25 @@ ${csvText}`;
     return JSON.parse(rawText);
   }
 
-  return { generate };
+  async function test(apiKey) {
+    const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: 'Reply with only the word OK.' }] }]
+      })
+    });
+
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      throw new Error(errBody.error?.message || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      throw new Error('Connected but received no content. Check API key permissions.');
+    }
+  }
+
+  return { generate, test };
 })();
