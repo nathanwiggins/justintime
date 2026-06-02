@@ -9,7 +9,8 @@ Using the budget spreadsheet data and project summary provided below, generate a
 Requirements:
 - All dollar amounts must match the budget spreadsheet exactly
 - Write professional, concise narrative justifications for each line item
-- If a budget category has no line items, return an empty array for that field`;
+- If a budget category has no line items, return an empty array for that field
+- If the spreadsheet contains multi-year budgets, sum the costs across all years and use the cumulative multi-year totals for salaries, effort, and all other expenses in the justification`;
 
     if (templateType === 'nih-modular') {
       instructions += `

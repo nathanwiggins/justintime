@@ -34,18 +34,27 @@ const Parser = (() => {
 
       reader.onload = e => {
         try {
-          const data  = new Uint8Array(e.target.result);
-          const wb    = XLSX.read(data, { type: 'array' });
-          const sheet = wb.Sheets[wb.SheetNames[0]];
+          const data = new Uint8Array(e.target.result);
+          const wb   = XLSX.read(data, { type: 'array' });
 
-          const aoa      = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-          const filtered = aoa.filter(row =>
-            row.some(cell => cell !== '' && cell !== null && cell !== undefined)
-          );
+          const csvParts   = [];
+          const allJsonRows = [];
 
-          const csvText    = filtered.map(row => row.join('\t')).join('\n');
-          const jsonRows   = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-          const sourceTruth = extractSourceTruth(jsonRows);
+          wb.SheetNames.forEach(name => {
+            const sheet    = wb.Sheets[name];
+            const aoa      = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+            const filtered = aoa.filter(row =>
+              row.some(cell => cell !== '' && cell !== null && cell !== undefined)
+            );
+
+            csvParts.push(`\n\n--- SHEET: ${name} ---\n` + filtered.map(row => row.join('\t')).join('\n'));
+
+            const jsonRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+            allJsonRows.push(...jsonRows);
+          });
+
+          const csvText     = csvParts.join('');
+          const sourceTruth = extractSourceTruth(allJsonRows);
 
           resolve({ csvText, sourceTruth });
         } catch (err) {
