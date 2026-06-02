@@ -1,4 +1,11 @@
 const Document = (() => {
+  let _docx = null;
+
+  async function requireDocx() {
+    if (!_docx) _docx = await import('https://esm.sh/docx@8.5.0');
+    return _docx;
+  }
+
   const OUTPUT_FILENAMES = {
     'nsf':          'NSF_Budget_Justification.docx',
     'nih-detailed': 'NIH_Detailed_Budget_Justification.docx',
@@ -11,7 +18,7 @@ const Document = (() => {
   }
 
   function sectionHeader(text) {
-    const { Paragraph, TextRun } = window.docx;
+    const { Paragraph, TextRun } = _docx;
     return new Paragraph({
       children: [new TextRun({ text, bold: true, size: 26 })],
       spacing:  { before: 280, after: 120 }
@@ -19,7 +26,7 @@ const Document = (() => {
   }
 
   function subHeader(text) {
-    const { Paragraph, TextRun } = window.docx;
+    const { Paragraph, TextRun } = _docx;
     return new Paragraph({
       children: [new TextRun({ text, bold: true, size: 24 })],
       spacing:  { before: 160, after: 80 }
@@ -27,7 +34,7 @@ const Document = (() => {
   }
 
   function lineItem(boldLabel, narrative) {
-    const { Paragraph, TextRun } = window.docx;
+    const { Paragraph, TextRun } = _docx;
     return new Paragraph({
       children: [
         new TextRun({ text: boldLabel + ' ', bold: true }),
@@ -38,7 +45,7 @@ const Document = (() => {
   }
 
   function plain(text) {
-    const { Paragraph, TextRun } = window.docx;
+    const { Paragraph, TextRun } = _docx;
     return new Paragraph({
       children: [new TextRun({ text: text || '' })],
       spacing:  { after: 100 }
@@ -291,7 +298,8 @@ const Document = (() => {
     const builder = BUILDERS[templateType];
     if (!builder) throw new Error(`Unknown template type: ${templateType}`);
 
-    const { Document: DocxDocument, Packer } = window.docx;
+    await requireDocx();
+    const { Document: DocxDocument, Packer } = _docx;
 
     const doc = new DocxDocument({
       styles: {
