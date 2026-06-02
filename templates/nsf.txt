@@ -1,0 +1,88 @@
+NSF Budget Justification
+PAPPG Compliant
+
+================================================================
+COMPLIANCE NOTES
+- Follow exact alphanumeric section layout of NSF 1030 budget form (A–I)
+- Domestic (E.1) and Foreign (E.2) travel must be explicitly segregated
+- Participant Support Costs (F) are exempt from Indirect Costs (F&A)
+- Participant Support sub-sections: Stipends (F.1), Travel (F.2), Subsistence (F.3), Other (F.4)
+- Typically limited to 5 pages unless the solicitation specifies otherwise
+================================================================
+
+A. Senior Personnel
+{#senior_personnel}
+{name}, {role} (Effort: {effort_months} {effort_type} months). {narrative_description} Total Requested Salary: ${salary}.
+{/senior_personnel}
+
+B. Other Personnel
+{#other_personnel}
+{name_or_title}, {role} (Effort: {effort_months} {effort_type} months). {narrative_description} Total Requested Salary: ${salary}.
+{/other_personnel}
+
+C. Fringe Benefits
+{fringe_boilerplate}
+
+D. Equipment
+{#equipment}
+{item_name} (${cost}): {narrative_justification}
+{/equipment}
+{^equipment}
+No items of equipment (defined as non-expendable equipment with an acquisition cost of $5,000 or more and a useful life of more than one year) are requested for this project.
+{/equipment}
+
+E. Travel
+
+E.1 Domestic Travel
+{#domestic_travel}
+{trip_purpose} (${cost}): Funds are requested for travel to {destination} for {num_people} person(s) to attend {event_name}. {narrative_justification}
+{/domestic_travel}
+
+E.2 Foreign Travel
+{#foreign_travel}
+{trip_purpose} (${cost}): Funds are requested for travel to {destination} for {num_people} person(s) to attend {event_name}. {narrative_justification}
+{/foreign_travel}
+
+F. Participant Support Costs
+F.1 Stipends: {#stipends}${cost} - {justification} {/stipends}
+F.2 Travel: {#participant_travel}${cost} - {justification} {/participant_travel}
+F.3 Subsistence: {#subsistence}${cost} - {justification} {/subsistence}
+F.4 Other: {#participant_other}${cost} - {justification} {/participant_other}
+{^participant_support_has_data}
+No participant support costs are requested for this project.
+{/participant_support_has_data}
+
+G. Other Direct Costs
+
+G.1 Materials and Supplies
+{#materials_supplies}
+{category_name} (${cost}): {narrative_justification}
+{/materials_supplies}
+
+G.2 Publication Costs / Documentation / Dissemination
+{#publications}
+{publication_title_or_type} (${cost}): {narrative_justification}
+{/publications}
+
+G.3 Consultant Services
+{#consultants}
+{consultant_name} (${cost}): Will provide expertise on {expertise_area}. Rate is ${rate}/day for {days} days. {narrative_justification}
+{/consultants}
+
+G.4 Computer Services
+{#computer_services}
+{service_description} (${cost}): {narrative_justification}
+{/computer_services}
+
+G.5 Subawards
+{#subawards}
+{institution_name} (${cost}): A separate budget and justification are attached for the subaward to {institution_name} under the direction of {sub_pi}. {narrative_justification}
+{/subawards}
+
+G.6 Other
+{#other_direct_lines}
+{item_name} (${cost}): {narrative_justification}
+{/other_direct_lines}
+
+H. Indirect Costs (Facilities and Administrative Costs)
+{fa_boilerplate}

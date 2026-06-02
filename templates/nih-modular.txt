@@ -1,0 +1,32 @@
+NIH Modular Budget Justification
+
+================================================================
+COMPLIANCE NOTES — READ CAREFULLY
+- NEVER mention specific salary amounts, fringe rates, or category totals
+- Personnel justification must focus entirely on names, roles, and effort (person months)
+- If a subawardee is included: state the institution name, declare domestic or foreign,
+  and list subaward personnel names, roles, and person months only
+- Additional Narrative is required ONLY if module counts vary across budget years
+  (e.g., 4 modules in Year 1, 3 in Year 2 due to equipment purchase)
+================================================================
+
+Personnel Justification
+{#personnel}
+{name}, {role} (Effort: {effort_months} Calendar Months). {name} will be responsible for {narrative_description}. No salary or fringe benefit amounts are requested or explicitly stated in accordance with NIH Modular guidelines.
+{/personnel}
+
+Consortium Justification
+{#consortium}
+{institution_name} ({institution_location_type}). This consortium subaward requires {effort_months} Calendar Months of effort for {sub_personnel_name}, who will serve as {sub_role} and oversee {narrative_description}.
+{/consortium}
+{^consortium}
+Not Applicable. No consortium or contractual arrangements are proposed.
+{/consortium}
+
+Additional Narrative Justification
+{#additional_justification}
+Yearly Module Variations: {variation_explanation}
+{/additional_justification}
+{^additional_justification}
+Not Applicable. An equal number of modules is requested for all budget periods.
+{/additional_justification}

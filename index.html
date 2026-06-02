@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Just-In-Time | Budget Justification Generator</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="header-content">
+      <h1>Just-In-Time</h1>
+      <p class="header-subtitle">Budget Justification Generator</p>
+    </div>
+  </header>
+
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="settings">Settings</button>
+    <button class="tab-btn" data-tab="generator">Generator</button>
+  </nav>
+
+  <main class="app-main">
+
+    <section id="tab-settings" class="tab-panel">
+
+      <div class="section-card">
+        <h2 class="section-title">API Configuration</h2>
+        <div class="form-group">
+          <label for="api-key-input">Gemini API Key</label>
+          <div class="input-with-action">
+            <input type="password" id="api-key-input" placeholder="Enter your Gemini API key" autocomplete="off">
+            <button id="toggle-key-visibility" class="btn btn-secondary btn-sm">Show</button>
+          </div>
+          <button id="save-api-key" class="btn btn-primary">Save API Key</button>
+          <p id="api-key-status" class="status-message" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header-row">
+          <h2 class="section-title">Institutional Profiles</h2>
+          <button id="add-profile-btn" class="btn btn-primary btn-sm">+ New Profile</button>
+        </div>
+        <div id="profile-list" class="profile-list">
+          <p class="empty-state" id="no-profiles-message">No profiles saved yet. Click "+ New Profile" to create one.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <section id="tab-generator" class="tab-panel hidden">
+
+      <div class="section-card">
+        <div class="form-group">
+          <label for="profile-select">Institutional Profile</label>
+          <select id="profile-select">
+            <option value="">— Select a profile —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="template-select">Grant Template Type</label>
+          <select id="template-select">
+            <option value="nih-detailed">NIH Detailed</option>
+            <option value="nih-modular">NIH Modular</option>
+            <option value="nsf">NSF</option>
+            <option value="generic">Generic</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="form-group">
+          <label for="budget-file-input">Budget File</label>
+          <input type="file" id="budget-file-input" accept=".csv,.xls,.xlsx">
+          <p class="field-hint">Accepted formats: .csv, .xls, .xlsx</p>
+        </div>
+        <div class="form-group">
+          <label for="project-summary-input">Project Summary / Statement of Work</label>
+          <textarea id="project-summary-input" rows="6" placeholder="Briefly describe the project goals, research activities, and personnel contributions..."></textarea>
+        </div>
+      </div>
+
+      <div id="validation-banner" class="validation-banner hidden" role="alert">
+        <div class="banner-header">
+          <span class="banner-icon">&#9888;</span>
+          <strong>Amount Mismatch Detected</strong>
+        </div>
+        <p id="validation-message" class="banner-message"></p>
+        <div class="banner-actions">
+          <button id="force-regenerate-btn" class="btn btn-primary btn-sm">Force Regenerate</button>
+          <button id="dismiss-banner-btn" class="btn btn-secondary btn-sm">Dismiss &amp; Proceed</button>
+        </div>
+        <div class="form-group">
+          <label for="json-edit-area">Edit JSON Payload</label>
+          <textarea id="json-edit-area" rows="10" class="mono"></textarea>
+        </div>
+      </div>
+
+      <div class="generate-action">
+        <button id="generate-btn" class="btn btn-primary btn-lg">Generate Justification</button>
+        <p id="generate-status" class="status-message" aria-live="polite"></p>
+      </div>
+
+    </section>
+
+  </main>
+
+  <div id="profile-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title">New Profile</h3>
+        <button id="close-modal" class="btn-icon" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="profile-name-input">Profile Name</label>
+          <input type="text" id="profile-name-input" placeholder="e.g., On-Campus, Off-Campus">
+          <p id="profile-name-error" class="field-error hidden">Profile name is required.</p>
+        </div>
+        <div class="form-group">
+          <label for="fringe-boilerplate-input">Default Fringe Benefit Boilerplate</label>
+          <textarea id="fringe-boilerplate-input" rows="6" placeholder="Enter your standard fringe benefit justification text..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="fa-boilerplate-input">Default F&amp;A / Indirect Cost Boilerplate</label>
+          <textarea id="fa-boilerplate-input" rows="6" placeholder="Enter your standard F&A / indirect cost justification text..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancel-modal" class="btn btn-secondary">Cancel</button>
+        <button id="save-profile-btn" class="btn btn-primary">Save Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+
+  <script src="js/schemas.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/validator.js"></script>
+  <script src="js/document.js"></script>
+  <script src="js/generator.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
