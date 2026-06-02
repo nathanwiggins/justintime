@@ -10,7 +10,8 @@ Requirements:
 - All dollar amounts must match the budget spreadsheet exactly
 - Write professional, concise narrative justifications for each line item
 - If a budget category has no line items, return an empty array for that field
-- If the spreadsheet contains multi-year budgets, sum the costs across all years and use the cumulative multi-year totals for salaries, effort, and all other expenses in the justification`;
+- If the spreadsheet contains multi-year budgets, sum the costs cumulatively across all years. However, for personnel effort, state the annual effort (e.g., '1 summer month annually' or '12 calendar months per year') rather than a cumulative 5-year effort total
+- Extract the total cumulative Fringe Benefits cost and the total cumulative Indirect (F&A) cost into the fringe_total_cost and indirect_total_cost fields. Do not list Indirect Costs or Fringe Benefits under 'Other Direct Costs'`;
 
     if (templateType === 'nih-modular') {
       instructions += `

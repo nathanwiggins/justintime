@@ -57,17 +57,18 @@ const Document = (() => {
 
     rows.push(sectionHeader('A. Senior Personnel'));
     (p.senior_personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name}, ${x.role} (Effort: ${x.effort_months} ${x.effort_type} months).`,
+      `${x.name}, ${x.role} (Effort: ${x.effort_months} ${x.effort_type}).`,
       `${x.narrative_description} Total Requested Salary: $${fmt(x.salary)}.`
     )));
 
     rows.push(sectionHeader('B. Other Personnel'));
     (p.other_personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name_or_title}, ${x.role} (Effort: ${x.effort_months} ${x.effort_type} months).`,
+      `${x.name_or_title}, ${x.role} (Effort: ${x.effort_months} ${x.effort_type}).`,
       `${x.narrative_description} Total Requested Salary: $${fmt(x.salary)}.`
     )));
 
     rows.push(sectionHeader('C. Fringe Benefits'));
+    rows.push(plain('Total Requested: $' + fmt(p.fringe_total_cost)));
     rows.push(plain(p.fringe_boilerplate));
 
     rows.push(sectionHeader('D. Equipment'));
@@ -140,6 +141,7 @@ const Document = (() => {
     )));
 
     rows.push(sectionHeader('H. Indirect Costs (Facilities and Administrative Costs)'));
+    rows.push(plain('Total Requested: $' + fmt(p.indirect_total_cost)));
     rows.push(plain(p.fa_boilerplate));
 
     return rows;
@@ -150,17 +152,18 @@ const Document = (() => {
 
     rows.push(sectionHeader('A. Senior/Key Personnel'));
     (p.senior_personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name}, ${x.role} (Effort: ${x.effort_months} Calendar Months).`,
+      `${x.name}, ${x.role} (Effort: ${x.effort_months}).`,
       `${x.name} will serve as ${x.role} and will be responsible for ${x.narrative_description}. Requested Salary: $${fmt(x.salary)}.`
     )));
 
     rows.push(sectionHeader('B. Other Personnel'));
     (p.other_personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name_or_title}, ${x.role} (Effort: ${x.effort_months} Calendar Months).`,
+      `${x.name_or_title}, ${x.role} (Effort: ${x.effort_months}).`,
       `${x.narrative_description}. Requested Salary: $${fmt(x.salary)}.`
     )));
 
     rows.push(sectionHeader('C. Fringe Benefits'));
+    rows.push(plain('Total Requested: $' + fmt(p.fringe_total_cost)));
     rows.push(plain(p.fringe_boilerplate));
 
     rows.push(sectionHeader('D. Equipment'));
@@ -218,6 +221,7 @@ const Document = (() => {
     )));
 
     rows.push(sectionHeader('H. Facilities and Administrative (F&A) Costs'));
+    rows.push(plain('Total Requested: $' + fmt(p.indirect_total_cost)));
     rows.push(plain(p.fa_boilerplate));
 
     return rows;
@@ -259,11 +263,12 @@ const Document = (() => {
 
     rows.push(sectionHeader('1. Personnel'));
     (p.personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name}, ${x.role} (${x.effort_months} person months):`,
+      `${x.name}, ${x.role} (${x.effort_months}):`,
       `${x.narrative_description} Total Salary Requested: $${fmt(x.salary)}.`
     )));
 
     rows.push(sectionHeader('2. Fringe Benefits'));
+    rows.push(plain('Total Requested: $' + fmt(p.fringe_total_cost)));
     rows.push(plain(p.fringe_boilerplate));
 
     rows.push(sectionHeader('3. Equipment'));
@@ -282,6 +287,7 @@ const Document = (() => {
     )));
 
     rows.push(sectionHeader('6. Indirect Costs (Overhead / F&A)'));
+    rows.push(plain('Total Requested: $' + fmt(p.indirect_total_cost)));
     rows.push(plain(p.fa_boilerplate));
 
     return rows;

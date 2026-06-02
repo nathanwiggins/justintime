@@ -195,10 +195,13 @@ const Schemas = {
           },
           required: ['item_name', 'cost', 'narrative_justification']
         }
-      }
+      },
+      fringe_total_cost:   { type: 'number' },
+      indirect_total_cost: { type: 'number' }
     },
     required: ['senior_personnel', 'other_personnel', 'equipment', 'domestic_travel', 'foreign_travel',
-               'participant_support_has_data', 'materials_supplies', 'other_direct_lines']
+               'participant_support_has_data', 'materials_supplies', 'other_direct_lines',
+               'fringe_total_cost', 'indirect_total_cost']
   },
 
   'nih-detailed': {
@@ -357,10 +360,13 @@ const Schemas = {
           },
           required: ['item_name', 'cost', 'narrative_justification']
         }
-      }
+      },
+      fringe_total_cost:   { type: 'number' },
+      indirect_total_cost: { type: 'number' }
     },
     required: ['senior_personnel', 'other_personnel', 'equipment', 'travel',
-               'materials_supplies', 'other_direct_lines']
+               'materials_supplies', 'other_direct_lines',
+               'fringe_total_cost', 'indirect_total_cost']
   },
 
   'nih-modular': {
@@ -404,9 +410,12 @@ const Schemas = {
           },
           required: ['variation_explanation']
         }
-      }
+      },
+      fringe_total_cost:   { type: 'number' },
+      indirect_total_cost: { type: 'number' }
     },
-    required: ['personnel', 'consortium', 'additional_justification']
+    required: ['personnel', 'consortium', 'additional_justification',
+               'fringe_total_cost', 'indirect_total_cost']
   },
 
   'generic': {
@@ -461,9 +470,12 @@ const Schemas = {
           },
           required: ['category_or_item', 'cost', 'narrative_justification']
         }
-      }
+      },
+      fringe_total_cost:   { type: 'number' },
+      indirect_total_cost: { type: 'number' }
     },
-    required: ['personnel', 'equipment', 'travel', 'direct_costs']
+    required: ['personnel', 'equipment', 'travel', 'direct_costs',
+               'fringe_total_cost', 'indirect_total_cost']
   }
 
 };
