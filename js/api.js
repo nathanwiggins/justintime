@@ -17,6 +17,12 @@ Requirements:
 CRITICAL MODULAR RULE: Do NOT include any dollar amounts, salary figures, fringe rates, or cost totals anywhere in your response. NIH Modular guidelines strictly prohibit specific dollar figures in the personnel justification. Only describe names, roles, and effort in calendar person-months.`;
     }
 
+    if (templateType === 'nih-detailed') {
+      instructions += `
+
+CRITICAL NIH RULE: Effort must be described using "person months" (Calendar, Academic, or Summer). Percentage effort is obsolete and must never be used. If a subaward exists, its direct AND indirect costs must be clearly noted.`;
+    }
+
     if (templateType === 'nsf') {
       instructions += `
 

@@ -293,7 +293,23 @@ const Document = (() => {
 
     const { Document: DocxDocument, Packer } = window.docx;
 
-    const doc  = new DocxDocument({ sections: [{ children: builder(payload) }] });
+    const doc = new DocxDocument({
+      styles: {
+        default: {
+          document: {
+            run: { font: 'Arial', size: 22 }
+          }
+        }
+      },
+      sections: [{
+        properties: {
+          page: {
+            margin: { top: 720, right: 720, bottom: 720, left: 720 }
+          }
+        },
+        children: builder(payload)
+      }]
+    });
     const blob = await Packer.toBlob(doc);
 
     const url  = URL.createObjectURL(blob);
