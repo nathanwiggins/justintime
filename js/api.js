@@ -1,5 +1,5 @@
 const Api = (() => {
-  const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+  const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent';
 
   function buildPrompt(csvText, projectSummary, templateType) {
     let instructions = `You are an expert grants administrator writing a formal budget justification narrative.
