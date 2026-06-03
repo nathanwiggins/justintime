@@ -125,6 +125,9 @@ const Generator = (() => {
   }
 
   async function parseSummaryFile(file) {
+    if (file.name.toLowerCase().endsWith('.doc') && !file.name.toLowerCase().endsWith('.docx')) {
+      throw new Error('Legacy .doc files cannot be parsed in the browser. Please re-save the file as .docx and re-upload.');
+    }
     const buffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer: buffer });
     if (!result.value.trim()) throw new Error('Project summary document appears to be empty.');
