@@ -111,17 +111,24 @@ const Generator = (() => {
       profileId:    document.getElementById('profile-select').value,
       templateType: document.getElementById('template-select').value,
       file:         document.getElementById('budget-file-input').files[0],
-      summary:      document.getElementById('project-summary-input').value.trim(),
+      summaryFile:  document.getElementById('project-summary-input').files[0],
       apiKey:       Settings.loadApiKey()
     };
   }
 
-  function validateForm({ profileId, file, summary, apiKey }) {
-    if (!apiKey)    return 'No API key saved. Go to the Settings tab and save your Gemini API key.';
-    if (!profileId) return 'Please select an Institutional Profile.';
-    if (!file)      return 'Please upload a budget file (.csv, .xls, or .xlsx).';
-    if (!summary)   return 'Please enter a Project Summary.';
+  function validateForm({ profileId, file, summaryFile, apiKey }) {
+    if (!apiKey)      return 'No API key saved. Go to the Settings tab and save your Gemini API key.';
+    if (!profileId)   return 'Please select an Institutional Profile.';
+    if (!file)        return 'Please upload a budget file (.csv, .xls, or .xlsx).';
+    if (!summaryFile) return 'Please upload a project summary (.docx).';
     return null;
+  }
+
+  async function parseSummaryFile(file) {
+    const buffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+    if (!result.value.trim()) throw new Error('Project summary document appears to be empty.');
+    return result.value.trim();
   }
 
   function injectBoilerplate(aiJson, profile) {
@@ -147,6 +154,10 @@ const Generator = (() => {
     currentTemplate = form.templateType;
 
     try {
+      const summaryStep = addStep('Parsing project summary');
+      const projectSummary = await parseSummaryFile(form.summaryFile);
+      summaryStep.done(form.summaryFile.name);
+
       const parseStep = addStep('Parsing budget file');
       const { csvText, sourceTruth } = await Parser.parse(form.file);
       parseStep.done(form.file.name, [
@@ -154,14 +165,14 @@ const Generator = (() => {
         { label: 'Source Truth',   content: JSON.stringify(sourceTruth, null, 2) }
       ]);
 
-      const sections = Sections.forTemplate(form.templateType);
+      const sections = Sections.forTemplate(form.templateType).filter(s => s.key === 'senior_personnel');
       const aiJson   = {};
 
       for (const section of sections) {
         const sectionStep = addStep(`Generating: ${section.label}`);
         const { result, prompt } = await Api.generateSection({
           csvText,
-          projectSummary: form.summary,
+          projectSummary,
           templateType:   form.templateType,
           apiKey:         form.apiKey,
           section

@@ -80,7 +80,8 @@
         </div>
         <div class="form-group">
           <label for="project-summary-input">Project Summary / Statement of Work</label>
-          <textarea id="project-summary-input" rows="6" placeholder="Briefly describe the project goals, research activities, and personnel contributions..."></textarea>
+          <input type="file" id="project-summary-input" accept=".docx">
+          <p class="field-hint">Accepted format: .docx</p>
         </div>
       </div>
 
@@ -128,6 +129,7 @@
   </footer>
 
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"></script>
 
   <script src="js/schemas.js"></script>
   <script src="js/sections.js"></script>
