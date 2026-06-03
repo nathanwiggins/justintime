@@ -35,11 +35,11 @@ const Schemas = {
         items: {
           type: 'object',
           properties: {
-            role:                     { type: 'string' },
-            number_of_individuals:    { type: 'number' },
-            effort_months_per_year:   { type: 'number' },
-            effort_type:              { type: 'string' },
-            base_rate_per_individual: { type: 'number' },
+            role:                  { type: 'string' },
+            number_of_individuals: { type: 'number' },
+            rate_type:             { type: 'string' },
+            rate_amount:           { type: 'number' },
+            effort_description:    { type: 'string' },
             yearly_breakdown: {
               type: 'array',
               items: {
@@ -51,11 +51,11 @@ const Schemas = {
                 required: ['year', 'cost']
               }
             },
-            total_cost:               { type: 'number' },
-            narrative_description:    { type: 'string' }
+            total_cost:            { type: 'number' },
+            narrative_description: { type: 'string' }
           },
-          required: ['role', 'number_of_individuals', 'effort_months_per_year', 'effort_type',
-                     'base_rate_per_individual', 'yearly_breakdown', 'total_cost', 'narrative_description']
+          required: ['role', 'number_of_individuals', 'rate_type', 'rate_amount',
+                     'effort_description', 'yearly_breakdown', 'total_cost', 'narrative_description']
         }
       },
       equipment: {

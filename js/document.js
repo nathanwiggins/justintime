@@ -124,12 +124,15 @@ const Document = (() => {
     const otherTotal = otherPersonnel.reduce((sum, x) => sum + (x.total_cost || 0), 0);
     rows.push(sectionHeader(`B. Other Personnel ($${fmt(otherTotal)})`));
     otherPersonnel.forEach(x => {
-      const count     = x.number_of_individuals || 0;
-      const countStr  = `${count} ${count === 1 ? 'individual' : 'individuals'}`;
+      const count             = x.number_of_individuals || 0;
+      const countStr          = `${count} ${count === 1 ? 'individual' : 'individuals'}`;
+      const formattedRateText = x.rate_type === 'hourly'
+        ? `$${fmt(x.rate_amount)}/hour`
+        : `$${fmt(x.rate_amount)}/individual/year`;
       const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
       rows.push(lineItem(
-        `${x.role} (${countStr}, Effort: ${effort(x.effort_months_per_year, x.effort_type)}).`,
-        `Base rate: $${fmt(x.base_rate_per_individual)}/individual/year. ${x.narrative_description} Total Requested: $${fmt(x.total_cost)}${yearlyStr ? ` (${yearlyStr})` : ''}.`
+        `${x.role} (${countStr}, Effort: ${x.effort_description}).`,
+        `Base rate: ${formattedRateText}. ${x.narrative_description} Total Requested: $${fmt(x.total_cost)}${yearlyStr ? ` (${yearlyStr})` : ''}.`
       ));
     });
 

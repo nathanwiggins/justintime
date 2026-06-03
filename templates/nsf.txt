@@ -23,8 +23,8 @@ Total Requested Salary: ${total_salary}
 
 B. Other Personnel
 {#other_personnel}
-{role} ({number_of_individuals} individual(s), Effort: {effort_months_per_year} {effort_type} months/year, Base Rate: ${base_rate_per_individual}/individual/year).
-{narrative_description}
+{role} ({number_of_individuals} individual(s), Effort: {effort_description}).
+Base rate: {formatted_rate_text}. {narrative_description}
 
 Yearly Cost Breakdown:
 {#yearly_breakdown}
