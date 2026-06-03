@@ -76,9 +76,13 @@
           <p class="field-hint">Accepted formats: .csv, .xls, .xlsx</p>
         </div>
         <div class="form-group">
-          <label for="project-summary-input">Project Summary / Statement of Work</label>
+          <div class="summary-label-row">
+            <label for="project-summary-input">Project Summary / Statement of Work</label>
+            <button type="button" id="summary-toggle" class="btn-link">Type instead</button>
+          </div>
           <input type="file" id="project-summary-input" accept=".doc,.docx">
-          <p class="field-hint">Accepted formats: .doc, .docx</p>
+          <p class="field-hint" id="summary-file-hint">Accepted formats: .doc, .docx</p>
+          <textarea id="project-summary-text-input" class="hidden" rows="6" placeholder="Paste or type your project summary here..."></textarea>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 const Generator = (() => {
   let currentTemplate = 'nsf';
+  let summaryMode     = 'file';
 
   function syncProfileDropdown() {
     const select    = document.getElementById('profile-select');
@@ -119,15 +120,18 @@ const Generator = (() => {
       templateType: document.getElementById('template-select').value,
       file:         document.getElementById('budget-file-input').files[0],
       summaryFile:  document.getElementById('project-summary-input').files[0],
+      summaryText:  document.getElementById('project-summary-text-input').value.trim(),
+      summaryMode,
       apiKey:       Settings.loadApiKey()
     };
   }
 
-  function validateForm({ profileId, file, summaryFile, apiKey }) {
-    if (!apiKey)      return 'No API key saved. Go to the Settings tab and save your Gemini API key.';
-    if (!profileId)   return 'Please select an Institutional Profile.';
-    if (!file)        return 'Please upload a budget file (.csv, .xls, or .xlsx).';
-    if (!summaryFile) return 'Please upload a project summary (.docx).';
+  function validateForm({ profileId, file, summaryFile, summaryText, summaryMode, apiKey }) {
+    if (!apiKey)    return 'No API key saved. Go to the Settings tab and save your Gemini API key.';
+    if (!profileId) return 'Please select an Institutional Profile.';
+    if (!file)      return 'Please upload a budget file (.csv, .xls, or .xlsx).';
+    if (summaryMode === 'file' && !summaryFile) return 'Please upload a project summary (.doc or .docx).';
+    if (summaryMode === 'text' && !summaryText) return 'Please enter a project summary.';
     return null;
   }
 
@@ -164,11 +168,16 @@ const Generator = (() => {
     currentTemplate = form.templateType;
 
     try {
-      const summaryStep = addStep('Parsing project summary');
-      const projectSummary = await parseSummaryFile(form.summaryFile);
-      summaryStep.done(form.summaryFile.name, [
-        { label: 'Extracted Text', content: projectSummary }
-      ]);
+      let projectSummary;
+      if (form.summaryMode === 'file') {
+        const summaryStep = addStep('Parsing project summary');
+        projectSummary = await parseSummaryFile(form.summaryFile);
+        summaryStep.done(form.summaryFile.name, [
+          { label: 'Extracted Text', content: projectSummary }
+        ]);
+      } else {
+        projectSummary = form.summaryText;
+      }
 
       const parseStep = addStep('Parsing budget file');
       const { csvText, sourceTruth } = await Parser.parse(form.file);
@@ -217,6 +226,21 @@ const Generator = (() => {
   function init() {
     syncProfileDropdown();
     document.getElementById('generate-btn').addEventListener('click', handleGenerate);
+
+    document.getElementById('summary-toggle').addEventListener('click', () => {
+      summaryMode = summaryMode === 'file' ? 'text' : 'file';
+
+      const fileInput  = document.getElementById('project-summary-input');
+      const fileHint   = document.getElementById('summary-file-hint');
+      const textInput  = document.getElementById('project-summary-text-input');
+      const toggleBtn  = document.getElementById('summary-toggle');
+
+      const isFile = summaryMode === 'file';
+      fileInput.classList.toggle('hidden', !isFile);
+      fileHint.classList.toggle('hidden', !isFile);
+      textInput.classList.toggle('hidden', isFile);
+      toggleBtn.textContent = isFile ? 'Type instead' : 'Upload document';
+    });
   }
 
   return { init, syncProfileDropdown };
