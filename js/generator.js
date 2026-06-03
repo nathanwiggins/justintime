@@ -159,7 +159,9 @@ const Generator = (() => {
     try {
       const summaryStep = addStep('Parsing project summary');
       const projectSummary = await parseSummaryFile(form.summaryFile);
-      summaryStep.done(form.summaryFile.name);
+      summaryStep.done(form.summaryFile.name, [
+        { label: 'Extracted Text', content: projectSummary }
+      ]);
 
       const parseStep = addStep('Parsing budget file');
       const { csvText, sourceTruth } = await Parser.parse(form.file);
