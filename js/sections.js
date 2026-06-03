@@ -7,7 +7,7 @@ const Sections = (() => {
         key:    'senior_personnel',
         label:  'A. Senior Personnel',
         fields: ['senior_personnel'],
-        prompt: 'List each named senior/key personnel. Include their role, annual effort in months, and effort type (Summer, Academic, or Calendar). Crucially, extract or calculate their base_salary (Institutional Base Salary) based on Year 1 requests. Map out their requested salary for each budget year in the yearly_breakdown array, accounting for any stated escalation rates (e.g., 3%). Finally, provide the cumulative total_salary and a concise narrative describing their specific contribution.',
+        prompt: 'List each named senior/key personnel. Include their role, annual effort in months, and effort type (Summer, Academic, or Calendar). Crucially, extract or calculate their base_salary (Institutional Base Salary) based on Year 1 requests. Map out their requested salary for each budget year in the yearly_breakdown array, accounting for and explicitly stating any stated escalation rates (e.g., 3%). Finally, provide the cumulative total_salary and a narrative describing their specific contribution.',
         schema: {
           type: 'object',
           properties: { senior_personnel: Schemas['nsf'].properties.senior_personnel },
