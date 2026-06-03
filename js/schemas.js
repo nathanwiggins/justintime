@@ -11,11 +11,10 @@ const Schemas = {
             name:                   { type: 'string' },
             role:                   { type: 'string' },
             effort_months:          { type: 'string' },
-            effort_type:            { type: 'string' },
             salary:                 { type: 'number' },
             narrative_description:  { type: 'string' }
           },
-          required: ['name', 'role', 'effort_months', 'effort_type', 'salary', 'narrative_description']
+          required: ['name', 'role', 'effort_months', 'salary', 'narrative_description']
         }
       },
       other_personnel: {
@@ -26,11 +25,10 @@ const Schemas = {
             name_or_title:          { type: 'string' },
             role:                   { type: 'string' },
             effort_months:          { type: 'string' },
-            effort_type:            { type: 'string' },
             salary:                 { type: 'number' },
             narrative_description:  { type: 'string' }
           },
-          required: ['name_or_title', 'role', 'effort_months', 'effort_type', 'salary', 'narrative_description']
+          required: ['name_or_title', 'role', 'effort_months', 'salary', 'narrative_description']
         }
       },
       equipment: {

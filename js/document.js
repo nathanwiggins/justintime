@@ -57,13 +57,13 @@ const Document = (() => {
 
     rows.push(sectionHeader('A. Senior Personnel'));
     (p.senior_personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name}, ${x.role} (Effort: ${x.effort_months} ${x.effort_type}).`,
+      `${x.name}, ${x.role} (Effort: ${x.effort_months}).`,
       `${x.narrative_description} Total Requested Salary: $${fmt(x.salary)}.`
     )));
 
     rows.push(sectionHeader('B. Other Personnel'));
     (p.other_personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name_or_title}, ${x.role} (Effort: ${x.effort_months} ${x.effort_type}).`,
+      `${x.name_or_title}, ${x.role} (Effort: ${x.effort_months}).`,
       `${x.narrative_description} Total Requested Salary: $${fmt(x.salary)}.`
     )));
 
