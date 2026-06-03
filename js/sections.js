@@ -7,7 +7,7 @@ const Sections = (() => {
         key:    'senior_personnel',
         label:  'A. Senior Personnel',
         fields: ['senior_personnel'],
-        prompt: 'List each named senior/key personnel. Include their role, annual effort in months, and cumulative salary across all budget years. Write a concise narrative for each person describing their specific contribution to the project.',
+        prompt: 'List each named senior/key personnel. Include their role, annual effort in months, and cumulative salary across all budget years. Do not assume rules or credentials (Dr, PhD) unless explicitly stated. Write a concise narrative for each person describing their specific contribution to the project.',
         schema: {
           type: 'object',
           properties: { senior_personnel: Schemas['nsf'].properties.senior_personnel },
