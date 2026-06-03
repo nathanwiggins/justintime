@@ -12,10 +12,36 @@ async function loadLastUpdated() {
   } catch {}
 }
 
+function initCyclingLabel() {
+  const words = ['Summary', 'Abstract', 'Narrative', 'Statement of Work'];
+  let index   = 0;
+  const el    = document.getElementById('summary-label-word');
+  if (!el) return;
+
+  setInterval(() => {
+    el.style.opacity   = '0';
+    el.style.transform = 'translateY(-8px)';
+
+    setTimeout(() => {
+      index          = (index + 1) % words.length;
+      el.textContent = words[index];
+
+      el.style.transition = 'none';
+      el.style.transform  = 'translateY(8px)';
+      el.offsetHeight;
+
+      el.style.transition = '';
+      el.style.opacity    = '1';
+      el.style.transform  = 'translateY(0)';
+    }, 350);
+  }, 3000);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   Settings.init();
   Generator.init();
   loadLastUpdated();
+  initCyclingLabel();
 
   const tabBtns   = document.querySelectorAll('.tab-btn');
   const tabPanels = document.querySelectorAll('.tab-panel');
