@@ -25,9 +25,10 @@ const Schemas = {
               }
             },
             total_salary:          { type: 'number' },
-            narrative_description: { type: 'string' }
+            narrative_description: { type: 'string' },
+            escalation_note:       { type: 'string' }
           },
-          required: ['name', 'role', 'effort_months_per_year', 'effort_type', 'base_salary', 'yearly_breakdown', 'total_salary', 'narrative_description']
+          required: ['name', 'role', 'effort_months_per_year', 'effort_type', 'base_salary', 'yearly_breakdown', 'total_salary', 'narrative_description', 'escalation_note']
         }
       },
       other_personnel: {
@@ -52,10 +53,11 @@ const Schemas = {
               }
             },
             total_cost:            { type: 'number' },
-            narrative_description: { type: 'string' }
+            narrative_description: { type: 'string' },
+            escalation_note:       { type: 'string' }
           },
           required: ['role', 'number_of_individuals', 'rate_type', 'rate_amount',
-                     'effort_description', 'yearly_breakdown', 'total_cost', 'narrative_description']
+                     'effort_description', 'yearly_breakdown', 'total_cost', 'narrative_description', 'escalation_note']
         }
       },
       equipment: {

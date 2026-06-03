@@ -74,6 +74,14 @@ const Document = (() => {
     });
   }
 
+  function italic(text) {
+    const { Paragraph, TextRun } = _docx;
+    return new Paragraph({
+      children: [new TextRun({ text: text || '', italics: true })],
+      spacing:  { after: 100 }
+    });
+  }
+
   function buildNsf(p) {
     const rows = [...titleBlock(p.profile_name)];
 
@@ -87,6 +95,7 @@ const Document = (() => {
         `${displayName}, ${x.role} (Effort: ${effort(x.effort_months_per_year, x.effort_type)}).`,
         `Funds are requested based on an Institutional Base Salary (IBS) of $${fmt(x.base_salary)}. ${x.narrative_description} Total Requested Salary: $${fmt(x.total_salary)}${yearlyStr ? ` (${yearlyStr})` : ''}.`
       ));
+      if (x.escalation_note) rows.push(italic(x.escalation_note));
     });
 
     if (seniorPersonnel.length > 1) {
@@ -134,6 +143,7 @@ const Document = (() => {
         `${x.role} (${countStr}, Effort: ${x.effort_description}).`,
         `Base rate: ${formattedRateText}. ${x.narrative_description} Total Requested: $${fmt(x.total_cost)}${yearlyStr ? ` (${yearlyStr})` : ''}.`
       ));
+      if (x.escalation_note) rows.push(italic(x.escalation_note));
     });
 
     if (otherPersonnel.length > 1) {
