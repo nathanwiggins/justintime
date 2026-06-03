@@ -197,12 +197,13 @@ const Document = (() => {
       )));
 
       if (p.equipment.length > 1) {
+        const itemsStr    = p.equipment.map(x => `$${fmt(x.cost)} for ${x.item_name}`).join(', ');
         const { Paragraph, TextRun } = _docx;
         rows.push(new Paragraph({
           children: [
             new TextRun({ text: 'The total request for Equipment is ' }),
             new TextRun({ text: `$${fmt(equipmentTotal)}`, bold: true }),
-            new TextRun({ text: '.' })
+            new TextRun({ text: ` (${itemsStr}).` })
           ],
           spacing: { after: 100 }
         }));
