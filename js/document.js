@@ -81,9 +81,10 @@ const Document = (() => {
     const seniorTotal = seniorPersonnel.reduce((sum, x) => sum + (x.total_salary || 0), 0);
     rows.push(sectionHeader(`A. Senior Personnel ($${fmt(seniorTotal)})`));
     seniorPersonnel.forEach(x => {
+      const displayName = x.name === x.role ? 'TBD' : x.name;
       const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
       rows.push(lineItem(
-        `${x.name}, ${x.role} (Effort: ${effort(x.effort_months, x.effort_type)}).`,
+        `${displayName}, ${x.role} (Effort: ${effort(x.effort_months, x.effort_type)}).`,
         `Funds are requested based on an Institutional Base Salary (IBS) of $${fmt(x.base_salary)}. ${x.narrative_description} Total Requested Salary: $${fmt(x.total_salary)}${yearlyStr ? ` (${yearlyStr})` : ''}.`
       ));
     });
