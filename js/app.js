@@ -6,7 +6,9 @@ async function loadLastUpdated() {
     if (!res.ok) return;
     const [commit] = await res.json();
     const date = new Date(commit.commit.committer.date);
-    el.textContent = `Last updated ${date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}`;
+    const datePart = date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const timePart = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    el.textContent = `Last updated ${datePart} at ${timePart}`;
   } catch {}
 }
 
