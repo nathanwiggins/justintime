@@ -7,7 +7,7 @@ const Sections = (() => {
         key:    'senior_personnel',
         label:  'A. Senior Personnel',
         fields: ['senior_personnel'],
-        prompt: 'List each named senior/key personnel. Include their role, annual effort in months, and cumulative salary across all budget years. Do not assume titles or credentials (Dr., PhD) unless explicitly stated in the budget. Write a concise narrative for each person describing their specific contribution to the project. CRITICAL: effort_months_per_year must be the effort PER YEAR, NOT the total across all years. Never multiply or sum months across years.',
+        prompt: 'List each named senior/key personnel. Include their role, annual effort in months, and cumulative salary across all budget years. Do not assume titles or credentials (Dr., PhD) unless explicitly stated in the budget. Write a concise narrative for each person describing their specific contribution to the project. effort_months_per_year must be the effort PER YEAR, NOT the total across all years. Never multiply or sum months across years.',
         schema: {
           type: 'object',
           properties: { senior_personnel: Schemas['nsf'].properties.senior_personnel },
@@ -18,7 +18,7 @@ const Sections = (() => {
         key:    'other_personnel',
         label:  'B. Other Personnel',
         fields: ['other_personnel'],
-        prompt: 'List all non-senior personnel grouped by role category. NSF Section B covers unnamed role groups such as Postdoctoral Scholars, Graduate Students, Undergraduate Students, and Other Professionals. For each group: COMPENSATION CLASSIFICATION: Analyze the spreadsheet to determine if the role is paid hourly or annually. Set rate_type strictly to "hourly" or "annual". Extract the corresponding wage or stipend into rate_amount. EFFORT AMBIGUITY STRICT RULE: Set effort_description to explicitly clarify the per-person effort. For annual roles use formats like "X Calendar months each per year". For hourly roles use formats like "X hours each per year". Never output a flat "12 months" or "500 hours" without the "each" clarifier when there are multiple individuals. Write a concise narrative for each group describing their role in the project.',
+        prompt: 'List all non-senior personnel grouped by role category. This section covers unnamed role groups such as Postdoctoral Scholars, Graduate Students, Undergraduate Students, and Other Professionals. For each group: Analyze the spreadsheet to determine if the role is paid hourly or annually. Set rate_type strictly to "hourly" or "annual". Extract the corresponding wage or stipend into rate_amount. Set effort_description to explicitly clarify the per-person effort. For annual roles use formats like "X Calendar months each per year". For hourly roles use formats like "X hours each per year". Never output a flat "12 months" or "500 hours" without the "each" clarifier when there are multiple individuals. Write a concise narrative for each group describing their role in the project.',
         schema: {
           type: 'object',
           properties: { other_personnel: Schemas['nsf'].properties.other_personnel },
