@@ -7,7 +7,7 @@ const Sections = (() => {
         key:    'senior_personnel',
         label:  'A. Senior Personnel',
         fields: ['senior_personnel'],
-        prompt: 'List each named senior/key personnel. Include their role, annual effort in months, and effort type (Summer, Academic, or Calendar). Crucially, extract or calculate their base_salary (Institutional Base Salary) based on Year 1 requests. Map out their requested salary for each budget year in the yearly_breakdown array, accounting for and explicitly stating any stated escalation rates (e.g., 3%). Finally, provide the cumulative total_salary and a narrative describing their specific contribution.',
+        prompt: 'List each named senior/key personnel. Include their role, annual effort in months, and cumulative salary across all budget years. Write a concise narrative for each person describing their specific contribution to the project.',
         schema: {
           type: 'object',
           properties: { senior_personnel: Schemas['nsf'].properties.senior_personnel },
@@ -18,7 +18,7 @@ const Sections = (() => {
         key:    'other_personnel',
         label:  'B. Other Personnel',
         fields: ['other_personnel'],
-        prompt: 'List all other personnel (graduate students, undergraduates, post-docs, technicians, administrative staff, etc.). Include role, annual effort in months, and cumulative salary. If none are budgeted, return an empty array.',
+        prompt: 'List all other personnel (graduate students, undergraduates, post-docs, technicians, administrative staff, etc.). Include role, annual effort in months, and cumulative salary across all budget years. If none are budgeted, return an empty array.',
         schema: {
           type: 'object',
           properties: { other_personnel: Schemas['nsf'].properties.other_personnel },
@@ -29,7 +29,7 @@ const Sections = (() => {
         key:    'equipment',
         label:  'C. Equipment',
         fields: ['equipment'],
-        prompt: 'List each equipment item (typically $5,000 or more per NSF policy). Provide the item name, total cost, and a justification explaining why this specific equipment is necessary for the proposed research. If no equipment is budgeted, return an empty array.',
+        prompt: 'List each equipment item (typically $5,000 or more per NSF policy). Provide the item name, total cost summed cumulatively across all budget years, and a justification explaining why this specific equipment is necessary for the proposed research. If no equipment is budgeted, return an empty array.',
         schema: {
           type: 'object',
           properties: { equipment: Schemas['nsf'].properties.equipment },
@@ -40,7 +40,7 @@ const Sections = (() => {
         key:    'travel',
         label:  'E. Travel',
         fields: ['domestic_travel', 'foreign_travel'],
-        prompt: 'Separate all travel into two categories. domestic_travel covers trips within the United States only. foreign_travel covers all international destinations. For each trip include trip purpose, destination, number of travelers, conference or event name, total cost, and justification. If no domestic travel is budgeted return an empty array for domestic_travel. If no foreign travel is budgeted return an empty array for foreign_travel.',
+        prompt: 'Separate all travel into two categories — domestic_travel (within the United States only) and foreign_travel (all international destinations). For each trip include trip purpose, destination, number of travelers, conference or event name, total cost summed cumulatively across all budget years, and justification. If no domestic travel is budgeted return an empty array for domestic_travel. If no foreign travel is budgeted return an empty array for foreign_travel.',
         schema: {
           type: 'object',
           properties: {
@@ -54,7 +54,7 @@ const Sections = (() => {
         key:    'participant_support',
         label:  'F. Participant Support',
         fields: ['stipends', 'participant_travel', 'subsistence', 'participant_other', 'participant_support_has_data'],
-        prompt: 'Identify all participant support costs and populate each sub-category separately: stipends, participant travel, subsistence, and other participant costs. Set participant_support_has_data to true if ANY participant support line items exist in the budget; otherwise set it to false and return empty arrays for all sub-categories.',
+        prompt: 'Participant support costs are exempt from indirect costs and must be listed separately from general direct costs. Populate each sub-category: stipends, participant travel, subsistence, and other participant costs. Set participant_support_has_data to true if ANY participant support line items exist in the budget; otherwise set it to false and return empty arrays for all sub-categories.',
         schema: {
           type: 'object',
           properties: {
@@ -71,7 +71,7 @@ const Sections = (() => {
         key:    'other_direct_costs',
         label:  'G. Other Direct Costs',
         fields: ['materials_supplies', 'publications', 'consultants', 'computer_services', 'subawards', 'other_direct_lines'],
-        prompt: 'Populate all six other direct cost sub-categories from the budget spreadsheet in a single response. materials_supplies: consumable supplies grouped by category with cost and justification. publications: journal page charges or open-access fees with cost and justification. consultants: each consultant with name, expertise area, daily rate, number of days, total cost, and justification. computer_services: purchased computing or IT services with description, cost, and justification. subawards: each subaward institution with institution name, sub-PI name, total cost, and justification. other_direct_lines: any remaining direct cost items not covered above with item name, cost, and justification. Do NOT include fringe benefits or indirect costs in any of these arrays. Return an empty array for any sub-category with no budgeted items.',
+        prompt: 'Populate all six other direct cost sub-categories, summing each cost cumulatively across all budget years. materials_supplies: consumable supplies grouped by category with cost and justification. publications: journal page charges or open-access fees with cost and justification. consultants: each consultant with name, expertise area, daily rate, number of days, total cost, and justification. computer_services: purchased computing or IT services with description, cost, and justification. subawards: each subaward institution with institution name, sub-PI name, total cost, and justification. other_direct_lines: any remaining direct cost items not covered above with item name, cost, and justification. Do NOT include fringe benefits or indirect costs in any of these arrays. Return an empty array for any sub-category with no budgeted items.',
         schema: {
           type: 'object',
           properties: {
@@ -89,7 +89,7 @@ const Sections = (() => {
         key:    'fringe_indirect',
         label:  'H. Fringe & Indirect Costs',
         fields: ['fringe_total_cost', 'indirect_total_cost'],
-        prompt: 'Extract ONLY two numbers from the spreadsheet: the total cumulative fringe benefits cost across all budget years, and the total cumulative indirect (F&A) cost across all budget years. Do not narrate; just return the numbers.',
+        prompt: 'Extract ONLY two numbers from the spreadsheet: the total cumulative fringe benefits cost across all budget years (fringe_total_cost), and the total cumulative indirect/F&A cost across all budget years (indirect_total_cost). Do not narrate; just return the numbers.',
         schema: {
           type: 'object',
           properties: {
@@ -106,7 +106,7 @@ const Sections = (() => {
         key:    'senior_personnel',
         label:  'A. Senior/Key Personnel',
         fields: ['senior_personnel'],
-        prompt: 'List each named senior or key personnel. Include their role, effort in person months (Calendar, Academic, or Summer — never percentage), and cumulative salary. Write a concise narrative for each person describing their specific role and contribution to the project.',
+        prompt: 'List each named senior or key personnel. Effort MUST be stated in person months (Calendar, Academic, or Summer) — percentage effort is obsolete and must never be used. Include cumulative salary across all budget years and a concise narrative describing each person\'s specific role and contribution.',
         schema: {
           type: 'object',
           properties: { senior_personnel: Schemas['nih-detailed'].properties.senior_personnel },
@@ -117,7 +117,7 @@ const Sections = (() => {
         key:    'other_personnel',
         label:  'B. Other Personnel',
         fields: ['other_personnel'],
-        prompt: 'List all other personnel (graduate students, research assistants, post-docs, technicians, etc.). Include role, effort in person months (Calendar, Academic, or Summer — never percentage), and cumulative salary. If none are budgeted, return an empty array.',
+        prompt: 'List all other personnel (graduate students, research assistants, post-docs, technicians, etc.). Effort MUST be stated in person months (Calendar, Academic, or Summer) — percentage effort is obsolete and must never be used. Include cumulative salary across all budget years. If none are budgeted, return an empty array.',
         schema: {
           type: 'object',
           properties: { other_personnel: Schemas['nih-detailed'].properties.other_personnel },
@@ -128,7 +128,7 @@ const Sections = (() => {
         key:    'equipment',
         label:  'C. Equipment',
         fields: ['equipment'],
-        prompt: 'List each equipment item (typically $5,000 or more). Provide the item name, total cost, and a justification explaining why this specific equipment is essential for the proposed research. If no equipment is budgeted, return an empty array.',
+        prompt: 'List each equipment item (typically $5,000 or more). Provide the item name, total cost summed cumulatively across all budget years, and a justification explaining why this specific equipment is essential for the proposed research. If no equipment is budgeted, return an empty array.',
         schema: {
           type: 'object',
           properties: { equipment: Schemas['nih-detailed'].properties.equipment },
@@ -139,7 +139,7 @@ const Sections = (() => {
         key:    'travel',
         label:  'D. Travel',
         fields: ['travel'],
-        prompt: 'List all travel (domestic and international). For each trip include the travel type (Domestic or International), destination, number of travelers, purpose, total cost, and justification. If no travel is budgeted, return an empty array.',
+        prompt: 'List all travel (domestic and international), summing each trip cost cumulatively across all budget years. For each trip include the travel type (Domestic or International), destination, number of travelers, purpose, total cost, and justification. If no travel is budgeted, return an empty array.',
         schema: {
           type: 'object',
           properties: { travel: Schemas['nih-detailed'].properties.travel },
@@ -150,7 +150,7 @@ const Sections = (() => {
         key:    'trainee_support',
         label:  'E. Trainee Support',
         fields: ['trainee_support'],
-        prompt: 'List trainee support costs (tuition, stipends, health insurance for trainees, etc.) by category. Include the category name, total cost, and justification. If none are budgeted, return an empty array.',
+        prompt: 'List trainee support costs (tuition, stipends, health insurance for trainees, etc.) by category, summing each cost cumulatively across all budget years. Include the category name, total cost, and justification. If none are budgeted, return an empty array.',
         schema: {
           type: 'object',
           properties: { trainee_support: Schemas['nih-detailed'].properties.trainee_support },
@@ -161,7 +161,7 @@ const Sections = (() => {
         key:    'other_direct_costs',
         label:  'G. Other Direct Costs',
         fields: ['materials_supplies', 'publications', 'consultants', 'consortiums', 'user_fees', 'alterations', 'other_direct_lines'],
-        prompt: 'Populate all seven other direct cost sub-categories from the budget spreadsheet in a single response. materials_supplies: consumable supplies grouped by category with cost and justification. publications: journal page charges or open-access fees with publication type, cost, and justification. consultants: each consultant with name, expertise area, total cost, and justification. consortiums: each subaward institution with institution name, sub-PI, total cost, direct costs, and indirect costs — clearly distinguish direct from indirect per NIH requirements. user_fees: research facility or core user fees with facility name, cost, and justification. alterations: lab or space renovations with description, cost, and justification. other_direct_lines: any remaining direct cost items not covered above with item name, cost, and justification. Do NOT include fringe benefits or indirect costs in any of these arrays. Return an empty array for any sub-category with no budgeted items.',
+        prompt: 'Populate all seven other direct cost sub-categories, summing each cost cumulatively across all budget years. materials_supplies: consumable supplies grouped by category with cost and justification. publications: journal page charges or open-access fees with publication type, cost, and justification. consultants: each consultant with name, expertise area, total cost, and justification. consortiums: each subaward institution with institution name, sub-PI, total cost, direct costs, and indirect costs — the direct and indirect costs MUST be clearly distinguished and listed separately per NIH requirements. user_fees: research facility or core user fees with facility name, cost, and justification. alterations: lab or space renovations with description, cost, and justification. other_direct_lines: any remaining direct cost items not covered above with item name, cost, and justification. Do NOT include fringe benefits or indirect costs in any of these arrays. Return an empty array for any sub-category with no budgeted items.',
         schema: {
           type: 'object',
           properties: {
@@ -180,7 +180,7 @@ const Sections = (() => {
         key:    'fringe_indirect',
         label:  'Fringe & Indirect Costs',
         fields: ['fringe_total_cost', 'indirect_total_cost'],
-        prompt: 'Extract ONLY two numbers from the spreadsheet: the total cumulative fringe benefits cost across all budget years, and the total cumulative indirect (F&A) cost across all budget years. Do not narrate; just return the numbers.',
+        prompt: 'Extract ONLY two numbers from the spreadsheet: the total cumulative fringe benefits cost across all budget years (fringe_total_cost), and the total cumulative indirect/F&A cost across all budget years (indirect_total_cost). Do not narrate; just return the numbers.',
         schema: {
           type: 'object',
           properties: {
@@ -197,7 +197,7 @@ const Sections = (() => {
         key:    'personnel',
         label:  'Personnel Justification',
         fields: ['personnel'],
-        prompt: 'List all personnel with their name, role, and effort in calendar person months. Do NOT include any dollar amounts, salaries, fringe rates, or cost totals — NIH Modular strictly prohibits specific dollar figures here.',
+        prompt: 'List all personnel with their name, role, and effort in calendar person months. Do NOT include any dollar amounts, salaries, fringe rates, or cost totals — NIH Modular guidelines strictly prohibit specific dollar figures in the personnel justification.',
         schema: {
           type: 'object',
           properties: { personnel: Schemas['nih-modular'].properties.personnel },
@@ -208,7 +208,7 @@ const Sections = (() => {
         key:    'consortium',
         label:  'Consortium Justification',
         fields: ['consortium'],
-        prompt: 'List each consortium institution. Include the institution name, its location type (domestic or foreign), the sub-personnel name, their role, their effort in person months, and a narrative description of the work they will perform. If no consortiums exist, return an empty array.',
+        prompt: 'List each consortium institution. Include the institution name, its location type (domestic or foreign), the sub-personnel name, their role, their effort in person months, and a narrative description of the work they will perform. Do NOT include any dollar amounts, cost figures, or financial totals — NIH Modular guidelines prohibit specific dollar figures here. If no consortiums exist, return an empty array.',
         schema: {
           type: 'object',
           properties: { consortium: Schemas['nih-modular'].properties.consortium },
@@ -230,7 +230,7 @@ const Sections = (() => {
         key:    'fringe_indirect',
         label:  'Fringe & Indirect Costs',
         fields: ['fringe_total_cost', 'indirect_total_cost'],
-        prompt: 'Extract ONLY two numbers from the spreadsheet: the total cumulative fringe benefits cost across all budget years, and the total cumulative indirect (F&A) cost across all budget years. Do not narrate; just return the numbers.',
+        prompt: 'Extract ONLY two numbers from the spreadsheet: the total cumulative fringe benefits cost across all budget years (fringe_total_cost), and the total cumulative indirect/F&A cost across all budget years (indirect_total_cost). Do not narrate; just return the numbers.',
         schema: {
           type: 'object',
           properties: {
@@ -247,7 +247,7 @@ const Sections = (() => {
         key:    'personnel',
         label:  'Personnel',
         fields: ['personnel'],
-        prompt: 'List all project personnel with their name, role, annual effort in months, and cumulative salary. Write a concise narrative for each person describing their contribution to the project.',
+        prompt: 'List all project personnel with their name, role, annual effort in months, and cumulative salary across all budget years. Write a concise narrative for each person describing their contribution to the project.',
         schema: {
           type: 'object',
           properties: { personnel: Schemas['generic'].properties.personnel },
@@ -258,7 +258,7 @@ const Sections = (() => {
         key:    'equipment',
         label:  'Equipment',
         fields: ['equipment'],
-        prompt: 'List each major equipment item with its name, cost, and a justification explaining why it is necessary for the project. If no equipment is budgeted, return an empty array.',
+        prompt: 'List each major equipment item with its name, total cost summed cumulatively across all budget years, and a justification explaining why it is necessary for the project. If no equipment is budgeted, return an empty array.',
         schema: {
           type: 'object',
           properties: { equipment: Schemas['generic'].properties.equipment },
@@ -269,7 +269,7 @@ const Sections = (() => {
         key:    'travel',
         label:  'Travel',
         fields: ['travel'],
-        prompt: 'List all travel with destination, total cost, and a justification explaining the purpose of the travel and its connection to the project. If no travel is budgeted, return an empty array.',
+        prompt: 'List all travel with destination, total cost summed cumulatively across all budget years, and a justification explaining the purpose and its connection to the project. If no travel is budgeted, return an empty array.',
         schema: {
           type: 'object',
           properties: { travel: Schemas['generic'].properties.travel },
@@ -280,7 +280,7 @@ const Sections = (() => {
         key:    'direct_costs',
         label:  'Other Direct Costs',
         fields: ['direct_costs'],
-        prompt: 'List all remaining direct cost items (supplies, services, consultants, publications, etc.) by category or item. Provide the category or item name, cost, and justification. If none remain, return an empty array.',
+        prompt: 'List all remaining direct cost items (supplies, services, consultants, publications, etc.) by category or item, summing each cost cumulatively across all budget years. Provide the category or item name, cost, and justification. Do NOT include fringe benefits or indirect costs here. If none remain, return an empty array.',
         schema: {
           type: 'object',
           properties: { direct_costs: Schemas['generic'].properties.direct_costs },
@@ -291,7 +291,7 @@ const Sections = (() => {
         key:    'fringe_indirect',
         label:  'Fringe & Indirect Costs',
         fields: ['fringe_total_cost', 'indirect_total_cost'],
-        prompt: 'Extract ONLY two numbers from the spreadsheet: the total cumulative fringe benefits cost across all budget years, and the total cumulative indirect (F&A) cost across all budget years. Do not narrate; just return the numbers.',
+        prompt: 'Extract ONLY two numbers from the spreadsheet: the total cumulative fringe benefits cost across all budget years (fringe_total_cost), and the total cumulative indirect/F&A cost across all budget years (indirect_total_cost). Do not narrate; just return the numbers.',
         schema: {
           type: 'object',
           properties: {

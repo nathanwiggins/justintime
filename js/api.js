@@ -1,24 +1,10 @@
 const Api = (() => {
   const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent';
 
-  function globalRules(templateType) {
-    let rules = `- All dollar amounts must match the budget spreadsheet exactly
+  function globalRules() {
+    return `- All dollar amounts must match the budget spreadsheet exactly
 - Write professional, concise narrative justifications for each line item
-- If a budget category has no line items, return an empty array for that field
-- Extract the total cumulative Fringe Benefits cost and the total cumulative Indirect (F&A) cost into the fringe_total_cost and indirect_total_cost fields. Do not list Indirect Costs or Fringe Benefits under 'Other Direct Costs'
-- CRITICAL MATH RULE: For Equipment, Travel, and Other Direct Costs, sum costs cumulatively across all years.`;
-
-    if (templateType === 'nih-modular') {
-      rules += `\n\nCRITICAL MODULAR RULE: Do NOT include any dollar amounts, salary figures, fringe rates, or cost totals anywhere in your response. NIH Modular guidelines strictly prohibit specific dollar figures in the personnel justification. Only describe names, roles, and effort in calendar person-months.`;
-    }
-    if (templateType === 'nih-detailed') {
-      rules += `\n\nCRITICAL NIH RULE: Effort must be described using "person months" (Calendar, Academic, or Summer). Percentage effort is obsolete and must never be used. If a subaward exists, its direct AND indirect costs must be clearly noted.`;
-    }
-    if (templateType === 'nsf') {
-      rules += `\n\nNSF RULE: Separate all travel into domestic (E.1) and foreign (E.2) arrays. Separate all participant support costs from general direct costs. Set participant_support_has_data to true only if the budget contains participant support line items.`;
-    }
-
-    return rules;
+- If a budget category has no line items, return an empty array for that field`;
   }
 
   function buildPrompt(csvText, projectSummary, templateType) {
@@ -27,7 +13,7 @@ const Api = (() => {
 Using the budget spreadsheet data and project summary provided below, generate a structured JSON response that fills out every section of a ${templateType.toUpperCase()} budget justification.
 
 Requirements:
-${globalRules(templateType)}
+${globalRules()}
 
 Project Summary:
 ${projectSummary}
@@ -42,7 +28,7 @@ ${csvText}`;
 You are generating ONLY the "${section.label}" section of a ${templateType.toUpperCase()} budget justification.
 
 Global requirements:
-${globalRules(templateType)}
+${globalRules()}
 
 Section-specific instructions:
 ${section.prompt}
