@@ -136,6 +136,26 @@ const Document = (() => {
       ));
     });
 
+    if (otherPersonnel.length > 1) {
+      const yearMap = {};
+      otherPersonnel.forEach(x => {
+        (x.yearly_breakdown || []).forEach(y => {
+          yearMap[y.year] = (yearMap[y.year] || 0) + y.cost;
+        });
+      });
+      const years       = Object.keys(yearMap).sort();
+      const combinedStr = years.map(yr => `$${fmt(yearMap[yr])} in Year ${yr}`).join(', ');
+      const { Paragraph, TextRun } = _docx;
+      rows.push(new Paragraph({
+        children: [
+          new TextRun({ text: 'The total request for Other Personnel is ' }),
+          new TextRun({ text: `$${fmt(otherTotal)}`, bold: true }),
+          new TextRun({ text: ` for the ${years.length}-year period of performance${combinedStr ? ` (${combinedStr})` : ''}.` })
+        ],
+        spacing: { after: 100 }
+      }));
+    }
+
     rows.push(sectionHeader('C. Fringe Benefits'));
     rows.push(plain('Total Requested: $' + fmt(p.fringe_total_cost)));
     rows.push(plain(p.fringe_boilerplate));
