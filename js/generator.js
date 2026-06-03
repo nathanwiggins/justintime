@@ -1,5 +1,4 @@
 const Generator = (() => {
-  let sourceTruth     = {};
   let currentTemplate = 'nih-detailed';
 
   function syncProfileDropdown() {
@@ -29,22 +28,42 @@ const Generator = (() => {
     document.getElementById('generate-btn').disabled = active;
   }
 
-  function showValidationBanner(mismatches, aiJson) {
-    const banner   = document.getElementById('validation-banner');
-    const msgEl    = document.getElementById('validation-message');
-    const editArea = document.getElementById('json-edit-area');
-
-    msgEl.textContent = mismatches.map(m =>
-      `• ${m.label}: AI generated $${m.aiAmount.toLocaleString()} — budget file shows $${m.truthAmount.toLocaleString()} (difference: $${m.difference.toLocaleString()})`
-    ).join('\n');
-
-    editArea.value = JSON.stringify(aiJson, null, 2);
-    banner.classList.remove('hidden');
-    banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  function clearStepLog() {
+    const log = document.getElementById('step-log');
+    log.innerHTML = '';
+    log.classList.remove('hidden');
   }
 
-  function hideValidationBanner() {
-    document.getElementById('validation-banner').classList.add('hidden');
+  function addStep(label) {
+    const log  = document.getElementById('step-log');
+    const item = document.createElement('div');
+    item.className = 'step-item running';
+
+    const icon = document.createElement('span');
+    icon.className   = 'step-icon spinning';
+    icon.textContent = '↻';
+
+    const text = document.createElement('span');
+    text.textContent = label;
+
+    item.appendChild(icon);
+    item.appendChild(text);
+    log.appendChild(item);
+
+    return {
+      done(detail) {
+        item.className   = 'step-item done';
+        icon.className   = 'step-icon';
+        icon.textContent = '✓';
+        if (detail) text.textContent = label + ' — ' + detail;
+      },
+      error(detail) {
+        item.className   = 'step-item error';
+        icon.className   = 'step-icon';
+        icon.textContent = '✗';
+        if (detail) text.textContent = label + ' — ' + detail;
+      }
+    };
   }
 
   function getFormValues() {
@@ -73,27 +92,6 @@ const Generator = (() => {
     };
   }
 
-  async function callAndValidate(csvText, templateType, summary, apiKey, profile) {
-    setStatus('Calling Gemini API…', 'loading');
-    const aiJson = await Api.generate({ csvText, projectSummary: summary, templateType, apiKey });
-
-    setStatus('Validating amounts…', 'loading');
-    const { valid, mismatches } = Validator.validate(aiJson, sourceTruth);
-
-    if (!valid) {
-      showValidationBanner(mismatches, aiJson);
-      setStatus('Validation found mismatches. Review the banner below.', 'error');
-      setGenerating(false);
-      return;
-    }
-
-    const payload = injectBoilerplate(aiJson, profile);
-    setStatus('Generating document…', 'loading');
-    await Document.generate(templateType, payload);
-    setStatus('Document downloaded successfully.', 'success');
-    setGenerating(false);
-  }
-
   async function handleGenerate() {
     const form  = getFormValues();
     const error = validateForm(form);
@@ -102,62 +100,28 @@ const Generator = (() => {
     const profile = Settings.getProfileById(form.profileId);
     if (!profile) { setStatus('Selected profile not found. Please reselect.', 'error'); return; }
 
-    hideValidationBanner();
     setGenerating(true);
+    setStatus('');
+    clearStepLog();
     currentTemplate = form.templateType;
 
     try {
-      setStatus('Parsing budget file…', 'loading');
-      const { csvText, sourceTruth: st } = await Parser.parse(form.file);
-      sourceTruth = st;
-
-      await callAndValidate(csvText, form.templateType, form.summary, form.apiKey, profile);
-    } catch (err) {
-      setGenerating(false);
-      setStatus('Error: ' + err.message, 'error');
-    }
-  }
-
-  async function handleForceRegenerate() {
-    const form    = getFormValues();
-    const profile = Settings.getProfileById(form.profileId);
-
-    hideValidationBanner();
-    setGenerating(true);
-
-    try {
-      setStatus('Parsing budget file…', 'loading');
+      const parseStep = addStep('Parsing budget file');
       const { csvText } = await Parser.parse(form.file);
-      const summary = form.summary +
-        '\n\nIMPORTANT: All dollar amounts must exactly match the values in the provided budget spreadsheet.';
+      parseStep.done(form.file.name);
 
-      await callAndValidate(csvText, currentTemplate, summary, form.apiKey, profile);
-    } catch (err) {
-      setGenerating(false);
-      setStatus('Error: ' + err.message, 'error');
-    }
-  }
+      const apiStep = addStep('Calling Gemini API');
+      const aiJson  = await Api.generate({ csvText, projectSummary: form.summary, templateType: form.templateType, apiKey: form.apiKey });
+      apiStep.done('response received');
 
-  async function handleDismissAndProceed() {
-    const profileId = document.getElementById('profile-select').value;
-    const profile   = Settings.getProfileById(profileId);
-    const editArea  = document.getElementById('json-edit-area');
+      const boilerplateStep = addStep('Injecting institutional boilerplate');
+      const payload = injectBoilerplate(aiJson, profile);
+      boilerplateStep.done(profile.name);
 
-    let editedJson;
-    try {
-      editedJson = JSON.parse(editArea.value);
-    } catch {
-      setStatus('Invalid JSON in the edit area. Fix the syntax before proceeding.', 'error');
-      return;
-    }
+      const docStep = addStep('Building Word document');
+      await Document.generate(form.templateType, payload);
+      docStep.done('download started');
 
-    hideValidationBanner();
-    setGenerating(true);
-    setStatus('Generating document…', 'loading');
-
-    try {
-      const payload = injectBoilerplate(editedJson, profile);
-      await Document.generate(currentTemplate, payload);
       setStatus('Document downloaded successfully.', 'success');
       setGenerating(false);
     } catch (err) {
@@ -169,8 +133,6 @@ const Generator = (() => {
   function init() {
     syncProfileDropdown();
     document.getElementById('generate-btn').addEventListener('click', handleGenerate);
-    document.getElementById('force-regenerate-btn').addEventListener('click', handleForceRegenerate);
-    document.getElementById('dismiss-banner-btn').addEventListener('click', handleDismissAndProceed);
   }
 
   return { init, syncProfileDropdown };
