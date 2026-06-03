@@ -77,15 +77,36 @@ const Document = (() => {
   function buildNsf(p) {
     const rows = [...titleBlock(p.profile_name)];
 
-    const seniorTotal = (p.senior_personnel || []).reduce((sum, x) => sum + (x.total_salary || 0), 0);
+    const seniorPersonnel = p.senior_personnel || [];
+    const seniorTotal = seniorPersonnel.reduce((sum, x) => sum + (x.total_salary || 0), 0);
     rows.push(sectionHeader(`A. Senior Personnel ($${fmt(seniorTotal)})`));
-    (p.senior_personnel || []).forEach(x => {
+    seniorPersonnel.forEach(x => {
       const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
       rows.push(lineItem(
         `${x.name}, ${x.role} (Effort: ${effort(x.effort_months, x.effort_type)}).`,
         `Funds are requested based on an Institutional Base Salary (IBS) of $${fmt(x.base_salary)}. ${x.narrative_description} Total Requested Salary: $${fmt(x.total_salary)}${yearlyStr ? ` (${yearlyStr})` : ''}.`
       ));
     });
+
+    if (seniorPersonnel.length > 1) {
+      const yearMap = {};
+      seniorPersonnel.forEach(x => {
+        (x.yearly_breakdown || []).forEach(y => {
+          yearMap[y.year] = (yearMap[y.year] || 0) + y.cost;
+        });
+      });
+      const years       = Object.keys(yearMap).sort();
+      const combinedStr = years.map(yr => `$${fmt(yearMap[yr])} in Year ${yr}`).join(', ');
+      const { Paragraph, TextRun } = _docx;
+      rows.push(new Paragraph({
+        children: [
+          new TextRun({ text: `The total request for Senior Personnel is ` }),
+          new TextRun({ text: `$${fmt(seniorTotal)}`, bold: true }),
+          new TextRun({ text: ` for the ${years.length}-year period of performance${combinedStr ? ` (${combinedStr})` : ''}.` })
+        ],
+        spacing: { after: 100 }
+      }));
+    }
 
     rows.push(sectionHeader('B. Other Personnel'));
     (p.other_personnel || []).forEach(x => rows.push(lineItem(
