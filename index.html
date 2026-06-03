@@ -72,16 +72,30 @@
       <div class="section-card">
         <div class="form-group">
           <label for="budget-file-input">Budget File</label>
-          <input type="file" id="budget-file-input" accept=".csv,.xls,.xlsx">
-          <p class="field-hint">Accepted formats: .csv, .xls, .xlsx</p>
+          <div class="drop-zone" id="budget-drop-zone">
+            <input type="file" id="budget-file-input" accept=".csv,.xls,.xlsx">
+            <div class="drop-zone-content">
+              <span class="drop-zone-icon">⬆</span>
+              <span class="drop-zone-text">Drag & drop or <span class="drop-zone-link">browse</span></span>
+              <span class="drop-zone-hint">.csv, .xls, .xlsx</span>
+            </div>
+            <span class="drop-zone-filename hidden" id="budget-filename"></span>
+          </div>
         </div>
         <div class="form-group">
           <div class="summary-label-row">
             <label for="project-summary-input">Project Summary / Statement of Work</label>
             <button type="button" id="summary-toggle" class="btn-link">Type instead</button>
           </div>
-          <input type="file" id="project-summary-input" accept=".doc,.docx">
-          <p class="field-hint" id="summary-file-hint">Accepted formats: .doc, .docx</p>
+          <div class="drop-zone" id="summary-drop-zone">
+            <input type="file" id="project-summary-input" accept=".doc,.docx">
+            <div class="drop-zone-content">
+              <span class="drop-zone-icon">⬆</span>
+              <span class="drop-zone-text">Drag & drop or <span class="drop-zone-link">browse</span></span>
+              <span class="drop-zone-hint">.doc, .docx</span>
+            </div>
+            <span class="drop-zone-filename hidden" id="summary-filename"></span>
+          </div>
           <textarea id="project-summary-text-input" class="hidden" rows="6" placeholder="Paste or type your project summary here..."></textarea>
         </div>
       </div>

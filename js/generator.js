@@ -225,21 +225,58 @@ const Generator = (() => {
     }
   }
 
+  function initDropZone(zoneId, inputId, filenameId) {
+    const zone     = document.getElementById(zoneId);
+    const input    = document.getElementById(inputId);
+    const filename = document.getElementById(filenameId);
+
+    function showFile(file) {
+      filename.textContent = file.name;
+      filename.classList.remove('hidden');
+      zone.querySelector('.drop-zone-content').classList.add('hidden');
+    }
+
+    input.addEventListener('change', () => {
+      if (input.files[0]) showFile(input.files[0]);
+    });
+
+    zone.addEventListener('dragover', e => {
+      e.preventDefault();
+      zone.classList.add('drag-over');
+    });
+
+    zone.addEventListener('dragleave', e => {
+      if (!zone.contains(e.relatedTarget)) zone.classList.remove('drag-over');
+    });
+
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      showFile(file);
+    });
+  }
+
   function init() {
     syncProfileDropdown();
     document.getElementById('generate-btn').addEventListener('click', handleGenerate);
 
+    initDropZone('budget-drop-zone',  'budget-file-input',       'budget-filename');
+    initDropZone('summary-drop-zone', 'project-summary-input',   'summary-filename');
+
     document.getElementById('summary-toggle').addEventListener('click', () => {
       summaryMode = summaryMode === 'file' ? 'text' : 'file';
 
-      const fileInput  = document.getElementById('project-summary-input');
-      const fileHint   = document.getElementById('summary-file-hint');
-      const textInput  = document.getElementById('project-summary-text-input');
-      const toggleBtn  = document.getElementById('summary-toggle');
+      const fileZone  = document.getElementById('summary-drop-zone');
+      const textInput = document.getElementById('project-summary-text-input');
+      const toggleBtn = document.getElementById('summary-toggle');
 
       const isFile = summaryMode === 'file';
-      fileInput.classList.toggle('hidden', !isFile);
-      fileHint.classList.toggle('hidden', !isFile);
+      fileZone.classList.toggle('hidden', !isFile);
       textInput.classList.toggle('hidden', isFile);
       toggleBtn.textContent = isFile ? 'Type instead' : 'Upload document';
     });
