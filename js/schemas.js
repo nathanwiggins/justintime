@@ -18,7 +18,7 @@ const Schemas = {
               items: {
                 type: 'object',
                 properties: {
-                  year: { type: 'string' },
+                  year: { type: 'number' },
                   cost: { type: 'number' }
                 },
                 required: ['year', 'cost']
