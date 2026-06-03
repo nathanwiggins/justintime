@@ -187,7 +187,8 @@ const Document = (() => {
       }));
     }
 
-    rows.push(sectionHeader('D. Equipment'));
+    const equipmentTotal = (p.equipment || []).reduce((sum, x) => sum + (x.cost || 0), 0);
+    rows.push(sectionHeader(`D. Equipment ($${fmt(equipmentTotal)})`));
     if (!(p.equipment || []).length) {
       rows.push(plain('No items of equipment (defined as non-expendable equipment with an acquisition cost of $5,000 or more and a useful life of more than one year) are requested for this project.'));
     } else {
