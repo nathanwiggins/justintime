@@ -13,7 +13,7 @@ async function loadLastUpdated() {
 }
 
 function initCyclingLabel() {
-  const words = ['Summary', 'Abstract', 'Narrative', 'Statement of Work'];
+  const words = ['Summary', 'Abstract', 'Narrative', 'Statement of Work', 'Description'];
   let index   = 0;
   const el    = document.getElementById('summary-label-word');
   if (!el) return;
