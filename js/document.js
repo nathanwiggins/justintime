@@ -84,7 +84,7 @@ const Document = (() => {
       const displayName = x.name === x.role ? 'TBD' : x.name;
       const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
       rows.push(lineItem(
-        `${displayName}, ${x.role} (Effort: ${effort(x.effort_months, x.effort_type)}).`,
+        `${displayName}, ${x.role} (Effort: ${effort(x.annual_effort_months, x.effort_type)}).`,
         `Funds are requested based on an Institutional Base Salary (IBS) of $${fmt(x.base_salary)}. ${x.narrative_description} Total Requested Salary: $${fmt(x.total_salary)}${yearlyStr ? ` (${yearlyStr})` : ''}.`
       ));
     });
@@ -109,7 +109,7 @@ const Document = (() => {
       }));
     }
 
-    const overLimit = seniorPersonnel.filter(x => (x.effort_months || 0) > 2);
+    const overLimit = seniorPersonnel.filter(x => (x.annual_effort_months || 0) > 2);
     if (overLimit.length > 0) {
       const roles    = overLimit.map(x => x.role);
       const rolesStr = roles.length === 1
@@ -122,7 +122,7 @@ const Document = (() => {
 
     rows.push(sectionHeader('B. Other Personnel'));
     (p.other_personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name_or_title}, ${x.role} (Effort: ${effort(x.effort_months)}).`,
+      `${x.name_or_title}, ${x.role} (Effort: ${effort(x.annual_effort_months)}).`,
       `${x.narrative_description} Total Requested Salary: $${fmt(x.salary)}.`
     )));
 
@@ -211,13 +211,13 @@ const Document = (() => {
 
     rows.push(sectionHeader('A. Senior/Key Personnel'));
     (p.senior_personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name}, ${x.role} (Effort: ${effort(x.effort_months)}).`,
+      `${x.name}, ${x.role} (Effort: ${effort(x.annual_effort_months)}).`,
       `${x.name} will serve as ${x.role} and will be responsible for ${x.narrative_description}. Requested Salary: $${fmt(x.salary)}.`
     )));
 
     rows.push(sectionHeader('B. Other Personnel'));
     (p.other_personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name_or_title}, ${x.role} (Effort: ${effort(x.effort_months)}).`,
+      `${x.name_or_title}, ${x.role} (Effort: ${effort(x.annual_effort_months)}).`,
       `${x.narrative_description}. Requested Salary: $${fmt(x.salary)}.`
     )));
 
@@ -291,7 +291,7 @@ const Document = (() => {
 
     rows.push(sectionHeader('Personnel Justification'));
     (p.personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name}, ${x.role} (Effort: ${effort(x.effort_months, 'Calendar')}).`,
+      `${x.name}, ${x.role} (Effort: ${effort(x.annual_effort_months, 'Calendar')}).`,
       `${x.name} will be responsible for ${x.narrative_description}. No salary or fringe benefit amounts are requested or explicitly stated in accordance with NIH Modular guidelines.`
     )));
 
@@ -301,7 +301,7 @@ const Document = (() => {
     } else {
       p.consortium.forEach(x => rows.push(lineItem(
         `${x.institution_name} (${x.institution_location_type}).`,
-        `This consortium subaward requires ${effort(x.effort_months, 'Calendar')} of effort for ${x.sub_personnel_name}, who will serve as ${x.sub_role} and oversee ${x.narrative_description}.`
+        `This consortium subaward requires ${effort(x.annual_effort_months, 'Calendar')} of effort for ${x.sub_personnel_name}, who will serve as ${x.sub_role} and oversee ${x.narrative_description}.`
       )));
     }
 
@@ -322,7 +322,7 @@ const Document = (() => {
 
     rows.push(sectionHeader('1. Personnel'));
     (p.personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name}, ${x.role} (${x.effort_months}):`,
+      `${x.name}, ${x.role} (${x.annual_effort_months}):`,
       `${x.narrative_description} Total Salary Requested: $${fmt(x.salary)}.`
     )));
 

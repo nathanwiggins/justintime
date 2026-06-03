@@ -10,7 +10,7 @@ const Schemas = {
           properties: {
             name:                  { type: 'string' },
             role:                  { type: 'string' },
-            effort_months:         { type: 'number' },
+            annual_effort_months:         { type: 'number' },
             effort_type:           { type: 'string' },
             base_salary:           { type: 'number' },
             yearly_breakdown: {
@@ -27,7 +27,7 @@ const Schemas = {
             total_salary:          { type: 'number' },
             narrative_description: { type: 'string' }
           },
-          required: ['name', 'role', 'effort_months', 'effort_type', 'base_salary', 'yearly_breakdown', 'total_salary', 'narrative_description']
+          required: ['name', 'role', 'annual_effort_months', 'effort_type', 'base_salary', 'yearly_breakdown', 'total_salary', 'narrative_description']
         }
       },
       other_personnel: {
@@ -37,11 +37,11 @@ const Schemas = {
           properties: {
             name_or_title:          { type: 'string' },
             role:                   { type: 'string' },
-            effort_months:          { type: 'number' },
+            annual_effort_months:          { type: 'number' },
             salary:                 { type: 'number' },
             narrative_description:  { type: 'string' }
           },
-          required: ['name_or_title', 'role', 'effort_months', 'salary', 'narrative_description']
+          required: ['name_or_title', 'role', 'annual_effort_months', 'salary', 'narrative_description']
         }
       },
       equipment: {
@@ -225,11 +225,11 @@ const Schemas = {
           properties: {
             name:                   { type: 'string' },
             role:                   { type: 'string' },
-            effort_months:          { type: 'number' },
+            annual_effort_months:          { type: 'number' },
             salary:                 { type: 'number' },
             narrative_description:  { type: 'string' }
           },
-          required: ['name', 'role', 'effort_months', 'salary', 'narrative_description']
+          required: ['name', 'role', 'annual_effort_months', 'salary', 'narrative_description']
         }
       },
       other_personnel: {
@@ -239,11 +239,11 @@ const Schemas = {
           properties: {
             name_or_title:          { type: 'string' },
             role:                   { type: 'string' },
-            effort_months:          { type: 'number' },
+            annual_effort_months:          { type: 'number' },
             salary:                 { type: 'number' },
             narrative_description:  { type: 'string' }
           },
-          required: ['name_or_title', 'role', 'effort_months', 'salary', 'narrative_description']
+          required: ['name_or_title', 'role', 'annual_effort_months', 'salary', 'narrative_description']
         }
       },
       equipment: {
@@ -390,10 +390,10 @@ const Schemas = {
           properties: {
             name:                  { type: 'string' },
             role:                  { type: 'string' },
-            effort_months:         { type: 'number' },
+            annual_effort_months:         { type: 'number' },
             narrative_description: { type: 'string' }
           },
-          required: ['name', 'role', 'effort_months', 'narrative_description']
+          required: ['name', 'role', 'annual_effort_months', 'narrative_description']
         }
       },
       consortium: {
@@ -403,12 +403,12 @@ const Schemas = {
           properties: {
             institution_name:          { type: 'string' },
             institution_location_type: { type: 'string' },
-            effort_months:             { type: 'number' },
+            annual_effort_months:             { type: 'number' },
             sub_personnel_name:        { type: 'string' },
             sub_role:                  { type: 'string' },
             narrative_description:     { type: 'string' }
           },
-          required: ['institution_name', 'institution_location_type', 'effort_months',
+          required: ['institution_name', 'institution_location_type', 'annual_effort_months',
                      'sub_personnel_name', 'sub_role', 'narrative_description']
         }
       },
@@ -439,11 +439,11 @@ const Schemas = {
           properties: {
             name:                  { type: 'string' },
             role:                  { type: 'string' },
-            effort_months:         { type: 'number' },
+            annual_effort_months:         { type: 'number' },
             salary:                { type: 'number' },
             narrative_description: { type: 'string' }
           },
-          required: ['name', 'role', 'effort_months', 'salary', 'narrative_description']
+          required: ['name', 'role', 'annual_effort_months', 'salary', 'narrative_description']
         }
       },
       equipment: {
