@@ -40,7 +40,7 @@ const Sections = (() => {
         key:    'equipment',
         label:  'D. Equipment',
         fields: ['equipment'],
-        prompt: 'List each equipment item (typically $5,000 or more per NSF policy). Provide the item name, total cost summed cumulatively across all budget years, and a justification explaining why this specific equipment is necessary for the proposed research. If no equipment is budgeted, return an empty array.',
+        prompt: 'List each equipment item (typically $5,000 or more per NSF policy). Provide the item name and the total cost summed cumulatively across all budget years (if applicable), and a justification explaining why this specific equipment is necessary for the proposed research. If no equipment is budgeted, return an empty array.',
         schema: {
           type: 'object',
           properties: { equipment: Schemas['nsf'].properties.equipment },
