@@ -12,7 +12,13 @@ COMPLIANCE NOTES
 
 A. Senior Personnel
 {#senior_personnel}
-{name}, {role} (Effort: {effort_months} {effort_type} months). {narrative_description} Total Requested Salary: ${salary}.
+{name}, {role} (Effort: {effort_months} {effort_type} months). Funds are requested based on an Institutional Base Salary (IBS) of ${base_salary}. {narrative_description}
+
+Yearly Requested Salary Breakdown:
+{#yearly_breakdown}
+  - {year}: ${cost}
+{/yearly_breakdown}
+Total Requested Salary: ${total_salary}
 {/senior_personnel}
 
 B. Other Personnel

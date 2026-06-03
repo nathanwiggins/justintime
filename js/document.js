@@ -72,10 +72,14 @@ const Document = (() => {
     const rows = [...titleBlock(p.profile_name)];
 
     rows.push(sectionHeader('A. Senior Personnel'));
-    (p.senior_personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name}, ${x.role} (Effort: ${x.effort_months}).`,
-      `${x.narrative_description} Total Requested Salary: $${fmt(x.salary)}.`
-    )));
+    (p.senior_personnel || []).forEach(x => {
+      rows.push(lineItem(
+        `${x.name}, ${x.role} (Effort: ${x.effort_months} ${x.effort_type} months).`,
+        `Funds are requested based on an Institutional Base Salary (IBS) of $${fmt(x.base_salary)}. ${x.narrative_description}`
+      ));
+      (x.yearly_breakdown || []).forEach(y => rows.push(plain(`  Year ${y.year}: $${fmt(y.cost)}`)));
+      rows.push(plain(`Total Requested Salary: $${fmt(x.total_salary)}.`));
+    });
 
     rows.push(sectionHeader('B. Other Personnel'));
     (p.other_personnel || []).forEach(x => rows.push(lineItem(

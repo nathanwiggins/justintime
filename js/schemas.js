@@ -8,13 +8,26 @@ const Schemas = {
         items: {
           type: 'object',
           properties: {
-            name:                   { type: 'string' },
-            role:                   { type: 'string' },
-            effort_months:          { type: 'string' },
-            salary:                 { type: 'number' },
-            narrative_description:  { type: 'string' }
+            name:                  { type: 'string' },
+            role:                  { type: 'string' },
+            effort_months:         { type: 'string' },
+            effort_type:           { type: 'string' },
+            base_salary:           { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  year: { type: 'string' },
+                  cost: { type: 'number' }
+                },
+                required: ['year', 'cost']
+              }
+            },
+            total_salary:          { type: 'number' },
+            narrative_description: { type: 'string' }
           },
-          required: ['name', 'role', 'effort_months', 'salary', 'narrative_description']
+          required: ['name', 'role', 'effort_months', 'effort_type', 'base_salary', 'yearly_breakdown', 'total_salary', 'narrative_description']
         }
       },
       other_personnel: {

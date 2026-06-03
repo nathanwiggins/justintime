@@ -5,8 +5,8 @@ const Api = (() => {
     let rules = `- All dollar amounts must match the budget spreadsheet exactly
 - Write professional, concise narrative justifications for each line item
 - If a budget category has no line items, return an empty array for that field
-- If the spreadsheet contains multi-year budgets, sum the costs cumulatively across all years. However, for personnel effort, state the annual effort (e.g., '1 summer month' or '12 calendar months') rather than a cumulative effort total
-- Extract the total cumulative Fringe Benefits cost and the total cumulative Indirect (F&A) cost into the fringe_total_cost and indirect_total_cost fields. Do not list Indirect Costs or Fringe Benefits under 'Other Direct Costs'`;
+- Extract the total cumulative Fringe Benefits cost and the total cumulative Indirect (F&A) cost into the fringe_total_cost and indirect_total_cost fields. Do not list Indirect Costs or Fringe Benefits under 'Other Direct Costs'
+- CRITICAL MATH RULE: For Equipment, Travel, and Other Direct Costs, sum costs cumulatively across all years. For Personnel categories, you MUST extract the Institutional Base Salary (IBS) from Year 1 and generate a strict year-by-year breakdown of requested salary costs. Do not sum personnel cumulatively.`;
 
     if (templateType === 'nih-modular') {
       rules += `\n\nCRITICAL MODULAR RULE: Do NOT include any dollar amounts, salary figures, fringe rates, or cost totals anywhere in your response. NIH Modular guidelines strictly prohibit specific dollar figures in the personnel justification. Only describe names, roles, and effort in calendar person-months.`;
