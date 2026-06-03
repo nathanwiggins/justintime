@@ -3,7 +3,8 @@ const Api = (() => {
 
   function globalRules() {
     return `- All dollar amounts must match the budget spreadsheet exactly
-- Write professional, concise narrative justifications for each line item
+- Write professional, informative narrative justifications for each line item
+- Prioritize JUSTIFYING and making a compelling case to the sponsor WHY each budget request is really necessary
 - If a budget category has no line items, return an empty array for that field`;
   }
 
