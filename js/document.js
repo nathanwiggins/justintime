@@ -156,9 +156,10 @@ const Document = (() => {
       }));
     }
 
-    rows.push(sectionHeader('C. Fringe Benefits'));
-    rows.push(plain('Total Requested: $' + fmt(p.fringe_total_cost)));
-    rows.push(plain(p.fringe_boilerplate));
+    rows.push(sectionHeader(`C. Fringe Benefits ($${fmt(p.fringe_total_cost)})`));
+    if (p.senior_personnel_paragraph) rows.push(plain(p.senior_personnel_paragraph));
+    if (p.other_personnel_paragraph)  rows.push(plain(p.other_personnel_paragraph));
+    if (p.total_summary_paragraph)    rows.push(plain(p.total_summary_paragraph));
 
     rows.push(sectionHeader('D. Equipment'));
     if (!(p.equipment || []).length) {

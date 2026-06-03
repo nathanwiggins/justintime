@@ -86,17 +86,32 @@ const Sections = (() => {
         }
       },
       {
-        key:    'fringe_indirect',
-        label:  'H. Fringe & Indirect Costs',
-        fields: ['fringe_total_cost', 'indirect_total_cost'],
-        prompt: 'Extract ONLY two numbers from the spreadsheet: the total cumulative fringe benefits cost across all budget years (fringe_total_cost), and the total cumulative indirect/F&A cost across all budget years (indirect_total_cost). Do not narrate; just return the numbers.',
+        key:    'fringe_benefits',
+        label:  'C. Fringe Benefits',
+        fields: ['fringe_total_cost', 'senior_personnel_paragraph', 'other_personnel_paragraph', 'total_summary_paragraph'],
+        prompt: 'Write a fringe benefits justification narrative using the institutional fringe rates and policies provided in the Institutional Context. Organize the response into up to three fields: (1) senior_personnel_paragraph: a paragraph detailing the fringe benefit calculation for Senior Personnel, referencing their salaries and the applicable rates from the institutional context. (2) other_personnel_paragraph: a paragraph detailing the fringe benefit calculation for Other Personnel if any are present in the budget — return an empty string if no other personnel are budgeted. (3) total_summary_paragraph: a combined summary paragraph if both Senior and Other Personnel fringe costs are present — return an empty string if only one personnel category exists. Also extract fringe_total_cost: the total cumulative fringe benefits cost across all budget years.',
         schema: {
           type: 'object',
           properties: {
-            fringe_total_cost:   Schemas['nsf'].properties.fringe_total_cost,
+            fringe_total_cost:          { type: 'number' },
+            senior_personnel_paragraph: { type: 'string' },
+            other_personnel_paragraph:  { type: 'string' },
+            total_summary_paragraph:    { type: 'string' }
+          },
+          required: ['fringe_total_cost', 'senior_personnel_paragraph', 'other_personnel_paragraph', 'total_summary_paragraph']
+        }
+      },
+      {
+        key:    'indirect_costs',
+        label:  'H. Indirect Costs',
+        fields: ['indirect_total_cost'],
+        prompt: 'Extract ONLY one number from the spreadsheet: the total cumulative indirect/F&A cost across all budget years (indirect_total_cost). Do not narrate; just return the number.',
+        schema: {
+          type: 'object',
+          properties: {
             indirect_total_cost: Schemas['nsf'].properties.indirect_total_cost
           },
-          required: ['fringe_total_cost', 'indirect_total_cost']
+          required: ['indirect_total_cost']
         }
       }
     ],

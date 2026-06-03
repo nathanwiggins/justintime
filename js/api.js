@@ -23,8 +23,8 @@ Budget Spreadsheet Data:
 ${csvText}`;
   }
 
-  function buildSectionPrompt(csvText, projectSummary, templateType, section) {
-    return `You are an expert grants administrator writing a formal budget justification narrative.
+  function buildSectionPrompt(csvText, projectSummary, templateType, section, additionalContext) {
+    let prompt = `You are an expert grants administrator writing a formal budget justification narrative.
 
 You are generating ONLY the "${section.label}" section of a ${templateType.toUpperCase()} budget justification.
 
@@ -32,13 +32,15 @@ Global requirements:
 ${globalRules()}
 
 Section-specific instructions:
-${section.prompt}
+${section.prompt}`;
 
-Project Summary:
-${projectSummary}
+    if (additionalContext) {
+      prompt += `\n\nInstitutional Context (incorporate the specific rates, policies, and language from this information directly into your response):\n${additionalContext}`;
+    }
 
-Budget Spreadsheet Data:
-${csvText}`;
+    prompt += `\n\nProject Summary:\n${projectSummary}\n\nBudget Spreadsheet Data:\n${csvText}`;
+
+    return prompt;
   }
 
   async function callApi(apiKey, prompt, schema) {
@@ -76,8 +78,8 @@ ${csvText}`;
     return { json, prompt };
   }
 
-  async function generateSection({ csvText, projectSummary, templateType, apiKey, section }) {
-    const prompt  = buildSectionPrompt(csvText, projectSummary, templateType, section);
+  async function generateSection({ csvText, projectSummary, templateType, apiKey, section, additionalContext }) {
+    const prompt  = buildSectionPrompt(csvText, projectSummary, templateType, section, additionalContext);
     const result  = await callApi(apiKey, prompt, section.schema);
     return { result, prompt };
   }

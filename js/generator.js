@@ -186,17 +186,19 @@ const Generator = (() => {
         { label: 'Source Truth',   content: JSON.stringify(sourceTruth, null, 2) }
       ]);
 
-      const sections = Sections.forTemplate(form.templateType).filter(s => s.key === 'other_personnel');
+      const sections = Sections.forTemplate(form.templateType).filter(s => s.key === 'fringe_benefits');
       const aiJson   = {};
 
       for (const section of sections) {
+        const additionalContext = section.key === 'fringe_benefits' ? profile.fringeBoilerplate : null;
         const sectionStep = addStep(`Generating: ${section.label}`);
         const { result, prompt } = await Api.generateSection({
           csvText,
           projectSummary,
           templateType:   form.templateType,
           apiKey:         form.apiKey,
-          section
+          section,
+          additionalContext
         });
         Object.assign(aiJson, result);
         sectionStep.done('done', [
