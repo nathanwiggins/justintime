@@ -93,6 +93,8 @@ body {
   gap: 24px;
 }
 
+.hidden { display: none; }
+
 .tab-panel.hidden { display: none; }
 
 .section-card {
