@@ -90,12 +90,22 @@ const Document = (() => {
     rows.push(sectionHeader(`A. Senior Personnel ($${fmt(seniorTotal)})`));
     seniorPersonnel.forEach(x => {
       const displayName = x.name === x.role ? 'TBD' : x.name;
-      const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
-      rows.push(lineItem(
-        `${displayName}, ${x.role} (Effort: ${effort(x.effort_months_per_year, x.effort_type)}).`,
-        `Funds are requested based on an Institutional Base Salary (IBS) of $${fmt(x.base_salary)}. ${x.narrative_description} Total Requested Salary: $${fmt(x.total_salary)}${yearlyStr ? ` (${yearlyStr})` : ''}.`
-      ));
-      if (x.escalation_note) rows.push(italic(x.escalation_note));
+      const yearlyStr   = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
+      const boldLabel   = `${displayName}, ${x.role} (Effort: ${effort(x.effort_months_per_year, x.effort_type)}).`;
+      const narrative   = `Funds are requested based on an Institutional Base Salary (IBS) of $${fmt(x.base_salary)}. ${x.narrative_description} Total Requested Salary: $${fmt(x.total_salary)}${yearlyStr ? ` (${yearlyStr})` : ''}.`;
+      if (x.escalation_note) {
+        const { Paragraph, TextRun } = _docx;
+        rows.push(new Paragraph({
+          children: [
+            new TextRun({ text: boldLabel + ' ', bold: true }),
+            new TextRun({ text: narrative }),
+            new TextRun({ text: ' ' + x.escalation_note, italics: true })
+          ],
+          spacing: { after: 100 }
+        }));
+      } else {
+        rows.push(lineItem(boldLabel, narrative));
+      }
     });
 
     if (seniorPersonnel.length > 1) {
@@ -138,12 +148,22 @@ const Document = (() => {
       const formattedRateText = x.rate_type === 'hourly'
         ? `$${fmt(x.rate_amount)}/hour`
         : `$${fmt(x.rate_amount)}/individual/year`;
-      const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
-      rows.push(lineItem(
-        `${x.role} (${countStr}, Effort: ${x.effort_description}).`,
-        `Base rate: ${formattedRateText}. ${x.narrative_description} Total Requested: $${fmt(x.total_cost)}${yearlyStr ? ` (${yearlyStr})` : ''}.`
-      ));
-      if (x.escalation_note) rows.push(italic(x.escalation_note));
+      const yearlyStr  = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
+      const boldLabel  = `${x.role} (${countStr}, Effort: ${x.effort_description}).`;
+      const narrative  = `Base rate: ${formattedRateText}. ${x.narrative_description} Total Requested: $${fmt(x.total_cost)}${yearlyStr ? ` (${yearlyStr})` : ''}.`;
+      if (x.escalation_note) {
+        const { Paragraph, TextRun } = _docx;
+        rows.push(new Paragraph({
+          children: [
+            new TextRun({ text: boldLabel + ' ', bold: true }),
+            new TextRun({ text: narrative }),
+            new TextRun({ text: ' ' + x.escalation_note, italics: true })
+          ],
+          spacing: { after: 100 }
+        }));
+      } else {
+        rows.push(lineItem(boldLabel, narrative));
+      }
     });
 
     if (otherPersonnel.length > 1) {
