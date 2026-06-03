@@ -1,6 +1,7 @@
 const Settings = (() => {
   const KEY_API      = 'jit_api_key';
   const KEY_PROFILES = 'jit_profiles';
+  const KEY_DEFAULT  = 'jit_default_profile';
 
   let profiles        = [];
   let editingId       = null;
@@ -49,9 +50,18 @@ const Settings = (() => {
     persistProfiles();
   }
 
+  function getDefaultProfileId() {
+    return localStorage.getItem(KEY_DEFAULT) || '';
+  }
+
+  function setDefaultProfile(id) {
+    localStorage.setItem(KEY_DEFAULT, id);
+  }
+
   function removeProfile(id) {
     profiles = profiles.filter(p => p.id !== id);
     persistProfiles();
+    if (getDefaultProfileId() === id) localStorage.removeItem(KEY_DEFAULT);
   }
 
   function renderProfiles() {
@@ -67,7 +77,11 @@ const Settings = (() => {
 
     emptyMsg.style.display = 'none';
 
+    const defaultId = getDefaultProfileId();
+
     profiles.forEach(profile => {
+      const isDefault = profile.id === defaultId;
+
       const card = document.createElement('div');
       card.className = 'profile-card';
       card.dataset.id = profile.id;
@@ -76,8 +90,27 @@ const Settings = (() => {
       name.className = 'profile-card-name';
       name.textContent = profile.name;
 
+      if (isDefault) {
+        const badge = document.createElement('span');
+        badge.className = 'profile-default-badge';
+        badge.textContent = 'Default';
+        name.appendChild(badge);
+      }
+
       const actions = document.createElement('div');
       actions.className = 'profile-card-actions';
+
+      if (!isDefault) {
+        const defaultBtn = document.createElement('button');
+        defaultBtn.className = 'btn btn-secondary btn-sm';
+        defaultBtn.textContent = 'Set Default';
+        defaultBtn.addEventListener('click', () => {
+          setDefaultProfile(profile.id);
+          renderProfiles();
+          Generator.syncProfileDropdown();
+        });
+        actions.appendChild(defaultBtn);
+      }
 
       const editBtn = document.createElement('button');
       editBtn.className = 'btn btn-secondary btn-sm';
@@ -232,5 +265,5 @@ const Settings = (() => {
     initProfilesSection();
   }
 
-  return { init, getProfiles, getProfileById, loadApiKey };
+  return { init, getProfiles, getProfileById, loadApiKey, getDefaultProfileId };
 })();

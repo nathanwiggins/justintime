@@ -1,10 +1,10 @@
 const Generator = (() => {
-  let currentTemplate = 'nih-detailed';
+  let currentTemplate = 'nsf';
 
   function syncProfileDropdown() {
-    const select   = document.getElementById('profile-select');
-    const profiles = Settings.getProfiles();
-    const current  = select.value;
+    const select    = document.getElementById('profile-select');
+    const profiles  = Settings.getProfiles();
+    const current   = select.value;
 
     while (select.options.length > 1) select.remove(1);
 
@@ -15,7 +15,14 @@ const Generator = (() => {
       select.appendChild(opt);
     });
 
-    if (profiles.some(p => p.id === current)) select.value = current;
+    if (profiles.some(p => p.id === current)) {
+      select.value = current;
+    } else {
+      const defaultId = Settings.getDefaultProfileId();
+      if (defaultId && profiles.some(p => p.id === defaultId)) {
+        select.value = defaultId;
+      }
+    }
   }
 
   function setStatus(msg, type = '') {
