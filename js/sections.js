@@ -37,25 +37,17 @@ const Sections = (() => {
         }
       },
       {
-        key:    'domestic_travel',
-        label:  'E.1 Domestic Travel',
-        fields: ['domestic_travel'],
-        prompt: 'List ONLY domestic (within the United States) travel. Include trip purpose, destination, number of travelers, conference or event name, total cost, and a justification. Do not include international travel here. If no domestic travel is budgeted, return an empty array.',
+        key:    'travel',
+        label:  'E. Travel',
+        fields: ['domestic_travel', 'foreign_travel'],
+        prompt: 'Separate all travel into two categories. domestic_travel covers trips within the United States only. foreign_travel covers all international destinations. For each trip include trip purpose, destination, number of travelers, conference or event name, total cost, and justification. If no domestic travel is budgeted return an empty array for domestic_travel. If no foreign travel is budgeted return an empty array for foreign_travel.',
         schema: {
           type: 'object',
-          properties: { domestic_travel: Schemas['nsf'].properties.domestic_travel },
-          required: ['domestic_travel']
-        }
-      },
-      {
-        key:    'foreign_travel',
-        label:  'E.2 Foreign Travel',
-        fields: ['foreign_travel'],
-        prompt: 'List ONLY international or foreign travel. Include trip purpose, destination country or city, number of travelers, conference or event name, total cost, and a justification. Do not include US domestic travel here. If no foreign travel is budgeted, return an empty array.',
-        schema: {
-          type: 'object',
-          properties: { foreign_travel: Schemas['nsf'].properties.foreign_travel },
-          required: ['foreign_travel']
+          properties: {
+            domestic_travel: Schemas['nsf'].properties.domestic_travel,
+            foreign_travel:  Schemas['nsf'].properties.foreign_travel
+          },
+          required: ['domestic_travel', 'foreign_travel']
         }
       },
       {
@@ -76,69 +68,21 @@ const Sections = (() => {
         }
       },
       {
-        key:    'materials_supplies',
-        label:  'G. Materials & Supplies',
-        fields: ['materials_supplies'],
-        prompt: 'List consumable materials and supplies grouped by category. Provide the category name, total cost, and a justification explaining how the supplies will be used in the research. If none are budgeted, return an empty array.',
-        schema: {
-          type: 'object',
-          properties: { materials_supplies: Schemas['nsf'].properties.materials_supplies },
-          required: ['materials_supplies']
-        }
-      },
-      {
-        key:    'publications',
-        label:  'G. Publication Costs',
-        fields: ['publications'],
-        prompt: 'List any publication or research dissemination costs (journal page charges, open-access fees, report printing, etc.). Include the publication type or title, cost, and justification. If none are budgeted, return an empty array.',
-        schema: {
-          type: 'object',
-          properties: { publications: Schemas['nsf'].properties.publications },
-          required: ['publications']
-        }
-      },
-      {
-        key:    'consultants',
-        label:  'G. Consultant Services',
-        fields: ['consultants'],
-        prompt: 'List each consultant individually. Include their name, area of expertise, daily rate, number of days, total cost, and a justification explaining the specialized expertise they provide that is not available within the project team. If none are budgeted, return an empty array.',
-        schema: {
-          type: 'object',
-          properties: { consultants: Schemas['nsf'].properties.consultants },
-          required: ['consultants']
-        }
-      },
-      {
-        key:    'computer_services',
-        label:  'G. Computer Services',
-        fields: ['computer_services'],
-        prompt: 'List any purchased computing or IT services (cloud computing, HPC cluster access, database subscriptions, etc.). Include a service description, cost, and justification. If none are budgeted, return an empty array.',
-        schema: {
-          type: 'object',
-          properties: { computer_services: Schemas['nsf'].properties.computer_services },
-          required: ['computer_services']
-        }
-      },
-      {
-        key:    'subawards',
-        label:  'G. Subawards / Subcontracts',
-        fields: ['subawards'],
-        prompt: 'List each subaward or subcontract institution. Include the institution name, sub-PI name, total subaward cost, and a justification describing what unique work the subawardee will perform and why a subaward is necessary. If none are budgeted, return an empty array.',
-        schema: {
-          type: 'object',
-          properties: { subawards: Schemas['nsf'].properties.subawards },
-          required: ['subawards']
-        }
-      },
-      {
-        key:    'other_direct_lines',
+        key:    'other_direct_costs',
         label:  'G. Other Direct Costs',
-        fields: ['other_direct_lines'],
-        prompt: 'List any other direct cost items not captured in previous sections. Provide the item name, cost, and justification. Do NOT include fringe benefits or indirect/F&A costs here — those are captured separately. If none remain, return an empty array.',
+        fields: ['materials_supplies', 'publications', 'consultants', 'computer_services', 'subawards', 'other_direct_lines'],
+        prompt: 'Populate all six other direct cost sub-categories from the budget spreadsheet in a single response. materials_supplies: consumable supplies grouped by category with cost and justification. publications: journal page charges or open-access fees with cost and justification. consultants: each consultant with name, expertise area, daily rate, number of days, total cost, and justification. computer_services: purchased computing or IT services with description, cost, and justification. subawards: each subaward institution with institution name, sub-PI name, total cost, and justification. other_direct_lines: any remaining direct cost items not covered above with item name, cost, and justification. Do NOT include fringe benefits or indirect costs in any of these arrays. Return an empty array for any sub-category with no budgeted items.',
         schema: {
           type: 'object',
-          properties: { other_direct_lines: Schemas['nsf'].properties.other_direct_lines },
-          required: ['other_direct_lines']
+          properties: {
+            materials_supplies:  Schemas['nsf'].properties.materials_supplies,
+            publications:        Schemas['nsf'].properties.publications,
+            consultants:         Schemas['nsf'].properties.consultants,
+            computer_services:   Schemas['nsf'].properties.computer_services,
+            subawards:           Schemas['nsf'].properties.subawards,
+            other_direct_lines:  Schemas['nsf'].properties.other_direct_lines
+          },
+          required: ['materials_supplies', 'publications', 'consultants', 'computer_services', 'subawards', 'other_direct_lines']
         }
       },
       {
@@ -214,80 +158,22 @@ const Sections = (() => {
         }
       },
       {
-        key:    'materials_supplies',
-        label:  'F. Materials & Supplies',
-        fields: ['materials_supplies'],
-        prompt: 'List consumable materials and supplies grouped by category. Provide the category name, total cost, and a justification explaining how the supplies will be used. If none are budgeted, return an empty array.',
+        key:    'other_direct_costs',
+        label:  'G. Other Direct Costs',
+        fields: ['materials_supplies', 'publications', 'consultants', 'consortiums', 'user_fees', 'alterations', 'other_direct_lines'],
+        prompt: 'Populate all seven other direct cost sub-categories from the budget spreadsheet in a single response. materials_supplies: consumable supplies grouped by category with cost and justification. publications: journal page charges or open-access fees with publication type, cost, and justification. consultants: each consultant with name, expertise area, total cost, and justification. consortiums: each subaward institution with institution name, sub-PI, total cost, direct costs, and indirect costs — clearly distinguish direct from indirect per NIH requirements. user_fees: research facility or core user fees with facility name, cost, and justification. alterations: lab or space renovations with description, cost, and justification. other_direct_lines: any remaining direct cost items not covered above with item name, cost, and justification. Do NOT include fringe benefits or indirect costs in any of these arrays. Return an empty array for any sub-category with no budgeted items.',
         schema: {
           type: 'object',
-          properties: { materials_supplies: Schemas['nih-detailed'].properties.materials_supplies },
-          required: ['materials_supplies']
-        }
-      },
-      {
-        key:    'publications',
-        label:  'F. Publication Costs',
-        fields: ['publications'],
-        prompt: 'List any publication or dissemination costs (journal charges, open-access fees, etc.). Include the publication type, cost, and justification. If none are budgeted, return an empty array.',
-        schema: {
-          type: 'object',
-          properties: { publications: Schemas['nih-detailed'].properties.publications },
-          required: ['publications']
-        }
-      },
-      {
-        key:    'consultants',
-        label:  'F. Consultant Services',
-        fields: ['consultants'],
-        prompt: 'List each consultant with their name, area of expertise, total cost, and a justification explaining the specialized expertise they bring that is not available within the project team. If none are budgeted, return an empty array.',
-        schema: {
-          type: 'object',
-          properties: { consultants: Schemas['nih-detailed'].properties.consultants },
-          required: ['consultants']
-        }
-      },
-      {
-        key:    'consortiums',
-        label:  'F. Consortium / Contractual',
-        fields: ['consortiums'],
-        prompt: 'List each consortium or subaward. Include the institution name, sub-PI, total consortium cost, direct costs, and indirect costs. Clearly distinguish direct from indirect costs per NIH requirements. If no consortiums are budgeted, return an empty array.',
-        schema: {
-          type: 'object',
-          properties: { consortiums: Schemas['nih-detailed'].properties.consortiums },
-          required: ['consortiums']
-        }
-      },
-      {
-        key:    'user_fees',
-        label:  'F. User Fees',
-        fields: ['user_fees'],
-        prompt: 'List any research facility or core user fees. Include the facility name, cost, and a justification explaining why this facility is necessary for the research. If none are budgeted, return an empty array.',
-        schema: {
-          type: 'object',
-          properties: { user_fees: Schemas['nih-detailed'].properties.user_fees },
-          required: ['user_fees']
-        }
-      },
-      {
-        key:    'alterations',
-        label:  'F. Alterations & Renovations',
-        fields: ['alterations'],
-        prompt: 'List any alterations or renovations to laboratory or research spaces. Include a description, cost, and justification. If none are budgeted, return an empty array.',
-        schema: {
-          type: 'object',
-          properties: { alterations: Schemas['nih-detailed'].properties.alterations },
-          required: ['alterations']
-        }
-      },
-      {
-        key:    'other_direct_lines',
-        label:  'F. Other Direct Costs',
-        fields: ['other_direct_lines'],
-        prompt: 'List any remaining direct cost items not captured in previous sections. Provide the item name, cost, and justification. Do NOT include fringe benefits or indirect costs here. If none remain, return an empty array.',
-        schema: {
-          type: 'object',
-          properties: { other_direct_lines: Schemas['nih-detailed'].properties.other_direct_lines },
-          required: ['other_direct_lines']
+          properties: {
+            materials_supplies:  Schemas['nih-detailed'].properties.materials_supplies,
+            publications:        Schemas['nih-detailed'].properties.publications,
+            consultants:         Schemas['nih-detailed'].properties.consultants,
+            consortiums:         Schemas['nih-detailed'].properties.consortiums,
+            user_fees:           Schemas['nih-detailed'].properties.user_fees,
+            alterations:         Schemas['nih-detailed'].properties.alterations,
+            other_direct_lines:  Schemas['nih-detailed'].properties.other_direct_lines
+          },
+          required: ['materials_supplies', 'publications', 'consultants', 'consortiums', 'user_fees', 'alterations', 'other_direct_lines']
         }
       },
       {
