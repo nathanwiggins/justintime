@@ -17,6 +17,22 @@ const Document = (() => {
     return Number(num || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
   }
 
+  function titleBlock(profileName) {
+    const { Paragraph, TextRun, AlignmentType } = _docx;
+    return [
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children:  [new TextRun({ text: 'BUDGET JUSTIFICATION', bold: true, allCaps: true, size: 28 })],
+        spacing:   { after: 80 }
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children:  [new TextRun({ text: profileName || '', italics: true, size: 22 })],
+        spacing:   { after: 240 }
+      })
+    ];
+  }
+
   function sectionHeader(text) {
     const { Paragraph, TextRun } = _docx;
     return new Paragraph({
@@ -53,7 +69,7 @@ const Document = (() => {
   }
 
   function buildNsf(p) {
-    const rows = [];
+    const rows = [...titleBlock(p.profile_name)];
 
     rows.push(sectionHeader('A. Senior Personnel'));
     (p.senior_personnel || []).forEach(x => rows.push(lineItem(
@@ -148,7 +164,7 @@ const Document = (() => {
   }
 
   function buildNihDetailed(p) {
-    const rows = [];
+    const rows = [...titleBlock(p.profile_name)];
 
     rows.push(sectionHeader('A. Senior/Key Personnel'));
     (p.senior_personnel || []).forEach(x => rows.push(lineItem(
@@ -228,7 +244,7 @@ const Document = (() => {
   }
 
   function buildNihModular(p) {
-    const rows = [];
+    const rows = [...titleBlock(p.profile_name)];
 
     rows.push(sectionHeader('Personnel Justification'));
     (p.personnel || []).forEach(x => rows.push(lineItem(
@@ -259,7 +275,7 @@ const Document = (() => {
   }
 
   function buildGeneric(p) {
-    const rows = [];
+    const rows = [...titleBlock(p.profile_name)];
 
     rows.push(sectionHeader('1. Personnel'));
     (p.personnel || []).forEach(x => rows.push(lineItem(

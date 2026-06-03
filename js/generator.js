@@ -127,6 +127,7 @@ const Generator = (() => {
   function injectBoilerplate(aiJson, profile) {
     return {
       ...aiJson,
+      profile_name:       profile.name              || '',
       fringe_boilerplate: profile.fringeBoilerplate || '',
       fa_boilerplate:     profile.faBoilerplate     || ''
     };
