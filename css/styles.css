@@ -320,15 +320,18 @@ textarea.mono {
 .step-log.hidden { display: none; }
 
 .step-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   color: var(--color-text-muted);
 }
 
 .step-item.running { color: var(--color-primary); }
 .step-item.done    { color: var(--color-success); }
 .step-item.error   { color: var(--color-danger); }
+
+.step-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
 .step-icon {
   width: 16px;
@@ -344,6 +347,53 @@ textarea.mono {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.step-toggle {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 1px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  color: inherit;
+  opacity: .7;
+}
+
+.step-toggle:hover { opacity: 1; }
+
+.step-detail {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.step-detail.hidden { display: none; }
+
+.step-detail-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.step-detail-pre {
+  margin: 0;
+  padding: 12px 14px;
+  background: #1a1a1a;
+  color: #d4d4d4;
+  border-radius: 5px;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  overflow: auto;
+  max-height: 320px;
 }
 
 .modal {

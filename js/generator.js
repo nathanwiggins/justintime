@@ -39,29 +39,69 @@ const Generator = (() => {
     const item = document.createElement('div');
     item.className = 'step-item running';
 
+    const row  = document.createElement('div');
+    row.className = 'step-row';
+
     const icon = document.createElement('span');
     icon.className   = 'step-icon spinning';
     icon.textContent = '↻';
 
     const text = document.createElement('span');
+    text.className   = 'step-text';
     text.textContent = label;
 
-    item.appendChild(icon);
-    item.appendChild(text);
+    row.appendChild(icon);
+    row.appendChild(text);
+    item.appendChild(row);
     log.appendChild(item);
 
+    function attachDetails(sections) {
+      const toggle = document.createElement('button');
+      toggle.className   = 'step-toggle';
+      toggle.textContent = 'Details ▾';
+      row.appendChild(toggle);
+
+      const detail = document.createElement('div');
+      detail.className = 'step-detail hidden';
+
+      sections.forEach(({ label: sLabel, content }) => {
+        const section = document.createElement('div');
+        section.className = 'step-detail-section';
+
+        const heading = document.createElement('div');
+        heading.className   = 'step-detail-label';
+        heading.textContent = sLabel;
+
+        const pre = document.createElement('pre');
+        pre.className   = 'step-detail-pre';
+        pre.textContent = content;
+
+        section.appendChild(heading);
+        section.appendChild(pre);
+        detail.appendChild(section);
+      });
+
+      item.appendChild(detail);
+
+      toggle.addEventListener('click', () => {
+        const hidden = detail.classList.toggle('hidden');
+        toggle.textContent = hidden ? 'Details ▾' : 'Details ▴';
+      });
+    }
+
     return {
-      done(detail) {
+      done(summary, sections) {
         item.className   = 'step-item done';
         icon.className   = 'step-icon';
         icon.textContent = '✓';
-        if (detail) text.textContent = label + ' — ' + detail;
+        if (summary) text.textContent = label + ' — ' + summary;
+        if (sections && sections.length) attachDetails(sections);
       },
-      error(detail) {
+      error(summary) {
         item.className   = 'step-item error';
         icon.className   = 'step-icon';
         icon.textContent = '✗';
-        if (detail) text.textContent = label + ' — ' + detail;
+        if (summary) text.textContent = label + ' — ' + summary;
       }
     };
   }
@@ -107,16 +147,24 @@ const Generator = (() => {
 
     try {
       const parseStep = addStep('Parsing budget file');
-      const { csvText } = await Parser.parse(form.file);
-      parseStep.done(form.file.name);
+      const { csvText, sourceTruth } = await Parser.parse(form.file);
+      parseStep.done(form.file.name, [
+        { label: 'Extracted CSV',  content: csvText },
+        { label: 'Source Truth',   content: JSON.stringify(sourceTruth, null, 2) }
+      ]);
 
       const apiStep = addStep('Calling Gemini API');
-      const aiJson  = await Api.generate({ csvText, projectSummary: form.summary, templateType: form.templateType, apiKey: form.apiKey });
-      apiStep.done('response received');
+      const { json: aiJson, prompt } = await Api.generate({ csvText, projectSummary: form.summary, templateType: form.templateType, apiKey: form.apiKey });
+      apiStep.done('response received', [
+        { label: 'Full Prompt Sent',      content: prompt },
+        { label: 'API Response (JSON)',   content: JSON.stringify(aiJson, null, 2) }
+      ]);
 
       const boilerplateStep = addStep('Injecting institutional boilerplate');
       const payload = injectBoilerplate(aiJson, profile);
-      boilerplateStep.done(profile.name);
+      boilerplateStep.done(profile.name, [
+        { label: 'Final Payload', content: JSON.stringify(payload, null, 2) }
+      ]);
 
       const docStep = addStep('Building Word document');
       await Document.generate(form.templateType, payload);

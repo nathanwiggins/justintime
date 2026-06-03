@@ -66,7 +66,7 @@ ${csvText}`;
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!rawText) throw new Error('Gemini returned an empty response.');
 
-    return JSON.parse(rawText);
+    return { json: JSON.parse(rawText), prompt };
   }
 
   async function test(apiKey) {
