@@ -122,8 +122,35 @@ const Generator = (() => {
       summaryFile:  document.getElementById('project-summary-input').files[0],
       summaryText:  document.getElementById('project-summary-text-input').value.trim(),
       summaryMode,
+      templateMode: document.getElementById('template-mode-toggle').checked,
       apiKey:       Settings.loadApiKey()
     };
+  }
+
+  function stripNarratives(obj) {
+    const NARRATIVE_FIELDS = new Set([
+      'narrative_description',
+      'narrative_justification',
+      'justification',
+      'escalation_note'
+    ]);
+
+    function walk(node) {
+      if (Array.isArray(node)) {
+        node.forEach(walk);
+      } else if (node && typeof node === 'object') {
+        Object.keys(node).forEach(key => {
+          if (NARRATIVE_FIELDS.has(key) && typeof node[key] === 'string' && node[key]) {
+            node[key] = '[Justification required]';
+          } else {
+            walk(node[key]);
+          }
+        });
+      }
+    }
+
+    walk(obj);
+    return obj;
   }
 
   function validateForm({ profileId, file, summaryFile, summaryText, summaryMode, apiKey }) {
@@ -205,6 +232,12 @@ const Generator = (() => {
           { label: 'Prompt Sent',        content: prompt },
           { label: 'Section Response',   content: JSON.stringify(result, null, 2) }
         ]);
+      }
+
+      if (form.templateMode) {
+        const templateStep = addStep('Applying Template Mode');
+        stripNarratives(aiJson);
+        templateStep.done('narrative fields replaced with placeholders');
       }
 
       const boilerplateStep = addStep('Injecting institutional boilerplate');

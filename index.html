@@ -108,6 +108,13 @@
       </div>
 
       <div class="generate-action">
+        <div class="mode-toggle-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="template-mode-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label">Template Mode <span class="toggle-hint">— numbers only, bracket placeholders for narratives</span></span>
+        </div>
         <button id="generate-btn" class="btn btn-primary btn-lg">Generate Justification</button>
         <div id="step-log" class="step-log hidden" aria-live="polite"></div>
         <p id="generate-status" class="status-message" aria-live="polite"></p>
