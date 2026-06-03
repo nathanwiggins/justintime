@@ -50,6 +50,42 @@ justintime/
     └── generic.txt
 ```
 
+## Getting Started: Obtaining a Gemini API Key
+
+Just-In-Time uses the Gemini API for AI generation. A free API key is available through Google AI Studio — no billing required for standard use.
+
+### Get Your Key
+
+1. **Visit Google AI Studio** — go to [aistudio.google.com](https://aistudio.google.com/) in your browser.
+2. **Sign in** — use any free Google (`@gmail.com`) or Google Workspace account.
+3. **Open the API Key panel** — click the **Get API key** button in the top-left sidebar.
+4. **Generate a key:**
+   - Click **Create API key**.
+   - Choose an existing Google Cloud project, or let AI Studio create a default **My Project** container automatically.
+5. **Copy the key** — click the copy icon next to the generated string.
+
+> **Security note:** Treat this key like a password. Never commit it to a public repository.
+
+### Configure the Key in Just-In-Time
+
+**Option A — UI Settings (recommended):**
+
+1. Launch the app and click the **Settings** tab.
+2. Paste your key into the **Gemini API Key** field.
+3. Click **Save API Key**.
+
+The key is stored in your browser's `localStorage` and never leaves your device.
+
+**Option B — Environment variable (for local backend use):**
+
+Create a `.env` file in the project root and add:
+
+```
+GEMINI_API_KEY=your_actual_api_key_here
+```
+
+---
+
 ## Local Development
 
 No build step required. Open `index.html` directly in a browser, or serve the directory with any static file server:
