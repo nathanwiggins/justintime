@@ -7,7 +7,7 @@ const Sections = (() => {
         key:    'senior_personnel',
         label:  'A. Senior Personnel',
         fields: ['senior_personnel'],
-        prompt: 'List each named senior/key personnel. Include their role, annual effort in months, and cumulative salary across all budget years. Do not assume titles or credentials (Dr., PhD) unless explicitly stated in the budget. Write a concise narrative for each person describing their specific contribution to the project. CRITICAL: annual_effort_months must be the effort per year, NOT the total across all years. For example, a PI working 1 summer month per year on a 5-year grant must have annual_effort_months set to 1, not 5. Never multiply or sum effort across years.',
+        prompt: 'List each named senior/key personnel. Include their role, annual effort in months, and cumulative salary across all budget years. Do not assume titles or credentials (Dr., PhD) unless explicitly stated in the budget. Write a concise narrative for each person describing their specific contribution to the project. CRITICAL: effort_months_per_year must be the effort PER YEAR, NOT the total across all years. Never multiply or sum months across years.',
         schema: {
           type: 'object',
           properties: { senior_personnel: Schemas['nsf'].properties.senior_personnel },
