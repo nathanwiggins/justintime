@@ -10,7 +10,7 @@ const Schemas = {
           properties: {
             name:                  { type: 'string' },
             role:                  { type: 'string' },
-            effort_months:         { type: 'string' },
+            effort_months:         { type: 'number' },
             effort_type:           { type: 'string' },
             base_salary:           { type: 'number' },
             yearly_breakdown: {
@@ -37,7 +37,7 @@ const Schemas = {
           properties: {
             name_or_title:          { type: 'string' },
             role:                   { type: 'string' },
-            effort_months:          { type: 'string' },
+            effort_months:          { type: 'number' },
             salary:                 { type: 'number' },
             narrative_description:  { type: 'string' }
           },
@@ -225,7 +225,7 @@ const Schemas = {
           properties: {
             name:                   { type: 'string' },
             role:                   { type: 'string' },
-            effort_months:          { type: 'string' },
+            effort_months:          { type: 'number' },
             salary:                 { type: 'number' },
             narrative_description:  { type: 'string' }
           },
@@ -239,7 +239,7 @@ const Schemas = {
           properties: {
             name_or_title:          { type: 'string' },
             role:                   { type: 'string' },
-            effort_months:          { type: 'string' },
+            effort_months:          { type: 'number' },
             salary:                 { type: 'number' },
             narrative_description:  { type: 'string' }
           },
@@ -390,7 +390,7 @@ const Schemas = {
           properties: {
             name:                  { type: 'string' },
             role:                  { type: 'string' },
-            effort_months:         { type: 'string' },
+            effort_months:         { type: 'number' },
             narrative_description: { type: 'string' }
           },
           required: ['name', 'role', 'effort_months', 'narrative_description']
@@ -403,7 +403,7 @@ const Schemas = {
           properties: {
             institution_name:          { type: 'string' },
             institution_location_type: { type: 'string' },
-            effort_months:             { type: 'string' },
+            effort_months:             { type: 'number' },
             sub_personnel_name:        { type: 'string' },
             sub_role:                  { type: 'string' },
             narrative_description:     { type: 'string' }
@@ -439,7 +439,7 @@ const Schemas = {
           properties: {
             name:                  { type: 'string' },
             role:                  { type: 'string' },
-            effort_months:         { type: 'string' },
+            effort_months:         { type: 'number' },
             salary:                { type: 'number' },
             narrative_description: { type: 'string' }
           },
