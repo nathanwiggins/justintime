@@ -153,12 +153,24 @@ const Generator = (() => {
         { label: 'Source Truth',   content: JSON.stringify(sourceTruth, null, 2) }
       ]);
 
-      const apiStep = addStep('Calling Gemini API');
-      const { json: aiJson, prompt } = await Api.generate({ csvText, projectSummary: form.summary, templateType: form.templateType, apiKey: form.apiKey });
-      apiStep.done('response received', [
-        { label: 'Full Prompt Sent',      content: prompt },
-        { label: 'API Response (JSON)',   content: JSON.stringify(aiJson, null, 2) }
-      ]);
+      const sections = Sections.forTemplate(form.templateType);
+      const aiJson   = {};
+
+      for (const section of sections) {
+        const sectionStep = addStep(`Generating: ${section.label}`);
+        const { result, prompt } = await Api.generateSection({
+          csvText,
+          projectSummary: form.summary,
+          templateType:   form.templateType,
+          apiKey:         form.apiKey,
+          section
+        });
+        Object.assign(aiJson, result);
+        sectionStep.done('done', [
+          { label: 'Prompt Sent',        content: prompt },
+          { label: 'Section Response',   content: JSON.stringify(result, null, 2) }
+        ]);
+      }
 
       const boilerplateStep = addStep('Injecting institutional boilerplate');
       const payload = injectBoilerplate(aiJson, profile);
