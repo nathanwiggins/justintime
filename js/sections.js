@@ -88,17 +88,12 @@ const Sections = (() => {
       {
         key:    'fringe_benefits',
         label:  'C. Fringe Benefits',
-        fields: ['fringe_total_cost', 'senior_personnel_paragraph', 'other_personnel_paragraph', 'total_summary_paragraph'],
-        prompt: 'Write a fringe benefits justification narrative using the institutional fringe rates and policies provided in the Institutional Context. Organize the response into up to three fields: (1) senior_personnel_paragraph: a paragraph detailing the fringe benefit calculation for Senior Personnel, referencing their salaries and the applicable rates from the institutional context. (2) other_personnel_paragraph: a paragraph detailing the fringe benefit calculation for Other Personnel if any are present in the budget — return an empty string if no other personnel are budgeted. (3) total_summary_paragraph: a combined summary paragraph if both Senior and Other Personnel fringe costs are present — return an empty string if only one personnel category exists. Also extract fringe_total_cost: the total cumulative fringe benefits cost across all budget years.',
+        fields: ['fringe_benefits'],
+        prompt: 'Generate the fringe benefits justification for Section C using the institutional fringe rate context provided. RATE APPLICATION: Use the provided institutional fringe rate context to build the rate_groups array. Create separate objects for full-time personnel and part-time personnel based on the rates described in the context. MATHEMATICAL JUSTIFICATION: For each group, calculate and provide a clear yearly_breakdown showing the exact dollar amount of fringe benefits requested per year, culminating in a category_total. The yearly costs must be derived from the personnel salaries in the spreadsheet multiplied by the applicable rates from the institutional context. NARRATIVE: Write a concise narrative_description that summarizes the institutional rates being applied, ensuring the text explicitly references the specific percentage and medical amounts provided in the context. Also set total_cost to the cumulative sum of all category_total values across all rate groups.',
         schema: {
           type: 'object',
-          properties: {
-            fringe_total_cost:          { type: 'number' },
-            senior_personnel_paragraph: { type: 'string' },
-            other_personnel_paragraph:  { type: 'string' },
-            total_summary_paragraph:    { type: 'string' }
-          },
-          required: ['fringe_total_cost', 'senior_personnel_paragraph', 'other_personnel_paragraph', 'total_summary_paragraph']
+          properties: { fringe_benefits: Schemas['nsf'].properties.fringe_benefits },
+          required: ['fringe_benefits']
         }
       },
       {

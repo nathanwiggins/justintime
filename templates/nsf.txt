@@ -34,7 +34,18 @@ Total Requested: ${total_cost}
 {/other_personnel}
 
 C. Fringe Benefits
-{fringe_boilerplate}
+{fringe_benefits.narrative_description}
+
+Requested Fringe Benefits Breakdown:
+{#fringe_benefits.rate_groups}
+* {personnel_category} (Rate: {applied_rate_description})
+{#yearly_breakdown}
+  - Year {year}: ${cost}
+{/yearly_breakdown}
+  Category Total: ${category_total}
+{/fringe_benefits.rate_groups}
+
+Total Requested Fringe Benefits: ${fringe_benefits.total_cost}
 
 D. Equipment
 {#equipment}

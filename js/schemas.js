@@ -222,7 +222,38 @@ const Schemas = {
         }
       },
       fringe_total_cost:   { type: 'number' },
-      indirect_total_cost: { type: 'number' }
+      indirect_total_cost: { type: 'number' },
+      fringe_benefits: {
+        type: 'object',
+        properties: {
+          total_cost:            { type: 'number' },
+          narrative_description: { type: 'string' },
+          rate_groups: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                personnel_category:       { type: 'string' },
+                applied_rate_description: { type: 'string' },
+                yearly_breakdown: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      year: { type: 'number' },
+                      cost: { type: 'number' }
+                    },
+                    required: ['year', 'cost']
+                  }
+                },
+                category_total: { type: 'number' }
+              },
+              required: ['personnel_category', 'applied_rate_description', 'yearly_breakdown', 'category_total']
+            }
+          }
+        },
+        required: ['total_cost', 'narrative_description', 'rate_groups']
+      }
     },
     required: ['senior_personnel', 'other_personnel', 'equipment', 'domestic_travel', 'foreign_travel',
                'participant_support_has_data', 'materials_supplies', 'other_direct_lines',
