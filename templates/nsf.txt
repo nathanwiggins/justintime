@@ -23,7 +23,14 @@ Total Requested Salary: ${total_salary}
 
 B. Other Personnel
 {#other_personnel}
-{name_or_title}, {role} (Effort: {effort_months} {effort_type} months). {narrative_description} Total Requested Salary: ${salary}.
+{role} ({number_of_individuals} individual(s), Effort: {effort_months_per_year} {effort_type} months/year, Base Rate: ${base_rate_per_individual}/individual/year).
+{narrative_description}
+
+Yearly Cost Breakdown:
+{#yearly_breakdown}
+  - Year {year}: ${cost}
+{/yearly_breakdown}
+Total Requested: ${total_cost}
 {/other_personnel}
 
 C. Fringe Benefits

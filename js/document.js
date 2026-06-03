@@ -120,11 +120,18 @@ const Document = (() => {
     ));
     }
 
-    rows.push(sectionHeader('B. Other Personnel'));
-    (p.other_personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name_or_title}, ${x.role} (Effort: ${effort(x.effort_months_per_year)}).`,
-      `${x.narrative_description} Total Requested Salary: $${fmt(x.salary)}.`
-    )));
+    const otherPersonnel = p.other_personnel || [];
+    const otherTotal = otherPersonnel.reduce((sum, x) => sum + (x.total_cost || 0), 0);
+    rows.push(sectionHeader(`B. Other Personnel ($${fmt(otherTotal)})`));
+    otherPersonnel.forEach(x => {
+      const count     = x.number_of_individuals || 0;
+      const countStr  = `${count} ${count === 1 ? 'individual' : 'individuals'}`;
+      const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
+      rows.push(lineItem(
+        `${x.role} (${countStr}, Effort: ${effort(x.effort_months_per_year, x.effort_type)}).`,
+        `Base rate: $${fmt(x.base_rate_per_individual)}/individual/year. ${x.narrative_description} Total Requested: $${fmt(x.total_cost)}${yearlyStr ? ` (${yearlyStr})` : ''}.`
+      ));
+    });
 
     rows.push(sectionHeader('C. Fringe Benefits'));
     rows.push(plain('Total Requested: $' + fmt(p.fringe_total_cost)));
