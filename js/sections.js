@@ -40,7 +40,7 @@ const Sections = (() => {
         key:    'equipment',
         label:  'D. Equipment',
         fields: ['equipment'],
-        prompt: 'List each individual piece of equipment as a SEPARATE array entry — one array item per distinct piece of equipment, no exceptions. MANDATORY INDIVIDUAL ITEMIZATION: Do NOT group, combine, or aggregate multiple pieces of equipment into a single array entry under any circumstances. Each entry must contain the specific item name for that single piece of equipment, its total cost summed cumulatively across all budget years, and an individual narrative justification explaining why that specific piece is essential for the proposed research. NSF policy requires individual justification for each item with a unit acquisition cost of $5,000 or more. If no equipment is budgeted, return an empty array.',
+        prompt: 'List each category of equipment as a SEPARATE array entry. Do NOT group, combine, or aggregate multiple categories of equipment into a single array entry under any circumstances. Each entry must contain the specific item name for that single piece of equipment, its total cost summed cumulatively across all budget years, and an individual narrative justification explaining why that specific piece is essential for the proposed research. If no equipment is budgeted, return an empty array.',
         schema: {
           type: 'object',
           properties: { equipment: Schemas['nsf'].properties.equipment },

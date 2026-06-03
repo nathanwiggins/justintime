@@ -195,6 +195,18 @@ const Document = (() => {
       p.equipment.forEach(x => rows.push(lineItem(
         `${x.item_name} ($${fmt(x.cost)}):`, x.narrative_justification
       )));
+
+      if (p.equipment.length > 1) {
+        const { Paragraph, TextRun } = _docx;
+        rows.push(new Paragraph({
+          children: [
+            new TextRun({ text: 'The total request for Equipment is ' }),
+            new TextRun({ text: `$${fmt(equipmentTotal)}`, bold: true }),
+            new TextRun({ text: '.' })
+          ],
+          spacing: { after: 100 }
+        }));
+      }
     }
 
     rows.push(sectionHeader('E. Travel'));
