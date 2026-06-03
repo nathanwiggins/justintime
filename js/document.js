@@ -167,6 +167,26 @@ const Document = (() => {
       ));
     });
 
+    if ((fb.rate_groups || []).length > 1) {
+      const yearMap = {};
+      (fb.rate_groups || []).forEach(g => {
+        (g.yearly_breakdown || []).forEach(y => {
+          yearMap[y.year] = (yearMap[y.year] || 0) + y.cost;
+        });
+      });
+      const years       = Object.keys(yearMap).sort();
+      const combinedStr = years.map(yr => `$${fmt(yearMap[yr])} in Year ${yr}`).join(', ');
+      const { Paragraph, TextRun } = _docx;
+      rows.push(new Paragraph({
+        children: [
+          new TextRun({ text: 'The total request for Fringe Benefits is ' }),
+          new TextRun({ text: `$${fmt(fb.total_cost)}`, bold: true }),
+          new TextRun({ text: ` for the ${years.length}-year period of performance${combinedStr ? ` (${combinedStr})` : ''}.` })
+        ],
+        spacing: { after: 100 }
+      }));
+    }
+
     rows.push(sectionHeader('D. Equipment'));
     if (!(p.equipment || []).length) {
       rows.push(plain('No items of equipment (defined as non-expendable equipment with an acquisition cost of $5,000 or more and a useful life of more than one year) are requested for this project.'));
