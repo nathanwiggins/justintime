@@ -186,7 +186,7 @@ const Generator = (() => {
         { label: 'Source Truth',   content: JSON.stringify(sourceTruth, null, 2) }
       ]);
 
-      const sections = Sections.forTemplate(form.templateType).filter(s => s.key === 'equipment');
+      const sections = Sections.forTemplate(form.templateType).filter(s => ['senior_personnel', 'other_personnel', 'fringe_benefits', 'equipment'].includes(s.key));
       const aiJson   = {};
 
       for (const section of sections) {
