@@ -26,8 +26,19 @@ const Sections = (() => {
         }
       },
       {
+        key:    'fringe_benefits',
+        label:  'C. Fringe Benefits',
+        fields: ['fringe_benefits'],
+        prompt: 'Generate the fringe benefits justification for Section C using the institutional fringe rate context provided. Use the provided institutional fringe rate context to build the rate_groups array. Create separate objects for personnel groups based on the rates described in the context. For each group, calculate and provide a clear yearly_breakdown showing the exact dollar amount of fringe benefits requested per year, culminating in a category_total. The yearly costs must be derived from the personnel salaries in the spreadsheet multiplied by the applicable rates from the institutional context. Write a concise narrative_description that summarizes the institutional rates being applied, ensuring the text explicitly references the specific percentages, breakdowns, and fringe amounts provided in the context. Also set total_cost to the cumulative sum of all category_total values across all rate groups.',
+        schema: {
+          type: 'object',
+          properties: { fringe_benefits: Schemas['nsf'].properties.fringe_benefits },
+          required: ['fringe_benefits']
+        }
+      },
+      {
         key:    'equipment',
-        label:  'C. Equipment',
+        label:  'D. Equipment',
         fields: ['equipment'],
         prompt: 'List each equipment item (typically $5,000 or more per NSF policy). Provide the item name, total cost summed cumulatively across all budget years, and a justification explaining why this specific equipment is necessary for the proposed research. If no equipment is budgeted, return an empty array.',
         schema: {
@@ -83,17 +94,6 @@ const Sections = (() => {
             other_direct_lines:  Schemas['nsf'].properties.other_direct_lines
           },
           required: ['materials_supplies', 'publications', 'consultants', 'computer_services', 'subawards', 'other_direct_lines']
-        }
-      },
-      {
-        key:    'fringe_benefits',
-        label:  'C. Fringe Benefits',
-        fields: ['fringe_benefits'],
-        prompt: 'Generate the fringe benefits justification for Section C using the institutional fringe rate context provided. Use the provided institutional fringe rate context to build the rate_groups array. Create separate objects for personnel groups based on the rates described in the context. For each group, calculate and provide a clear yearly_breakdown showing the exact dollar amount of fringe benefits requested per year, culminating in a category_total. The yearly costs must be derived from the personnel salaries in the spreadsheet multiplied by the applicable rates from the institutional context. Write a concise narrative_description that summarizes the institutional rates being applied, ensuring the text explicitly references the specific percentages, breakdowns, and fringe amounts provided in the context. Also set total_cost to the cumulative sum of all category_total values across all rate groups.',
-        schema: {
-          type: 'object',
-          properties: { fringe_benefits: Schemas['nsf'].properties.fringe_benefits },
-          required: ['fringe_benefits']
         }
       },
       {
