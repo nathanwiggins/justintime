@@ -131,8 +131,7 @@ const Generator = (() => {
     const NARRATIVE_FIELDS = new Set([
       'narrative_description',
       'narrative_justification',
-      'justification',
-      'escalation_note'
+      'justification'
     ]);
 
     function walk(node) {
@@ -140,6 +139,7 @@ const Generator = (() => {
         node.forEach(walk);
       } else if (node && typeof node === 'object') {
         Object.keys(node).forEach(key => {
+          if (key === 'fringe_benefits') return;
           if (NARRATIVE_FIELDS.has(key) && typeof node[key] === 'string' && node[key]) {
             node[key] = '[Justification required]';
           } else {
