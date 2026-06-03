@@ -108,6 +108,17 @@ const Document = (() => {
       }));
     }
 
+    const overLimit = seniorPersonnel.filter(x => (x.effort_months || 0) > 2);
+    if (overLimit.length > 0) {
+      const roles    = overLimit.map(x => x.role);
+      const rolesStr = roles.length === 1
+        ? roles[0]
+        : roles.slice(0, -1).join(', ') + ' and ' + roles[roles.length - 1];
+      rows.push(plain(
+        `Senior personnel are aware of NSF policy limiting NSF support for senior personnel to two months in any year. Since the ${rolesStr} will be fully engaged in efforts that holistically relate to this project throughout the year, we seek approval for these positions beyond the NSF two month limitation.`
+      ));
+    }
+
     rows.push(sectionHeader('B. Other Personnel'));
     (p.other_personnel || []).forEach(x => rows.push(lineItem(
       `${x.name_or_title}, ${x.role} (Effort: ${effort(x.effort_months)}).`,
