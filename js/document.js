@@ -412,7 +412,7 @@ const Document = (() => {
       rows.push(subHeader(`G.${idx + 1} ${section.name} ($${fmt(sectionTotal)})`));
 
       section.items.forEach(x => {
-        const yearlyStr   = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
+        const yearlyStr   = (x.yearly_breakdown || []).filter(y => (y.cost || 0) > 0).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
         const { bold, text } = section.renderItem(x);
         rows.push(lineItem(bold, `${text}${yearlyStr ? ` (${yearlyStr})` : ''}`));
       });
@@ -424,7 +424,7 @@ const Document = (() => {
       gSubsections.flatMap(s => s.items).forEach(x => (x.yearly_breakdown || []).forEach(y => {
         allYearMap[y.year] = (allYearMap[y.year] || 0) + y.cost;
       }));
-      const years       = Object.keys(allYearMap).sort();
+      const years       = Object.keys(allYearMap).sort().filter(yr => allYearMap[yr] > 0);
       const combinedStr = years.map(yr => `$${fmt(allYearMap[yr])} in Year ${yr}`).join(', ');
       const { Paragraph, TextRun } = _docx;
       rows.push(new Paragraph({
