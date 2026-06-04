@@ -254,13 +254,13 @@ const Document = (() => {
       return map;
     }
 
-    function travelSummaryRow(total, yearMap) {
+    function travelSummaryRow(label, total, yearMap) {
       const years       = Object.keys(yearMap).sort();
       const combinedStr = years.map(yr => `$${fmt(yearMap[yr])} in Year ${yr}`).join(', ');
       const { Paragraph, TextRun } = _docx;
       return new Paragraph({
         children: [
-          new TextRun({ text: 'Total: ' }),
+          new TextRun({ text: `Total ${label}: ` }),
           new TextRun({ text: `$${fmt(total)}`, bold: true }),
           new TextRun({ text: combinedStr ? ` (${combinedStr}).` : '.' })
         ],
@@ -268,15 +268,28 @@ const Document = (() => {
       });
     }
 
+    function maxProjectYear(payload) {
+      let max = 0;
+      function scan(node) {
+        if (Array.isArray(node)) { node.forEach(scan); }
+        else if (node && typeof node === 'object') {
+          if ('year' in node && typeof node.year === 'number') max = Math.max(max, node.year);
+          else Object.values(node).forEach(scan);
+        }
+      }
+      scan(payload);
+      return max;
+    }
+
     if (domestic.length) {
       domestic.forEach(x => {
         const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
         rows.push(lineItem(
           `${x.trip_purpose} ($${fmt(x.cost)}):`,
-          `Funds are requested for travel to ${x.destination} for ${x.num_people} person(s) to attend ${x.event_name}. ${x.narrative_justification}${yearlyStr ? ` (${yearlyStr})` : ''}`
+          `${x.narrative_justification}${yearlyStr ? ` (${yearlyStr})` : ''}`
         ));
       });
-      rows.push(travelSummaryRow(domesticTotal, travelYearMap(domestic)));
+      rows.push(travelSummaryRow('Domestic Travel', domesticTotal, travelYearMap(domestic)));
     }
 
     if (foreign.length) {
@@ -284,23 +297,24 @@ const Document = (() => {
         const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
         rows.push(lineItem(
           `${x.trip_purpose} ($${fmt(x.cost)}):`,
-          `Funds are requested for travel to ${x.destination} for ${x.num_people} person(s) to attend ${x.event_name}. ${x.narrative_justification}${yearlyStr ? ` (${yearlyStr})` : ''}`
+          `${x.narrative_justification}${yearlyStr ? ` (${yearlyStr})` : ''}`
         ));
       });
       rows.push(plain('All requested international air travel will be booked in strict accordance with the Fly America Act (49 U.S.C. § 40118), utilizing U.S. flag air carriers or compliant Open Skies agreement partner airlines wherever applicable.'));
-      rows.push(travelSummaryRow(foreignTotal, travelYearMap(foreign)));
+      rows.push(travelSummaryRow('International Travel', foreignTotal, travelYearMap(foreign)));
     }
 
     if (domestic.length && foreign.length) {
-      const allYearMap   = travelYearMap([...domestic, ...foreign]);
-      const years        = Object.keys(allYearMap).sort();
-      const combinedStr  = years.map(yr => `$${fmt(allYearMap[yr])} in Year ${yr}`).join(', ');
+      const allYearMap  = travelYearMap([...domestic, ...foreign]);
+      const years       = Object.keys(allYearMap).sort();
+      const combinedStr = years.map(yr => `$${fmt(allYearMap[yr])} in Year ${yr}`).join(', ');
+      const projectYrs  = maxProjectYear(p);
       const { Paragraph, TextRun } = _docx;
       rows.push(new Paragraph({
         children: [
           new TextRun({ text: 'The total travel request is ' }),
           new TextRun({ text: `$${fmt(travelTotal)}`, bold: true }),
-          new TextRun({ text: ` for the ${years.length}-year period of performance${combinedStr ? ` (${combinedStr})` : ''}.` })
+          new TextRun({ text: ` for the ${projectYrs}-year period of performance${combinedStr ? ` (${combinedStr})` : ''}.` })
         ],
         spacing: { after: 100 }
       }));
