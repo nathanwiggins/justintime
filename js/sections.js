@@ -51,7 +51,7 @@ const Sections = (() => {
         key:    'travel',
         label:  'E. Travel',
         fields: ['domestic_travel', 'foreign_travel'],
-        prompt: 'Separate all travel into two categories — domestic_travel (within the United States only) and foreign_travel (all international destinations). For each trip include trip purpose, destination, number of travelers, conference or event name, total cost summed cumulatively across all budget years, and justification. If no domestic travel is budgeted return an empty array for domestic_travel. If no foreign travel is budgeted return an empty array for foreign_travel.',
+        prompt: 'Separate all travel into two categories — domestic_travel (within the United States only) and foreign_travel (all international destinations). For each trip provide: trip purpose, destination, number of travelers, conference or event name, total cost summed cumulatively across all budget years, a yearly_breakdown array showing the cost for each year this trip occurs (if a trip only occurs in certain years, only include those years), and a narrative justification that describes the purpose of the trip and the breakdown of associated costs (e.g., airfare, lodging, per diem). If no domestic travel is budgeted return an empty array for domestic_travel. If no foreign travel is budgeted return an empty array for foreign_travel.',
         schema: {
           type: 'object',
           properties: {

@@ -82,9 +82,20 @@ const Schemas = {
             num_people:             { type: 'number' },
             event_name:             { type: 'string' },
             cost:                   { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  year: { type: 'number' },
+                  cost: { type: 'number' }
+                },
+                required: ['year', 'cost']
+              }
+            },
             narrative_justification:{ type: 'string' }
           },
-          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'narrative_justification']
+          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'narrative_justification']
         }
       },
       foreign_travel: {
@@ -97,9 +108,20 @@ const Schemas = {
             num_people:             { type: 'number' },
             event_name:             { type: 'string' },
             cost:                   { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  year: { type: 'number' },
+                  cost: { type: 'number' }
+                },
+                required: ['year', 'cost']
+              }
+            },
             narrative_justification:{ type: 'string' }
           },
-          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'narrative_justification']
+          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'narrative_justification']
         }
       },
       stipends: {
