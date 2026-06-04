@@ -321,18 +321,67 @@ const Document = (() => {
       }));
     }
 
-    rows.push(sectionHeader('F. Participant Support Costs'));
+    const psCategories = [
+      p.stipends          || [],
+      p.participant_travel || [],
+      p.subsistence       || [],
+      p.participant_other || []
+    ];
+    const psTotal = psCategories.flat().reduce((s, x) => s + (x.cost || 0), 0);
+
+    rows.push(sectionHeader(`F. Participant Support Costs ($${fmt(psTotal)})`));
+
     if (!p.participant_support_has_data) {
       rows.push(plain('No participant support costs are requested for this project.'));
     } else {
-      rows.push(subHeader('F.1 Stipends'));
-      (p.stipends || []).forEach(x => rows.push(plain(`$${fmt(x.cost)} — ${x.justification}`)));
-      rows.push(subHeader('F.2 Travel'));
-      (p.participant_travel || []).forEach(x => rows.push(plain(`$${fmt(x.cost)} — ${x.justification}`)));
-      rows.push(subHeader('F.3 Subsistence'));
-      (p.subsistence || []).forEach(x => rows.push(plain(`$${fmt(x.cost)} — ${x.justification}`)));
-      rows.push(subHeader('F.4 Other'));
-      (p.participant_other || []).forEach(x => rows.push(plain(`$${fmt(x.cost)} — ${x.justification}`)));
+      const activeCategories = psCategories.filter(cat => cat.length > 0);
+
+      activeCategories.forEach(cat => {
+        cat.forEach(x => {
+          const count     = x.num_participants || 0;
+          const countStr  = `${count} participant${count === 1 ? '' : 's'}`;
+          const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
+          rows.push(lineItem(
+            `${countStr} ($${fmt(x.cost)}):`,
+            `${x.justification}${yearlyStr ? ` (${yearlyStr})` : ''}`
+          ));
+        });
+
+        const catTotal  = cat.reduce((s, x) => s + (x.cost || 0), 0);
+        const yearMap   = {};
+        cat.forEach(x => (x.yearly_breakdown || []).forEach(y => {
+          yearMap[y.year] = (yearMap[y.year] || 0) + y.cost;
+        }));
+        const years       = Object.keys(yearMap).sort();
+        const combinedStr = years.map(yr => `$${fmt(yearMap[yr])} in Year ${yr}`).join(', ');
+        const { Paragraph, TextRun } = _docx;
+        rows.push(new Paragraph({
+          children: [
+            new TextRun({ text: 'Section Total: ' }),
+            new TextRun({ text: `$${fmt(catTotal)}`, bold: true }),
+            new TextRun({ text: combinedStr ? ` (${combinedStr}).` : '.' })
+          ],
+          spacing: { after: 100 }
+        }));
+      });
+
+      if (activeCategories.length > 1) {
+        const allYearMap  = {};
+        psCategories.flat().forEach(x => (x.yearly_breakdown || []).forEach(y => {
+          allYearMap[y.year] = (allYearMap[y.year] || 0) + y.cost;
+        }));
+        const years       = Object.keys(allYearMap).sort();
+        const combinedStr = years.map(yr => `$${fmt(allYearMap[yr])} in Year ${yr}`).join(', ');
+        const { Paragraph, TextRun } = _docx;
+        rows.push(new Paragraph({
+          children: [
+            new TextRun({ text: 'The total request for Participant Support is ' }),
+            new TextRun({ text: `$${fmt(psTotal)}`, bold: true }),
+            new TextRun({ text: combinedStr ? ` (${combinedStr}).` : '.' })
+          ],
+          spacing: { after: 100 }
+        }));
+      }
     }
 
     rows.push(sectionHeader('G. Other Direct Costs'));

@@ -129,10 +129,15 @@ const Schemas = {
         items: {
           type: 'object',
           properties: {
-            cost:         { type: 'number' },
-            justification:{ type: 'string' }
+            num_participants: { type: 'number' },
+            cost:             { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] }
+            },
+            justification:    { type: 'string' }
           },
-          required: ['cost', 'justification']
+          required: ['num_participants', 'cost', 'yearly_breakdown', 'justification']
         }
       },
       participant_travel: {
@@ -140,10 +145,15 @@ const Schemas = {
         items: {
           type: 'object',
           properties: {
-            cost:         { type: 'number' },
-            justification:{ type: 'string' }
+            num_participants: { type: 'number' },
+            cost:             { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] }
+            },
+            justification:    { type: 'string' }
           },
-          required: ['cost', 'justification']
+          required: ['num_participants', 'cost', 'yearly_breakdown', 'justification']
         }
       },
       subsistence: {
@@ -151,10 +161,15 @@ const Schemas = {
         items: {
           type: 'object',
           properties: {
-            cost:         { type: 'number' },
-            justification:{ type: 'string' }
+            num_participants: { type: 'number' },
+            cost:             { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] }
+            },
+            justification:    { type: 'string' }
           },
-          required: ['cost', 'justification']
+          required: ['num_participants', 'cost', 'yearly_breakdown', 'justification']
         }
       },
       participant_other: {
@@ -162,10 +177,15 @@ const Schemas = {
         items: {
           type: 'object',
           properties: {
-            cost:         { type: 'number' },
-            justification:{ type: 'string' }
+            num_participants: { type: 'number' },
+            cost:             { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] }
+            },
+            justification:    { type: 'string' }
           },
-          required: ['cost', 'justification']
+          required: ['num_participants', 'cost', 'yearly_breakdown', 'justification']
         }
       },
       participant_support_has_data: { type: 'boolean' },
