@@ -37,9 +37,12 @@ const Generator = (() => {
   }
 
   function clearStepLog() {
-    const log = document.getElementById('step-log');
+    const log    = document.getElementById('step-log');
+    const toggle = document.getElementById('log-toggle');
     log.innerHTML = '';
-    log.classList.remove('hidden');
+    log.classList.add('hidden');
+    toggle.classList.remove('hidden');
+    toggle.textContent = 'Show details';
   }
 
   function addStep(label) {
@@ -303,6 +306,13 @@ const Generator = (() => {
 
     initDropZone('budget-drop-zone',  'budget-file-input',       'budget-filename');
     initDropZone('summary-drop-zone', 'project-summary-input',   'summary-filename');
+
+    document.getElementById('log-toggle').addEventListener('click', () => {
+      const log    = document.getElementById('step-log');
+      const toggle = document.getElementById('log-toggle');
+      const hidden = log.classList.toggle('hidden');
+      toggle.textContent = hidden ? 'Show details' : 'Hide details';
+    });
 
     document.getElementById('summary-toggle').addEventListener('click', () => {
       summaryMode = summaryMode === 'file' ? 'text' : 'file';
