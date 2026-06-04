@@ -10,8 +10,8 @@ A lightweight, client-side NSF budget justification generator built for research
 - **Default profile** — mark any Institutional Profile as the default in Settings. It auto-selects in the Generator dropdown on every load.
 - **Section-by-section AI generation** — the Gemini API is called once per document section. Each call uses a focused, section-specific prompt from `sections.js`, improving narrative quality and making individual sections easy to tune.
 - **Section registry** — `js/sections.js` defines the ordered section list for each template. Each entry holds a label, the fields it produces, a focused prompt, and its schema fragment. This is the single place to add, remove, or refine any section's behavior.
-- **Institutional context injection** — fringe boilerplate from the selected profile is passed to the AI as context for Section C, so the model incorporates the institution's specific rates and language into the narrative rather than having it appended verbatim.
-- **F&A boilerplate injection** — the indirect cost boilerplate is injected directly into the payload for Section H, ensuring that language remains exact.
+- **Institutional context injection** — fringe and F&A boilerplate from the selected profile are passed to the AI as context for Sections C and I respectively, so the model incorporates the institution's specific rates and language into the narrative.
+- **Template Mode** — a toggle above the Generate button runs the full AI pipeline but replaces all narrative fields with `[Justification required]` placeholders post-generation, producing a pre-populated template with all numbers and structure intact for manual narrative completion.
 - **Step-by-step progress log** — each section displays live with a spinner that resolves to a checkmark or error indicator. Expandable detail panes show the exact prompt sent and the raw API response for every section.
 - **Word document output** — the final payload builds a `.docx` file from scratch using the `docx` library. No pre-built template files required. The document downloads automatically.
 - **Last updated indicator** — a footer shows the date of the most recent push, fetched live from the GitHub API.
@@ -44,10 +44,7 @@ justintime/
 │   ├── validator.js        # Amount mismatch detection
 │   └── document.js         # docx output + download trigger
 └── templates/
-    ├── nsf.txt             # Reference: NSF section layout and field definitions
-    ├── nih-detailed.txt
-    ├── nih-modular.txt
-    └── generic.txt
+    └── nsf.txt             # Reference: NSF section layout and field definitions
 ```
 
 ## Getting Started: Obtaining a Gemini API Key
