@@ -116,6 +116,10 @@
           <span class="toggle-label">Template Mode <span class="toggle-hint">— Placeholders for justifications</span></span>
         </div>
         <button id="generate-btn" class="btn btn-primary btn-lg">Generate Justification</button>
+        <div id="loading-indicator" class="hidden">
+          <div class="loading-spinner"></div>
+          <p class="loading-text">Generating your justification<span class="loading-dots"></span></p>
+        </div>
         <button type="button" id="log-toggle" class="btn-link hidden">Show details</button>
         <div id="step-log" class="step-log hidden" aria-live="polite"></div>
         <p id="generate-status" class="status-message" aria-live="polite"></p>

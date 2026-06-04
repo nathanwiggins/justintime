@@ -34,6 +34,7 @@ const Generator = (() => {
 
   function setGenerating(active) {
     document.getElementById('generate-btn').disabled = active;
+    document.getElementById('loading-indicator').classList.toggle('hidden', !active);
   }
 
   function clearStepLog() {
