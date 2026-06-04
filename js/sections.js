@@ -111,67 +111,6 @@ const Sections = (() => {
       }
     ],
 
-    'generic': [
-      {
-        key:    'personnel',
-        label:  'Personnel',
-        fields: ['personnel'],
-        prompt: 'List all project personnel with their name, role, annual effort in months, and cumulative salary across all budget years. Write a concise narrative for each person describing their contribution to the project.',
-        schema: {
-          type: 'object',
-          properties: { personnel: Schemas['generic'].properties.personnel },
-          required: ['personnel']
-        }
-      },
-      {
-        key:    'equipment',
-        label:  'Equipment',
-        fields: ['equipment'],
-        prompt: 'List each major equipment item with its name, total cost summed cumulatively across all budget years, and a justification explaining why it is necessary for the project. If no equipment is budgeted, return an empty array.',
-        schema: {
-          type: 'object',
-          properties: { equipment: Schemas['generic'].properties.equipment },
-          required: ['equipment']
-        }
-      },
-      {
-        key:    'travel',
-        label:  'Travel',
-        fields: ['travel'],
-        prompt: 'List all travel with destination, total cost summed cumulatively across all budget years, and a justification explaining the purpose and its connection to the project. If no travel is budgeted, return an empty array.',
-        schema: {
-          type: 'object',
-          properties: { travel: Schemas['generic'].properties.travel },
-          required: ['travel']
-        }
-      },
-      {
-        key:    'direct_costs',
-        label:  'Other Direct Costs',
-        fields: ['direct_costs'],
-        prompt: 'List all other direct cost items by category or item, summing each cost cumulatively across all budget years. Provide the category or item name, cost, and justification. The categories in this section are G.1 Materials and Supplies, G.2 Publication Costs / Documentation / Dissemination, G.3 Consultant Services, G.4 Computer Services, G.5 Subawards, G.6 Other. If there are no other direct costs, return an empty array.',
-        schema: {
-          type: 'object',
-          properties: { direct_costs: Schemas['generic'].properties.direct_costs },
-          required: ['direct_costs']
-        }
-      },
-      {
-        key:    'fringe_and_indirect',
-        label:  'Fringe & Indirect Costs',
-        fields: ['fringe_total_cost', 'indirect_total_cost'],
-        prompt: 'Extract ONLY two numbers from the spreadsheet: the total cumulative fringe benefits cost across all budget years (fringe_total_cost), and the total cumulative indirect/F&A cost across all budget years (indirect_total_cost). Do not narrate; just return the numbers.',
-        schema: {
-          type: 'object',
-          properties: {
-            fringe_total_cost:   Schemas['generic'].properties.fringe_total_cost,
-            indirect_total_cost: Schemas['generic'].properties.indirect_total_cost
-          },
-          required: ['fringe_total_cost', 'indirect_total_cost']
-        }
-      }
-    ]
-
   };
 
   function forTemplate(templateType) {

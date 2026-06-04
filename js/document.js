@@ -8,7 +8,6 @@ const Document = (() => {
 
   const OUTPUT_FILENAMES = {
     'nsf':          'NSF_Budget_Justification.docx',
-    'generic':      'Budget_Justification.docx'
   };
 
   function fmt(num) {
@@ -447,44 +446,9 @@ const Document = (() => {
   }
 
 
-  function buildGeneric(p) {
-    const rows = [...titleBlock(p.profile_name)];
-
-    rows.push(sectionHeader('1. Personnel'));
-    (p.personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name}, ${x.role} (${x.effort_months_per_year}):`,
-      `${x.narrative_description} Total Salary Requested: $${fmt(x.salary)}.`
-    )));
-
-    rows.push(sectionHeader('2. Fringe Benefits'));
-    rows.push(plain('Total Requested: $' + fmt(p.fringe_total_cost)));
-    rows.push(plain(p.fringe_boilerplate));
-
-    rows.push(sectionHeader('3. Equipment'));
-    (p.equipment || []).forEach(x => rows.push(lineItem(
-      `${x.item_name} ($${fmt(x.cost)}):`, x.narrative_justification
-    )));
-
-    rows.push(sectionHeader('4. Travel'));
-    (p.travel || []).forEach(x => rows.push(lineItem(
-      `${x.destination} ($${fmt(x.cost)}):`, x.narrative_justification
-    )));
-
-    rows.push(sectionHeader('5. Materials, Supplies, and Direct Operational Costs'));
-    (p.direct_costs || []).forEach(x => rows.push(lineItem(
-      `${x.category_or_item} ($${fmt(x.cost)}):`, x.narrative_justification
-    )));
-
-    rows.push(sectionHeader('6. Indirect Costs (Overhead / F&A)'));
-    rows.push(plain('Total Requested: $' + fmt(p.indirect_total_cost)));
-    rows.push(plain(p.fa_boilerplate));
-
-    return rows;
-  }
 
   const BUILDERS = {
-    'nsf':          buildNsf,
-    'generic':      buildGeneric
+    'nsf':          buildNsf
   };
 
   async function generate(templateType, payload) {
