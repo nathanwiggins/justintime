@@ -329,9 +329,7 @@ const Document = (() => {
 
     rows.push(sectionHeader(`F. Participant Support Costs ($${fmt(psTotal)})`));
 
-    if (!p.participant_support_has_data) {
-      rows.push(plain('No participant support costs are requested for this project.'));
-    } else {
+    if (p.participant_support_has_data) {
       const activeCategories = psCategories.filter(c => c.items.length > 0);
 
       activeCategories.forEach(({ label, items }) => {
