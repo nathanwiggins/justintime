@@ -303,6 +303,18 @@ const Schemas = {
           }
         },
         required: ['total_cost', 'narrative_description', 'rate_groups']
+      },
+      indirect_costs: {
+        type: 'object',
+        properties: {
+          total_cost:            { type: 'number' },
+          narrative_description: { type: 'string' },
+          yearly_breakdown: {
+            type: 'array',
+            items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] }
+          }
+        },
+        required: ['total_cost', 'narrative_description', 'yearly_breakdown']
       }
     },
     required: ['senior_personnel', 'other_personnel', 'equipment', 'domestic_travel', 'foreign_travel',

@@ -218,7 +218,9 @@ const Generator = (() => {
       const aiJson   = {};
 
       for (const section of sections) {
-        const additionalContext = section.key === 'fringe_benefits' ? profile.fringeBoilerplate : null;
+        const additionalContext = section.key === 'fringe_benefits' ? profile.fringeBoilerplate
+          : section.key === 'indirect_costs'   ? profile.faBoilerplate
+          : null;
         const sectionStep = addStep(`Generating: ${section.label}`);
         const { result, prompt } = await Api.generateSection({
           csvText,
