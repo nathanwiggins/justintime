@@ -308,13 +308,14 @@ const Document = (() => {
       const allYearMap  = travelYearMap([...domestic, ...foreign]);
       const years       = Object.keys(allYearMap).sort();
       const combinedStr = years.map(yr => `$${fmt(allYearMap[yr])} in Year ${yr}`).join(', ');
-      const projectYrs  = p.num_project_years || maxProjectYear(p);
+      const projectYrs    = p.num_project_years || maxProjectYear(p);
+      const performanceStr = projectYrs ? `for the ${projectYrs}-year period of performance` : 'during the period of performance';
       const { Paragraph, TextRun } = _docx;
       rows.push(new Paragraph({
         children: [
           new TextRun({ text: 'The total travel request is ' }),
           new TextRun({ text: `$${fmt(travelTotal)}`, bold: true }),
-          new TextRun({ text: ` for the ${projectYrs}-year period of performance${combinedStr ? ` (${combinedStr})` : ''}.` })
+          new TextRun({ text: ` ${performanceStr}${combinedStr ? ` (${combinedStr})` : ''}.` })
         ],
         spacing: { after: 100 }
       }));
