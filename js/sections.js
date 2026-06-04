@@ -157,7 +157,7 @@ const Sections = (() => {
         }
       },
       {
-        key:    'fringe_indirect',
+        key:    'fringe_and_indirect',
         label:  'Fringe & Indirect Costs',
         fields: ['fringe_total_cost', 'indirect_total_cost'],
         prompt: 'Extract ONLY two numbers from the spreadsheet: the total cumulative fringe benefits cost across all budget years (fringe_total_cost), and the total cumulative indirect/F&A cost across all budget years (indirect_total_cost). Do not narrate; just return the numbers.',
