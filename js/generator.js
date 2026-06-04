@@ -176,7 +176,7 @@ const Generator = (() => {
     return result.value.trim();
   }
 
-  function injectBoilerplate(aiJson, profile, numYears) {
+  function assemblePayload(aiJson, profile, numYears) {
     return {
       ...aiJson,
       profile_name:       profile.name              || '',
@@ -245,8 +245,8 @@ const Generator = (() => {
         templateStep.done('narrative fields replaced with placeholders');
       }
 
-      const boilerplateStep = addStep('Injecting institutional boilerplate');
-      const payload = injectBoilerplate(aiJson, profile, numYears);
+      const boilerplateStep = addStep('Assembling final payload');
+      const payload = assemblePayload(aiJson, profile, numYears);
       boilerplateStep.done(profile.name, [
         { label: 'Final Payload', content: JSON.stringify(payload, null, 2) }
       ]);
