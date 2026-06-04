@@ -441,8 +441,7 @@ const Document = (() => {
     const ic = p.indirect_costs || {};
     const icYearlyStr = (ic.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
     rows.push(sectionHeader(`I. Indirect Costs (Facilities and Administrative Costs) ($${fmt(ic.total_cost)})`));
-    if (ic.narrative_description) rows.push(plain(ic.narrative_description));
-    if (icYearlyStr) rows.push(plain(`Yearly Totals: ${icYearlyStr}.`));
+    if (ic.narrative_description) rows.push(plain(`${ic.narrative_description}${icYearlyStr ? ` (${icYearlyStr})` : ''}`));
 
     return rows;
   }
