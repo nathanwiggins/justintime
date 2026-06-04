@@ -71,14 +71,6 @@ const Document = (() => {
     });
   }
 
-  function italic(text) {
-    const { Paragraph, TextRun } = _docx;
-    return new Paragraph({
-      children: [new TextRun({ text: text || '', italics: true })],
-      spacing:  { after: 100 }
-    });
-  }
-
   function buildNsf(p) {
     const rows = [...titleBlock(p.profile_name)];
 

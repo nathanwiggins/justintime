@@ -271,8 +271,6 @@ const Schemas = {
           required: ['item_name', 'cost', 'yearly_breakdown', 'narrative_justification']
         }
       },
-      fringe_total_cost:   { type: 'number' },
-      indirect_total_cost: { type: 'number' },
       fringe_benefits: {
         type: 'object',
         properties: {
@@ -319,6 +317,6 @@ const Schemas = {
     },
     required: ['senior_personnel', 'other_personnel', 'equipment', 'domestic_travel', 'foreign_travel',
                'participant_support_has_data', 'materials_supplies', 'other_direct_lines',
-               'fringe_total_cost', 'indirect_total_cost']
+]
   },
 };

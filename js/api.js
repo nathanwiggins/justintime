@@ -8,20 +8,6 @@ const Api = (() => {
 - If a budget category has no line items, return an empty array for that field`;
   }
 
-  function buildPrompt(csvText, projectSummary, templateType) {
-    return `You are an expert grants administrator writing a formal budget justification narrative.
-
-Using the budget spreadsheet data and project summary provided below, generate a structured JSON response that fills out every section of a ${templateType.toUpperCase()} budget justification.
-
-Requirements:
-${globalRules()}
-
-Project Summary:
-${projectSummary}
-
-Budget Spreadsheet Data:
-${csvText}`;
-  }
 
   function buildSectionPrompt(csvText, projectSummary, templateType, section, additionalContext) {
     let prompt = `You are an expert grants administrator writing a formal budget justification narrative.
@@ -68,16 +54,6 @@ ${section.prompt}`;
     return JSON.parse(rawText);
   }
 
-  async function generate({ csvText, projectSummary, templateType, apiKey }) {
-    const schema = Schemas[templateType];
-    if (!schema) throw new Error(`No schema defined for template type: ${templateType}`);
-
-    const prompt = buildPrompt(csvText, projectSummary, templateType);
-    const json   = await callApi(apiKey, prompt, schema);
-
-    return { json, prompt };
-  }
-
   async function generateSection({ csvText, projectSummary, templateType, apiKey, section, additionalContext }) {
     const prompt  = buildSectionPrompt(csvText, projectSummary, templateType, section, additionalContext);
     const result  = await callApi(apiKey, prompt, section.schema);
@@ -104,5 +80,5 @@ ${section.prompt}`;
     }
   }
 
-  return { generate, generateSection, test };
+  return { generateSection, test };
 })();
