@@ -439,7 +439,7 @@ const Document = (() => {
       }));
     }
 
-    rows.push(sectionHeader('H. Indirect Costs (Facilities and Administrative Costs)'));
+    rows.push(sectionHeader('I. Indirect Costs (Facilities and Administrative Costs)'));
     rows.push(plain('Total Requested: $' + fmt(p.indirect_total_cost)));
     rows.push(plain(p.fa_boilerplate));
 

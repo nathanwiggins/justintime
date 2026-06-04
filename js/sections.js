@@ -98,7 +98,7 @@ const Sections = (() => {
       },
       {
         key:    'indirect_costs',
-        label:  'H. Indirect Costs',
+        label:  'I. Indirect Costs',
         fields: ['indirect_total_cost'],
         prompt: 'Extract ONLY one number from the spreadsheet: the total cumulative indirect/F&A cost across all budget years (indirect_total_cost). Do not narrate; just return the number.',
         schema: {
