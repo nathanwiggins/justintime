@@ -8,8 +8,6 @@ const Document = (() => {
 
   const OUTPUT_FILENAMES = {
     'nsf':          'NSF_Budget_Justification.docx',
-    'nih-detailed': 'NIH_Detailed_Budget_Justification.docx',
-    'nih-modular':  'NIH_Modular_Budget_Justification.docx',
     'generic':      'Budget_Justification.docx'
   };
 
@@ -444,116 +442,6 @@ const Document = (() => {
     return rows;
   }
 
-  function buildNihDetailed(p) {
-    const rows = [...titleBlock(p.profile_name)];
-
-    rows.push(sectionHeader('A. Senior/Key Personnel'));
-    (p.senior_personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name}, ${x.role} (Effort: ${effort(x.effort_months_per_year)}).`,
-      `${x.name} will serve as ${x.role} and will be responsible for ${x.narrative_description}. Requested Salary: $${fmt(x.salary)}.`
-    )));
-
-    rows.push(sectionHeader('B. Other Personnel'));
-    (p.other_personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name_or_title}, ${x.role} (Effort: ${effort(x.effort_months_per_year)}).`,
-      `${x.narrative_description}. Requested Salary: $${fmt(x.salary)}.`
-    )));
-
-    rows.push(sectionHeader('C. Fringe Benefits'));
-    rows.push(plain('Total Requested: $' + fmt(p.fringe_total_cost)));
-    rows.push(plain(p.fringe_boilerplate));
-
-    rows.push(sectionHeader('D. Equipment'));
-    (p.equipment || []).forEach(x => rows.push(lineItem(
-      `${x.item_name} ($${fmt(x.cost)}):`, x.narrative_justification
-    )));
-
-    rows.push(sectionHeader('E. Travel'));
-    (p.travel || []).forEach(x => rows.push(lineItem(
-      `${x.travel_type} Travel ($${fmt(x.cost)}):`,
-      `Funds are requested for ${x.num_people} project personnel to travel to ${x.destination} for the purpose of ${x.trip_purpose}. ${x.narrative_justification}`
-    )));
-
-    rows.push(sectionHeader('F. Participant/Trainee Support Costs'));
-    (p.trainee_support || []).forEach(x => rows.push(lineItem(
-      `${x.category} ($${fmt(x.cost)}):`, x.narrative_justification
-    )));
-
-    rows.push(sectionHeader('G. Other Direct Costs'));
-    rows.push(subHeader('G.1 Materials and Supplies'));
-    (p.materials_supplies || []).forEach(x => rows.push(lineItem(
-      `${x.category_name} ($${fmt(x.cost)}):`, x.narrative_justification
-    )));
-
-    rows.push(subHeader('G.2 Publication Costs'));
-    (p.publications || []).forEach(x => rows.push(lineItem(
-      `${x.type} ($${fmt(x.cost)}):`, x.narrative_justification
-    )));
-
-    rows.push(subHeader('G.3 Consultants'));
-    (p.consultants || []).forEach(x => rows.push(lineItem(
-      `${x.consultant_name} ($${fmt(x.cost)}):`,
-      `Will assist with ${x.expertise_area}. ${x.narrative_justification}`
-    )));
-
-    rows.push(subHeader('G.4 Consortium/Contractual Costs'));
-    (p.consortiums || []).forEach(x => rows.push(lineItem(
-      `${x.institution_name} Subaward ($${fmt(x.total_cost)}):`,
-      `Direct Costs: $${fmt(x.direct_costs)}; Indirect Costs: $${fmt(x.indirect_costs)}. A separate subaward budget and justification narrative are included for ${x.institution_name} under the direction of ${x.sub_pi}.`
-    )));
-
-    rows.push(subHeader('G.5 Equipment or Facility Rental/User Fees'));
-    (p.user_fees || []).forEach(x => rows.push(lineItem(
-      `${x.facility_name} ($${fmt(x.cost)}):`, x.narrative_justification
-    )));
-
-    rows.push(subHeader('G.6 Alterations and Renovations'));
-    (p.alterations || []).forEach(x => rows.push(lineItem(
-      `${x.description} ($${fmt(x.cost)}):`, x.narrative_justification
-    )));
-
-    rows.push(subHeader('G.7 Other'));
-    (p.other_direct_lines || []).forEach(x => rows.push(lineItem(
-      `${x.item_name} ($${fmt(x.cost)}):`, x.narrative_justification
-    )));
-
-    rows.push(sectionHeader('H. Facilities and Administrative (F&A) Costs'));
-    rows.push(plain('Total Requested: $' + fmt(p.indirect_total_cost)));
-    rows.push(plain(p.fa_boilerplate));
-
-    return rows;
-  }
-
-  function buildNihModular(p) {
-    const rows = [...titleBlock(p.profile_name)];
-
-    rows.push(sectionHeader('Personnel Justification'));
-    (p.personnel || []).forEach(x => rows.push(lineItem(
-      `${x.name}, ${x.role} (Effort: ${effort(x.effort_months_per_year, 'Calendar')}).`,
-      `${x.name} will be responsible for ${x.narrative_description}. No salary or fringe benefit amounts are requested or explicitly stated in accordance with NIH Modular guidelines.`
-    )));
-
-    rows.push(sectionHeader('Consortium Justification'));
-    if (!(p.consortium || []).length) {
-      rows.push(plain('Not Applicable. No consortium or contractual arrangements are proposed.'));
-    } else {
-      p.consortium.forEach(x => rows.push(lineItem(
-        `${x.institution_name} (${x.institution_location_type}).`,
-        `This consortium subaward requires ${effort(x.effort_months_per_year, 'Calendar')} of effort for ${x.sub_personnel_name}, who will serve as ${x.sub_role} and oversee ${x.narrative_description}.`
-      )));
-    }
-
-    rows.push(sectionHeader('Additional Narrative Justification'));
-    if (!(p.additional_justification || []).length) {
-      rows.push(plain('Not Applicable. An equal number of modules is requested for all budget periods.'));
-    } else {
-      p.additional_justification.forEach(x => rows.push(lineItem(
-        'Yearly Module Variations:', x.variation_explanation
-      )));
-    }
-
-    return rows;
-  }
 
   function buildGeneric(p) {
     const rows = [...titleBlock(p.profile_name)];
@@ -592,8 +480,6 @@ const Document = (() => {
 
   const BUILDERS = {
     'nsf':          buildNsf,
-    'nih-detailed': buildNihDetailed,
-    'nih-modular':  buildNihModular,
     'generic':      buildGeneric
   };
 
