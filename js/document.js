@@ -363,16 +363,19 @@ const Document = (() => {
 
     const gSubsections = [
       {
+        label: 'G.1',
         name:  'Materials and Supplies',
         items: p.materials_supplies || [],
         renderItem: x => ({ bold: `${x.category_name} ($${fmt(x.cost)}):`, text: x.narrative_justification })
       },
       {
+        label: 'G.2',
         name:  'Publication Costs / Documentation / Dissemination',
         items: p.publications || [],
         renderItem: x => ({ bold: `${x.publication_title_or_type} ($${fmt(x.cost)}):`, text: x.narrative_justification })
       },
       {
+        label: 'G.3',
         name:  'Consultant Services',
         items: p.consultants || [],
         renderItem: x => ({
@@ -381,11 +384,13 @@ const Document = (() => {
         })
       },
       {
+        label: 'G.4',
         name:  'Computer Services',
         items: p.computer_services || [],
         renderItem: x => ({ bold: `${x.service_description} ($${fmt(x.cost)}):`, text: x.narrative_justification })
       },
       {
+        label: 'G.5',
         name:  'Subawards / Contractual',
         items: p.subawards || [],
         renderItem: x => ({
@@ -394,6 +399,7 @@ const Document = (() => {
         })
       },
       {
+        label: 'G.6',
         name:  'Other',
         items: p.other_direct_lines || [],
         renderItem: x => ({ bold: `${x.item_name} ($${fmt(x.cost)}):`, text: x.narrative_justification })
@@ -403,9 +409,9 @@ const Document = (() => {
     const gTotal = gSubsections.flatMap(s => s.items).reduce((sum, x) => sum + (x.cost || 0), 0);
     rows.push(sectionHeader(`G. Other Direct Costs ($${fmt(gTotal)})`));
 
-    gSubsections.forEach((section, idx) => {
+    gSubsections.forEach(section => {
       const sectionTotal = section.items.reduce((s, x) => s + (x.cost || 0), 0);
-      rows.push(subHeader(`G.${idx + 1} ${section.name} ($${fmt(sectionTotal)})`));
+      rows.push(subHeader(`${section.label} ${section.name} ($${fmt(sectionTotal)})`));
 
       section.items.forEach(x => {
         const yearlyStr   = (x.yearly_breakdown || []).filter(y => (y.cost || 0) > 0).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
