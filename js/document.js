@@ -417,15 +417,6 @@ const Document = (() => {
         rows.push(lineItem(bold, `${text}${yearlyStr ? ` (${yearlyStr})` : ''}`));
       });
 
-      const yearMap = {};
-      section.items.forEach(x => (x.yearly_breakdown || []).forEach(y => {
-        yearMap[y.year] = (yearMap[y.year] || 0) + y.cost;
-      }));
-      const years = Object.keys(yearMap).sort();
-      if (years.length > 1) {
-        const combinedStr = years.map(yr => `$${fmt(yearMap[yr])} in Year ${yr}`).join(', ');
-        rows.push(plain(`Yearly breakdown: ${combinedStr}.`));
-      }
     });
 
     if (gSubsections.length > 1) {
