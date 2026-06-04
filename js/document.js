@@ -365,38 +365,86 @@ const Document = (() => {
       }
     }
 
-    rows.push(sectionHeader('G. Other Direct Costs'));
-    rows.push(subHeader('G.1 Materials and Supplies'));
-    (p.materials_supplies || []).forEach(x => rows.push(lineItem(
-      `${x.category_name} ($${fmt(x.cost)}):`, x.narrative_justification
-    )));
+    const gSubsections = [
+      {
+        name:  'Materials and Supplies',
+        items: p.materials_supplies || [],
+        renderItem: x => ({ bold: `${x.category_name} ($${fmt(x.cost)}):`, text: x.narrative_justification })
+      },
+      {
+        name:  'Publication Costs / Documentation / Dissemination',
+        items: p.publications || [],
+        renderItem: x => ({ bold: `${x.publication_title_or_type} ($${fmt(x.cost)}):`, text: x.narrative_justification })
+      },
+      {
+        name:  'Consultant Services',
+        items: p.consultants || [],
+        renderItem: x => ({
+          bold: `${x.consultant_name} ($${fmt(x.cost)}):`,
+          text: `${x.consultant_name} will provide expertise in ${x.expertise_area} at a daily rate of $${fmt(x.rate)} for ${x.days} day${x.days === 1 ? '' : 's'} (${x.days} days × $${fmt(x.rate)}/day = $${fmt(x.days * x.rate)}). ${x.narrative_justification}`
+        })
+      },
+      {
+        name:  'Computer Services',
+        items: p.computer_services || [],
+        renderItem: x => ({ bold: `${x.service_description} ($${fmt(x.cost)}):`, text: x.narrative_justification })
+      },
+      {
+        name:  'Subawards / Contractual',
+        items: p.subawards || [],
+        renderItem: x => ({
+          bold: `${x.institution_name} ($${fmt(x.cost)}):`,
+          text: `A separate budget and justification are attached for the subaward to ${x.institution_name} under the direction of ${x.sub_pi}. ${x.narrative_justification}`
+        })
+      },
+      {
+        name:  'Other',
+        items: p.other_direct_lines || [],
+        renderItem: x => ({ bold: `${x.item_name} ($${fmt(x.cost)}):`, text: x.narrative_justification })
+      }
+    ].filter(s => s.items.length > 0);
 
-    rows.push(subHeader('G.2 Publication Costs / Documentation / Dissemination'));
-    (p.publications || []).forEach(x => rows.push(lineItem(
-      `${x.publication_title_or_type} ($${fmt(x.cost)}):`, x.narrative_justification
-    )));
+    const gTotal = gSubsections.flatMap(s => s.items).reduce((sum, x) => sum + (x.cost || 0), 0);
+    rows.push(sectionHeader(`G. Other Direct Costs ($${fmt(gTotal)})`));
 
-    rows.push(subHeader('G.3 Consultant Services'));
-    (p.consultants || []).forEach(x => rows.push(lineItem(
-      `${x.consultant_name} ($${fmt(x.cost)}):`,
-      `Will provide expertise on ${x.expertise_area}. Rate is $${fmt(x.rate)}/day for ${x.days} days. ${x.narrative_justification}`
-    )));
+    gSubsections.forEach((section, idx) => {
+      const sectionTotal = section.items.reduce((s, x) => s + (x.cost || 0), 0);
+      rows.push(subHeader(`G.${idx + 1} ${section.name} ($${fmt(sectionTotal)})`));
 
-    rows.push(subHeader('G.4 Computer Services'));
-    (p.computer_services || []).forEach(x => rows.push(lineItem(
-      `${x.service_description} ($${fmt(x.cost)}):`, x.narrative_justification
-    )));
+      section.items.forEach(x => {
+        const yearlyStr   = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
+        const { bold, text } = section.renderItem(x);
+        rows.push(lineItem(bold, `${text}${yearlyStr ? ` (${yearlyStr})` : ''}`));
+      });
 
-    rows.push(subHeader('G.5 Subawards'));
-    (p.subawards || []).forEach(x => rows.push(lineItem(
-      `${x.institution_name} ($${fmt(x.cost)}):`,
-      `A separate budget and justification are attached for the subaward to ${x.institution_name} under the direction of ${x.sub_pi}. ${x.narrative_justification}`
-    )));
+      const yearMap = {};
+      section.items.forEach(x => (x.yearly_breakdown || []).forEach(y => {
+        yearMap[y.year] = (yearMap[y.year] || 0) + y.cost;
+      }));
+      const years = Object.keys(yearMap).sort();
+      if (years.length > 1) {
+        const combinedStr = years.map(yr => `$${fmt(yearMap[yr])} in Year ${yr}`).join(', ');
+        rows.push(plain(`Yearly breakdown: ${combinedStr}.`));
+      }
+    });
 
-    rows.push(subHeader('G.6 Other'));
-    (p.other_direct_lines || []).forEach(x => rows.push(lineItem(
-      `${x.item_name} ($${fmt(x.cost)}):`, x.narrative_justification
-    )));
+    if (gSubsections.length > 1) {
+      const allYearMap  = {};
+      gSubsections.flatMap(s => s.items).forEach(x => (x.yearly_breakdown || []).forEach(y => {
+        allYearMap[y.year] = (allYearMap[y.year] || 0) + y.cost;
+      }));
+      const years       = Object.keys(allYearMap).sort();
+      const combinedStr = years.map(yr => `$${fmt(allYearMap[yr])} in Year ${yr}`).join(', ');
+      const { Paragraph, TextRun } = _docx;
+      rows.push(new Paragraph({
+        children: [
+          new TextRun({ text: 'The total request for Other Direct Costs is ' }),
+          new TextRun({ text: `$${fmt(gTotal)}`, bold: true }),
+          new TextRun({ text: combinedStr ? ` (${combinedStr}).` : '.' })
+        ],
+        spacing: { after: 100 }
+      }));
+    }
 
     rows.push(sectionHeader('H. Indirect Costs (Facilities and Administrative Costs)'));
     rows.push(plain('Total Requested: $' + fmt(p.indirect_total_cost)));

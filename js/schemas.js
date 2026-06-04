@@ -196,9 +196,10 @@ const Schemas = {
           properties: {
             category_name:          { type: 'string' },
             cost:                   { type: 'number' },
+            yearly_breakdown: { type: 'array', items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] } },
             narrative_justification:{ type: 'string' }
           },
-          required: ['category_name', 'cost', 'narrative_justification']
+          required: ['category_name', 'cost', 'yearly_breakdown', 'narrative_justification']
         }
       },
       publications: {
@@ -208,9 +209,10 @@ const Schemas = {
           properties: {
             publication_title_or_type:{ type: 'string' },
             cost:                     { type: 'number' },
+            yearly_breakdown: { type: 'array', items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] } },
             narrative_justification:  { type: 'string' }
           },
-          required: ['publication_title_or_type', 'cost', 'narrative_justification']
+          required: ['publication_title_or_type', 'cost', 'yearly_breakdown', 'narrative_justification']
         }
       },
       consultants: {
@@ -223,9 +225,10 @@ const Schemas = {
             expertise_area:         { type: 'string' },
             rate:                   { type: 'number' },
             days:                   { type: 'number' },
+            yearly_breakdown: { type: 'array', items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] } },
             narrative_justification:{ type: 'string' }
           },
-          required: ['consultant_name', 'cost', 'expertise_area', 'rate', 'days', 'narrative_justification']
+          required: ['consultant_name', 'cost', 'expertise_area', 'rate', 'days', 'yearly_breakdown', 'narrative_justification']
         }
       },
       computer_services: {
@@ -235,9 +238,10 @@ const Schemas = {
           properties: {
             service_description:    { type: 'string' },
             cost:                   { type: 'number' },
+            yearly_breakdown: { type: 'array', items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] } },
             narrative_justification:{ type: 'string' }
           },
-          required: ['service_description', 'cost', 'narrative_justification']
+          required: ['service_description', 'cost', 'yearly_breakdown', 'narrative_justification']
         }
       },
       subawards: {
@@ -248,9 +252,10 @@ const Schemas = {
             institution_name:       { type: 'string' },
             cost:                   { type: 'number' },
             sub_pi:                 { type: 'string' },
+            yearly_breakdown: { type: 'array', items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] } },
             narrative_justification:{ type: 'string' }
           },
-          required: ['institution_name', 'cost', 'sub_pi', 'narrative_justification']
+          required: ['institution_name', 'cost', 'sub_pi', 'yearly_breakdown', 'narrative_justification']
         }
       },
       other_direct_lines: {
@@ -260,9 +265,10 @@ const Schemas = {
           properties: {
             item_name:              { type: 'string' },
             cost:                   { type: 'number' },
+            yearly_breakdown: { type: 'array', items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] } },
             narrative_justification:{ type: 'string' }
           },
-          required: ['item_name', 'cost', 'narrative_justification']
+          required: ['item_name', 'cost', 'yearly_breakdown', 'narrative_justification']
         }
       },
       fringe_total_cost:   { type: 'number' },
