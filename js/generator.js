@@ -143,6 +143,7 @@ const Generator = (() => {
       } else if (node && typeof node === 'object') {
         Object.keys(node).forEach(key => {
           if (key === 'fringe_benefits') return;
+          if (key === 'indirect_costs')  return;
           if (NARRATIVE_FIELDS.has(key) && typeof node[key] === 'string' && node[key]) {
             node[key] = '[Justification required]';
           } else {
