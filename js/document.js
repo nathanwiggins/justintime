@@ -322,47 +322,28 @@ const Document = (() => {
     }
 
     const psCategories = [
-      p.stipends          || [],
-      p.participant_travel || [],
-      p.subsistence       || [],
-      p.participant_other || []
+      { label: 'Stipends',     items: p.stipends           || [] },
+      { label: 'Travel',       items: p.participant_travel || [] },
+      { label: 'Subsistence',  items: p.subsistence        || [] },
+      { label: 'Other',        items: p.participant_other  || [] }
     ];
-    const psTotal = psCategories.flat().reduce((s, x) => s + (x.cost || 0), 0);
+    const psTotal = psCategories.flatMap(c => c.items).reduce((s, x) => s + (x.cost || 0), 0);
 
     rows.push(sectionHeader(`F. Participant Support Costs ($${fmt(psTotal)})`));
 
     if (!p.participant_support_has_data) {
       rows.push(plain('No participant support costs are requested for this project.'));
     } else {
-      const activeCategories = psCategories.filter(cat => cat.length > 0);
+      const activeCategories = psCategories.filter(c => c.items.length > 0);
 
-      activeCategories.forEach(cat => {
-        cat.forEach(x => {
-          const count     = x.num_participants || 0;
-          const countStr  = `${count} participant${count === 1 ? '' : 's'}`;
+      activeCategories.forEach(({ label, items }) => {
+        items.forEach(x => {
           const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
           rows.push(lineItem(
-            `${countStr} ($${fmt(x.cost)}):`,
+            `${label} ($${fmt(x.cost)}):`,
             `${x.justification}${yearlyStr ? ` (${yearlyStr})` : ''}`
           ));
         });
-
-        const catTotal  = cat.reduce((s, x) => s + (x.cost || 0), 0);
-        const yearMap   = {};
-        cat.forEach(x => (x.yearly_breakdown || []).forEach(y => {
-          yearMap[y.year] = (yearMap[y.year] || 0) + y.cost;
-        }));
-        const years       = Object.keys(yearMap).sort();
-        const combinedStr = years.map(yr => `$${fmt(yearMap[yr])} in Year ${yr}`).join(', ');
-        const { Paragraph, TextRun } = _docx;
-        rows.push(new Paragraph({
-          children: [
-            new TextRun({ text: 'Section Total: ' }),
-            new TextRun({ text: `$${fmt(catTotal)}`, bold: true }),
-            new TextRun({ text: combinedStr ? ` (${combinedStr}).` : '.' })
-          ],
-          spacing: { after: 100 }
-        }));
       });
 
       if (activeCategories.length > 1) {

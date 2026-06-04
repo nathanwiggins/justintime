@@ -65,7 +65,7 @@ const Sections = (() => {
         key:    'participant_support',
         label:  'F. Participant Support',
         fields: ['stipends', 'participant_travel', 'subsistence', 'participant_other', 'participant_support_has_data'],
-        prompt: 'Participant support costs are exempt from indirect costs and must be listed separately from general direct costs. Populate each sub-category: stipends, participant travel, subsistence, and other participant costs. For each item include num_participants (the headcount of participants receiving this support), the total cost summed cumulatively across all budget years, a yearly_breakdown showing the cost for each year this support occurs, and a justification that specifies the headcount, per-participant rate or cost basis, and the purpose of the support. Set participant_support_has_data to true if ANY participant support line items exist in the budget; otherwise set it to false and return empty arrays for all sub-categories.',
+        prompt: 'Populate each of these pre-defined sub-categories if they exist: stipends, participant travel, subsistence, and other participant costs. For each item include num_participants (the headcount of participants receiving this support), the total cost summed cumulatively across all budget years, a yearly_breakdown showing the cost for each year this support occurs, and a justification that specifies the headcount, per-participant rate or cost basis, and the purpose of the support. Set participant_support_has_data to true if ANY participant support line items exist in the budget; otherwise set it to false and return empty arrays for all sub-categories.',
         schema: {
           type: 'object',
           properties: {
