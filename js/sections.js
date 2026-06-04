@@ -100,7 +100,7 @@ const Sections = (() => {
         key:    'indirect_costs',
         label:  'I. Indirect Costs',
         fields: ['indirect_costs'],
-        prompt: 'Generate the indirect costs justification for Section I using the institutional F&A rate context provided. Write a brief narrative_description (1-2 sentences) summarizing the indirect rate being applied, derived only from the Institutional Context — do not invent rate information. Extract total_cost as the total cumulative indirect/F&A cost across all budget years. Provide a yearly_breakdown showing the indirect cost for each budget year.',
+        prompt: 'Generate a simple justification of indirect costs using the institutional F&A rate context provided. Write a brief narrative_description (1-2 sentences) summarizing the indirect rate being applied, derived only from the Institutional Context — do not invent rate information. Extract total_cost as the total cumulative indirect/F&A cost across all budget years. Provide a yearly_breakdown showing the indirect cost for each budget year.',
         schema: {
           type: 'object',
           properties: { indirect_costs: Schemas['nsf'].properties.indirect_costs },
