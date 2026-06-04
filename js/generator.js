@@ -172,12 +172,13 @@ const Generator = (() => {
     return result.value.trim();
   }
 
-  function injectBoilerplate(aiJson, profile) {
+  function injectBoilerplate(aiJson, profile, numYears) {
     return {
       ...aiJson,
       profile_name:       profile.name              || '',
       fringe_boilerplate: profile.fringeBoilerplate || '',
-      fa_boilerplate:     profile.faBoilerplate     || ''
+      fa_boilerplate:     profile.faBoilerplate     || '',
+      num_project_years:  numYears || 0
     };
   }
 
@@ -207,7 +208,7 @@ const Generator = (() => {
       }
 
       const parseStep = addStep('Parsing budget file');
-      const { csvText, sourceTruth } = await Parser.parse(form.file);
+      const { csvText, sourceTruth, numYears } = await Parser.parse(form.file);
       parseStep.done(form.file.name, [
         { label: 'Extracted CSV',  content: csvText },
         { label: 'Source Truth',   content: JSON.stringify(sourceTruth, null, 2) }
@@ -241,7 +242,7 @@ const Generator = (() => {
       }
 
       const boilerplateStep = addStep('Injecting institutional boilerplate');
-      const payload = injectBoilerplate(aiJson, profile);
+      const payload = injectBoilerplate(aiJson, profile, numYears);
       boilerplateStep.done(profile.name, [
         { label: 'Final Payload', content: JSON.stringify(payload, null, 2) }
       ]);

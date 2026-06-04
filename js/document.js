@@ -308,7 +308,7 @@ const Document = (() => {
       const allYearMap  = travelYearMap([...domestic, ...foreign]);
       const years       = Object.keys(allYearMap).sort();
       const combinedStr = years.map(yr => `$${fmt(allYearMap[yr])} in Year ${yr}`).join(', ');
-      const projectYrs  = maxProjectYear(p);
+      const projectYrs  = p.num_project_years || maxProjectYear(p);
       const { Paragraph, TextRun } = _docx;
       rows.push(new Paragraph({
         children: [

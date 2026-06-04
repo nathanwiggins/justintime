@@ -28,6 +28,16 @@ const Parser = (() => {
     return truth;
   }
 
+  function detectNumYears(aoa) {
+    for (const row of aoa) {
+      const count = row.filter(cell =>
+        /^(year|yr|fy|y)\s*\d+$/i.test(String(cell).trim())
+      ).length;
+      if (count > 0) return count;
+    }
+    return 0;
+  }
+
   function parse(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -37,8 +47,9 @@ const Parser = (() => {
           const data = new Uint8Array(e.target.result);
           const wb   = XLSX.read(data, { type: 'array' });
 
-          const csvParts   = [];
+          const csvParts    = [];
           const allJsonRows = [];
+          let   numYears    = 0;
 
           wb.SheetNames.forEach(name => {
             const sheet    = wb.Sheets[name];
@@ -51,12 +62,15 @@ const Parser = (() => {
 
             const jsonRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
             allJsonRows.push(...jsonRows);
+
+            const sheetYears = detectNumYears(aoa);
+            if (sheetYears > numYears) numYears = sheetYears;
           });
 
           const csvText     = csvParts.join('');
           const sourceTruth = extractSourceTruth(allJsonRows);
 
-          resolve({ csvText, sourceTruth });
+          resolve({ csvText, sourceTruth, numYears });
         } catch (err) {
           reject(new Error('Failed to parse budget file: ' + err.message));
         }
