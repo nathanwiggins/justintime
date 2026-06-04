@@ -149,7 +149,7 @@ const Sections = (() => {
         key:    'direct_costs',
         label:  'Other Direct Costs',
         fields: ['direct_costs'],
-        prompt: 'List all remaining direct cost items (supplies, services, consultants, publications, etc.) by category or item, summing each cost cumulatively across all budget years. Provide the category or item name, cost, and justification. Do NOT include fringe benefits or indirect costs here. If none remain, return an empty array.',
+        prompt: 'List all other direct cost items by category or item, summing each cost cumulatively across all budget years. Provide the category or item name, cost, and justification. The categories in this section are G.1 Materials and Supplies, G.2 Publication Costs / Documentation / Dissemination, G.3 Consultant Services, G.4 Computer Services, G.5 Subawards, G.6 Other. If there are no other direct costs, return an empty array.',
         schema: {
           type: 'object',
           properties: { direct_costs: Schemas['generic'].properties.direct_costs },
