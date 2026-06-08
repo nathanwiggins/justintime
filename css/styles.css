@@ -441,6 +441,8 @@ textarea {
   padding: 20px 0 8px;
 }
 
+#loading-indicator.hidden { display: none; }
+
 .loading-spinner {
   width: 44px;
   height: 44px;
