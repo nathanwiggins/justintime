@@ -31,19 +31,72 @@ const Highlighter = (() => {
     return content.replace(/(<w:t[ >])/, `<w:rPr><w:highlight w:val="${color}"/></w:rPr>$1`);
   }
 
+  function splitAndHighlight(open, content, matchStr, color) {
+    const rPrBlock = (content.match(/<w:rPr>[\s\S]*?<\/w:rPr>/) || [''])[0];
+
+    let highlightedRPr;
+    if (rPrBlock) {
+      highlightedRPr = rPrBlock.includes('<w:highlight')
+        ? rPrBlock
+        : rPrBlock.replace('<w:rPr>', `<w:rPr><w:highlight w:val="${color}"/>`);
+    } else {
+      highlightedRPr = `<w:rPr><w:highlight w:val="${color}"/></w:rPr>`;
+    }
+
+    const text = getRunText(content);
+    const idx  = text.indexOf(matchStr);
+    if (idx === -1) return null;
+
+    const before = text.slice(0, idx);
+    const after  = text.slice(idx + matchStr.length);
+
+    const makeT = t => {
+      const preserve = t.startsWith(' ') || t.endsWith(' ');
+      return `<w:t${preserve ? ' xml:space="preserve"' : ''}>${t}</w:t>`;
+    };
+
+    let result = '';
+    if (before) result += `${open}${rPrBlock}${makeT(before)}</w:r>`;
+    result += `${open}${highlightedRPr}${makeT(matchStr)}</w:r>`;
+    if (after)  result += `${open}${rPrBlock}${makeT(after)}</w:r>`;
+
+    return result;
+  }
+
   function applyHighlights(xml, items) {
     const sorted = [...items].sort((a, b) => (a.color === 'red' ? -1 : 1));
 
-    return xml.replace(/(<w:r(?:\s[^>]*)?>)([\s\S]*?)(<\/w:r>)/g, (match, open, content, close) => {
-      const text = getRunText(content);
-      if (!text) return match;
+    return xml.replace(/(<w:p\b[^>]*>)([\s\S]*?)(<\/w:p>)/g, (paraMatch, paraOpen, paraContent, paraClose) => {
+      const paraText = [...paraContent.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)]
+        .map(m => m[1]).join('');
 
-      for (const { variants, color } of sorted) {
-        if (variants.some(v => text.includes(v))) {
-          return open + injectHighlight(content, color) + close;
+      if (!paraText) return paraMatch;
+
+      const applicable = sorted.filter(({ context, variants }) =>
+        context ? paraText.includes(context) : variants.some(v => paraText.includes(v))
+      );
+
+      if (!applicable.length) return paraMatch;
+
+      const updatedContent = paraContent.replace(/(<w:r(?:\s[^>]*)?>)([\s\S]*?)(<\/w:r>)/g, (match, open, content, close) => {
+        const text = getRunText(content);
+        if (!text) return match;
+
+        for (const { variants, color } of applicable) {
+          const variant = variants.find(v => text.includes(v));
+          if (!variant) continue;
+
+          if (text === variant) {
+            return open + injectHighlight(content, color) + close;
+          }
+
+          return splitAndHighlight(open, content, variant, color)
+            || (open + injectHighlight(content, color) + close);
         }
-      }
-      return match;
+        return match;
+      });
+
+      return paraOpen + updatedContent + paraClose;
     });
   }
 
