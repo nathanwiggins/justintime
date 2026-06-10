@@ -695,11 +695,16 @@ textarea {
   font-weight: 600;
   padding: 4px 12px;
   border-radius: 20px;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: opacity .15s;
 }
 
 .verify-summary-chip.match    { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
 .verify-summary-chip.mismatch { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 .verify-summary-chip.notfound { background: var(--color-bg); color: var(--color-text-muted); border: 1px solid var(--color-border); }
+.verify-summary-chip.inactive { opacity: .35; }
 
 .verify-table-wrap {
   overflow-x: auto;

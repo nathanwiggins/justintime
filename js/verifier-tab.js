@@ -112,12 +112,27 @@ const VerifierTab = (() => {
     const mismatch = items.filter(i => i.found_in_spreadsheet && !isMatch(i.justification_value, i.spreadsheet_value));
     const notFound = items.filter(i => !i.found_in_spreadsheet);
 
+    const activeFilters = new Set(['match', 'mismatch', 'notfound']);
+
     const summary = document.createElement('div');
     summary.className = 'verify-summary';
-    summary.innerHTML =
-      `<span class="verify-summary-chip match">${matched.length} matched</span>` +
-      `<span class="verify-summary-chip mismatch">${mismatch.length} mismatched</span>` +
-      `<span class="verify-summary-chip notfound">${notFound.length} not found</span>`;
+
+    const chipData = [
+      { status: 'match',    label: `${matched.length} matched` },
+      { status: 'mismatch', label: `${mismatch.length} mismatched` },
+      { status: 'notfound', label: `${notFound.length} not found` }
+    ];
+
+    const chips = {};
+    chipData.forEach(({ status, label }) => {
+      const chip = document.createElement('button');
+      chip.className   = `verify-summary-chip ${status}`;
+      chip.textContent = label;
+      chip.type        = 'button';
+      chips[status]    = chip;
+      summary.appendChild(chip);
+    });
+
     container.appendChild(summary);
 
     const tableWrap = document.createElement('div');
@@ -134,33 +149,55 @@ const VerifierTab = (() => {
       '</tr></thead>';
 
     const tbody = document.createElement('tbody');
+    const rows  = [];
 
     for (const item of items) {
       let statusLabel, statusClass, spreadsheetDisplay;
 
       if (!item.found_in_spreadsheet) {
-        statusLabel       = 'Not found';
-        statusClass       = 'notfound';
+        statusLabel        = 'Not found';
+        statusClass        = 'notfound';
         spreadsheetDisplay = '—';
       } else if (isMatch(item.justification_value, item.spreadsheet_value)) {
-        statusLabel       = 'Match';
-        statusClass       = 'match';
+        statusLabel        = 'Match';
+        statusClass        = 'match';
         spreadsheetDisplay = formatCurrency(item.spreadsheet_value);
       } else {
-        statusLabel       = 'Mismatch';
-        statusClass       = 'mismatch';
+        statusLabel        = 'Mismatch';
+        statusClass        = 'mismatch';
         spreadsheetDisplay = formatCurrency(item.spreadsheet_value);
       }
 
       const tr = document.createElement('tr');
-      tr.className = `verify-row-${statusClass}`;
+      tr.className        = `verify-row-${statusClass}`;
+      tr.dataset.status   = statusClass;
       tr.innerHTML =
         `<td class="verify-cell-label">${item.label}</td>` +
         `<td class="verify-cell-value">${formatCurrency(item.justification_value)}</td>` +
         `<td class="verify-cell-value">${spreadsheetDisplay}</td>` +
         `<td><span class="verify-badge ${statusClass}">${statusLabel}</span></td>`;
       tbody.appendChild(tr);
+      rows.push(tr);
     }
+
+    function applyFilter() {
+      rows.forEach(tr => {
+        tr.classList.toggle('hidden', !activeFilters.has(tr.dataset.status));
+      });
+    }
+
+    chipData.forEach(({ status }) => {
+      chips[status].addEventListener('click', () => {
+        if (activeFilters.has(status)) {
+          activeFilters.delete(status);
+          chips[status].classList.add('inactive');
+        } else {
+          activeFilters.add(status);
+          chips[status].classList.remove('inactive');
+        }
+        applyFilter();
+      });
+    });
 
     table.appendChild(tbody);
     tableWrap.appendChild(table);
