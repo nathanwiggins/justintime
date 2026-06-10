@@ -40,6 +40,7 @@ function initCyclingLabel() {
 document.addEventListener('DOMContentLoaded', () => {
   Settings.init();
   Generator.init();
+  VerifierTab.init();
   loadLastUpdated();
   initCyclingLabel();
 

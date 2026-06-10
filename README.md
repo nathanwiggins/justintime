@@ -4,6 +4,7 @@ A lightweight, client-side NSF budget justification generator built for research
 
 ## Features
 
+- **Budget Verifier** — a dedicated Verify tab accepts any budget justification `.docx` and its corresponding spreadsheet. Two AI passes identify every dollar value in the justification, match each against the spreadsheet, and display a color-coded results table showing matches, mismatches, and values not found in the spreadsheet.
 - **Generator-first UI** — opens directly on the Generator tab. Settings are a click away but stay out of the way during normal use.
 - **Drag-and-drop file uploads** — budget file and project summary both support drag-and-drop or click-to-browse. Accepted formats shown inline; filename displayed on selection.
 - **Project summary as document or text** — upload a `.doc` or `.docx` file (default) or toggle to a plain text input. Mammoth.js extracts text from the uploaded document before generation begins.
@@ -38,10 +39,11 @@ justintime/
 │   ├── settings.js         # Settings tab + localStorage CRUD
 │   ├── generator.js        # Generator workflow orchestration
 │   ├── parser.js           # SheetJS parsing + source-of-truth extraction
-│   ├── api.js              # Gemini API communication (generate, generateSection, test)
-│   ├── schemas.js          # Full JSON schemas per template type
+│   ├── api.js              # Gemini API communication (generateSection, extractValues, matchValues, test)
+│   ├── schemas.js          # Full JSON schemas per template type + VerifierSchemas
 │   ├── sections.js         # Section registry: ordered section definitions per template
-│   ├── validator.js        # Amount mismatch detection
+│   ├── verifier.js         # Portable two-step verification core: Verifier.run(text, csv, key)
+│   ├── verifier-tab.js     # Verify tab UI: file handling, orchestration, results rendering
 │   └── document.js         # docx output + download trigger
 └── templates/
     └── nsf.txt             # Reference: NSF section layout and field definitions
@@ -97,9 +99,20 @@ Push to the `main` branch. GitHub Pages serves `index.html` from the repository 
 
 ## Usage
 
+### Generating a budget justification
+
 1. Go to the **Settings** tab.
 2. Enter and save your Gemini API key.
 3. Create at least one Institutional Profile with your institution's fringe benefit and F&A boilerplate text. Optionally mark one as the default.
 4. Return to the **Generator** tab (opens by default).
 5. Select an Institutional Profile, upload your budget file, and upload your project summary document (or toggle to text input).
 6. Click **Generate Justification** — a `.docx` file will download automatically.
+
+### Verifying a budget justification
+
+1. Go to the **Verify** tab.
+2. Upload a budget justification `.docx` file.
+3. Upload the corresponding budget spreadsheet (`.csv`, `.xls`, or `.xlsx`).
+4. Click **Verify Budget**.
+
+Just-In-Time makes two AI passes: the first extracts every dollar amount from the justification; the second matches each against the spreadsheet. Results are displayed in a table with color-coded status — green for matches, red for mismatches, and gray for values that could not be located in the spreadsheet.

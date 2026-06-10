@@ -320,3 +320,31 @@ const Schemas = {
 ]
   },
 };
+
+const VerifierSchemas = {
+  extraction: {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        label:   { type: 'string' },
+        value:   { type: 'number' },
+        context: { type: 'string' }
+      },
+      required: ['label', 'value', 'context']
+    }
+  },
+  comparison: {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        label:                { type: 'string' },
+        justification_value:  { type: 'number' },
+        spreadsheet_value:    { type: 'number' },
+        found_in_spreadsheet: { type: 'boolean' }
+      },
+      required: ['label', 'justification_value', 'found_in_spreadsheet']
+    }
+  }
+};

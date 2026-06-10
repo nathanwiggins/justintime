@@ -60,6 +60,39 @@ ${section.prompt}`;
     return { result, prompt };
   }
 
+  async function extractValues(justificationText, apiKey) {
+    const prompt = `You are a precise data extraction tool. Read this budget justification document and identify every numeric dollar value mentioned.
+
+For each value provide:
+- label: a descriptive identifier for what the value represents (e.g. "Dr. Smith Year 1 Salary", "Equipment: Spectrometer", "Total Indirect Costs")
+- value: the numeric amount as a plain number with no dollar signs or commas
+- context: a short phrase or sentence from the document where this value appears
+
+Extract ALL dollar amounts — individual line items, per-unit costs, yearly breakdowns, subtotals, and totals.
+
+Budget Justification:
+${justificationText}`;
+    return callApi(apiKey, prompt, VerifierSchemas.extraction);
+  }
+
+  async function matchValues(extracted, csvText, apiKey) {
+    const prompt = `You are a budget verification assistant. For each item in the list below, search the spreadsheet data to find the corresponding value.
+
+Instructions:
+- Copy label and justification_value exactly from the input (justification_value comes from the input's "value" field)
+- Set found_in_spreadsheet to true if you can identify a matching line in the spreadsheet
+- If found, set spreadsheet_value to the numeric value from the spreadsheet as a plain number
+- If not found or too ambiguous to match confidently, set found_in_spreadsheet to false and omit spreadsheet_value
+- Match by meaning, not just text — "Dr. Smith Year 1 Salary" may correspond to "PI Salary Y1" in the spreadsheet
+
+Items to match:
+${JSON.stringify(extracted, null, 2)}
+
+Budget Spreadsheet:
+${csvText}`;
+    return callApi(apiKey, prompt, VerifierSchemas.comparison);
+  }
+
   async function test(apiKey) {
     const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
       method: 'POST',
@@ -80,5 +113,5 @@ ${section.prompt}`;
     }
   }
 
-  return { generateSection, test };
+  return { generateSection, extractValues, matchValues, test };
 })();

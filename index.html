@@ -24,6 +24,7 @@
 
   <nav class="tab-nav">
     <button class="tab-btn active" data-tab="generator">Generator</button>
+    <button class="tab-btn" data-tab="verify">Verify</button>
     <button class="tab-btn" data-tab="settings">Settings</button>
   </nav>
 
@@ -55,6 +56,50 @@
         <div id="profile-list" class="profile-list">
           <p class="empty-state" id="no-profiles-message">No profiles saved yet. Click "+ New Profile" to create one.</p>
         </div>
+      </div>
+
+    </section>
+
+    <section id="tab-verify" class="tab-panel hidden">
+
+      <div class="section-card">
+        <p class="verify-intro">Upload a budget justification document and its corresponding budget spreadsheet. Just-In-Time will identify every dollar amount in the justification and check whether it matches the spreadsheet.</p>
+
+        <div class="form-group">
+          <label for="verify-justification-input">Budget Justification</label>
+          <div class="drop-zone" id="verify-justification-drop-zone">
+            <input type="file" id="verify-justification-input" accept=".docx">
+            <div class="drop-zone-content">
+              <span class="drop-zone-icon">⬆</span>
+              <span class="drop-zone-text">Drag & drop or <span class="drop-zone-link">browse</span></span>
+              <span class="drop-zone-hint">.docx</span>
+            </div>
+            <span class="drop-zone-filename hidden" id="verify-justification-filename"></span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="verify-budget-input">Budget Spreadsheet</label>
+          <div class="drop-zone" id="verify-budget-drop-zone">
+            <input type="file" id="verify-budget-input" accept=".csv,.xls,.xlsx">
+            <div class="drop-zone-content">
+              <span class="drop-zone-icon">⬆</span>
+              <span class="drop-zone-text">Drag & drop or <span class="drop-zone-link">browse</span></span>
+              <span class="drop-zone-hint">.csv, .xls, .xlsx</span>
+            </div>
+            <span class="drop-zone-filename hidden" id="verify-budget-filename"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="generate-action">
+        <button id="verify-btn" class="btn btn-primary btn-lg">Verify Budget</button>
+        <div id="verify-loading" class="hidden">
+          <div class="loading-spinner"></div>
+          <p class="loading-text">Analyzing your documents<span class="loading-dots"></span></p>
+        </div>
+        <p id="verify-status" class="status-message" aria-live="polite"></p>
+        <div id="verify-results" class="hidden"></div>
       </div>
 
     </section>
@@ -172,6 +217,8 @@
   <script src="js/api.js"></script>
   <script src="js/document.js"></script>
   <script src="js/generator.js"></script>
+  <script src="js/verifier.js"></script>
+  <script src="js/verifier-tab.js"></script>
   <script src="js/app.js"></script>
 
 </body>
