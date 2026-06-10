@@ -355,8 +355,9 @@ const VerifierSchemas = {
         label:               { type: 'string' },
         justification_value: { type: 'number' },
         spreadsheet_value:   { type: 'number' },
-        status:              { type: 'string', enum: ['MISMATCH', 'NOT_FOUND'] },
-        cause_type:          { type: 'string', enum: ['ROOT_CAUSE', 'CASCADING'] }
+        status:           { type: 'string', enum: ['MISMATCH', 'NOT_FOUND'] },
+        cause_type:       { type: 'string', enum: ['ROOT_CAUSE', 'CASCADING'] },
+        root_cause_label: { type: 'string' }
       },
       required: ['label', 'justification_value', 'status']
     }

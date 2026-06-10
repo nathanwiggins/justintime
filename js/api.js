@@ -107,6 +107,7 @@ Your tasks:
    - A ROOT_CAUSE mismatch is one where the incorrect value is an atomic entry — a rate, a unit cost, or a year-level amount that is not itself a sum of other mismatched items in this list.
    - A CASCADING mismatch is one that is off only because it rolls up or derives from a ROOT_CAUSE mismatch.
    - Set cause_type to ROOT_CAUSE or CASCADING for MISMATCH items only. Omit cause_type for NOT_FOUND items.
+   - For CASCADING items, also set root_cause_label to the exact label string of the ROOT_CAUSE finding it derives from.
 
 3. For each remaining item include:
    - label: copied exactly from the input

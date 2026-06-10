@@ -763,7 +763,7 @@ textarea {
 .verify-badge.cause-root      { background: #fef3c7; color: #92400e; }
 .verify-badge.cause-cascading { background: var(--color-bg); color: var(--color-text-muted); border: 1px solid var(--color-border); }
 
-.verify-cell-status { white-space: nowrap; display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; }
+.verify-row-indented .verify-cell-label { padding-left: 28px; }
 
 .verify-download-row {
   display: flex;

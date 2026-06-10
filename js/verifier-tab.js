@@ -129,17 +129,27 @@ const VerifierTab = (() => {
         '<th>Justification</th>' +
         '<th>Spreadsheet</th>' +
         '<th>Status</th>' +
+        '<th>Type</th>' +
       '</tr></thead>';
 
     const tbody = document.createElement('tbody');
 
-    for (const item of items) {
-      const isMismatch   = item.status === 'MISMATCH';
-      const statusLabel  = isMismatch ? 'Mismatch' : 'Not Found';
-      const statusClass  = isMismatch ? 'mismatch' : 'notfound';
+    const cascadingMap = new Map();
+    items.forEach(item => {
+      if (item.cause_type === 'CASCADING' && item.root_cause_label) {
+        if (!cascadingMap.has(item.root_cause_label)) cascadingMap.set(item.root_cause_label, []);
+        cascadingMap.get(item.root_cause_label).push(item);
+      }
+    });
+    const cascadingHandled = new Set();
+
+    const renderRow = (item, indented) => {
+      const isMismatch  = item.status === 'MISMATCH';
+      const statusLabel = isMismatch ? 'Mismatch' : 'Not Found';
+      const statusClass = isMismatch ? 'mismatch' : 'notfound';
 
       const tr = document.createElement('tr');
-      tr.className = `verify-row-${statusClass}`;
+      tr.className = `verify-row-${statusClass}${indented ? ' verify-row-indented' : ''}`;
 
       const tdLabel = document.createElement('td');
       tdLabel.className   = 'verify-cell-label';
@@ -154,21 +164,40 @@ const VerifierTab = (() => {
       tdSheet.textContent = item.spreadsheet_value !== undefined ? formatCurrency(item.spreadsheet_value) : '—';
 
       const tdStatus = document.createElement('td');
-      tdStatus.className = 'verify-cell-status';
       const badge = document.createElement('span');
       badge.className   = `verify-badge ${statusClass}`;
       badge.textContent = statusLabel;
       tdStatus.appendChild(badge);
+
+      const tdType = document.createElement('td');
       if (item.cause_type) {
-        const causeBadge = document.createElement('span');
-        causeBadge.className   = `verify-badge cause-${item.cause_type === 'ROOT_CAUSE' ? 'root' : 'cascading'}`;
-        causeBadge.textContent = item.cause_type === 'ROOT_CAUSE' ? 'Root Cause' : 'Cascading';
-        tdStatus.appendChild(causeBadge);
+        const typeBadge = document.createElement('span');
+        typeBadge.className   = `verify-badge cause-${item.cause_type === 'ROOT_CAUSE' ? 'root' : 'cascading'}`;
+        typeBadge.textContent = item.cause_type === 'ROOT_CAUSE' ? 'Root Cause' : 'Cascading';
+        tdType.appendChild(typeBadge);
+      } else {
+        tdType.textContent = '—';
       }
 
-      tr.append(tdLabel, tdJust, tdSheet, tdStatus);
+      tr.append(tdLabel, tdJust, tdSheet, tdStatus, tdType);
       tbody.appendChild(tr);
-    }
+    };
+
+    items.forEach(item => {
+      if (item.cause_type === 'CASCADING' && item.root_cause_label) return;
+      renderRow(item, false);
+      const children = cascadingMap.get(item.label) || [];
+      children.forEach(child => {
+        cascadingHandled.add(child);
+        renderRow(child, true);
+      });
+    });
+
+    items.forEach(item => {
+      if (item.cause_type === 'CASCADING' && item.root_cause_label && !cascadingHandled.has(item)) {
+        renderRow(item, false);
+      }
+    });
 
     table.appendChild(tbody);
     tableWrap.appendChild(table);
