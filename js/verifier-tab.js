@@ -155,10 +155,15 @@ const VerifierTab = (() => {
       tdSheet.textContent = item.spreadsheet_value !== undefined ? formatCurrency(item.spreadsheet_value) : '—';
 
       const tdStatus = document.createElement('td');
+      tdStatus.className = 'verify-cell-status';
       const badge = document.createElement('span');
       badge.className   = `verify-badge ${statusClass}`;
       badge.textContent = statusLabel;
       tdStatus.appendChild(badge);
+      const causeBadge = document.createElement('span');
+      causeBadge.className   = `verify-badge cause-${item.cause_type === 'ROOT_CAUSE' ? 'root' : 'cascading'}`;
+      causeBadge.textContent = item.cause_type === 'ROOT_CAUSE' ? 'Root Cause' : 'Cascading';
+      tdStatus.appendChild(causeBadge);
 
       const tdExplanation = document.createElement('td');
       tdExplanation.className   = 'verify-cell-explanation';

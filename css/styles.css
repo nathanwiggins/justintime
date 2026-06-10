@@ -758,9 +758,13 @@ textarea {
   white-space: nowrap;
 }
 
-.verify-badge.match    { background: #dcfce7; color: #15803d; }
-.verify-badge.mismatch { background: #fee2e2; color: #b91c1c; }
-.verify-badge.notfound { background: var(--color-bg); color: var(--color-text-muted); border: 1px solid var(--color-border); }
+.verify-badge.match           { background: #dcfce7; color: #15803d; }
+.verify-badge.mismatch        { background: #fee2e2; color: #b91c1c; }
+.verify-badge.notfound        { background: var(--color-bg); color: var(--color-text-muted); border: 1px solid var(--color-border); }
+.verify-badge.cause-root      { background: #fef3c7; color: #92400e; }
+.verify-badge.cause-cascading { background: var(--color-bg); color: var(--color-text-muted); border: 1px solid var(--color-border); }
+
+.verify-cell-status { white-space: nowrap; display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; }
 
 .verify-download-row {
   display: flex;
