@@ -101,9 +101,11 @@ You have been given a list of problem items — values that either could not be 
 
 Your tasks:
 
-1. For each NOT_FOUND item: determine whether this value is a calculated sum derivable from other values in the spreadsheet. A value is calculated if you can identify individual component lines (e.g. year-by-year salary rows) in the spreadsheet that add up to it. If it is a calculated sum, omit it from your output entirely — it is not a true discrepancy.
+1. For each NOT_FOUND item, determine 
+   - Whether this value is a calculated sum derivable from other values in the spreadsheet. A value is calculated if you can identify individual component lines (e.g. year-by-year salary rows) in the spreadsheet that add up to it. If it is a calculated sum, omit it from your output entirely — it is not a true discrepancy.
+   - Whether this value is actually a mismatch and was classified as NOT_FOUND by mistake. If so, assign it a status of MISMATCH.
 
-2. For each remaining MISMATCH item, analyze the full set of findings together to identify causal relationships:
+2. For each MISMATCH item, analyze the full set of findings together to identify the relationships:
    - A ROOT_CAUSE mismatch is one where the incorrect value is an atomic entry — a rate, a unit cost, or a year-level amount that is not itself a sum of other mismatched items in this list.
    - A CASCADING mismatch is one that is off only because it rolls up or derives from a ROOT_CAUSE mismatch.
    - Set cause_type to ROOT_CAUSE or CASCADING for MISMATCH items only. Omit cause_type for NOT_FOUND items.
