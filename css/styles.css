@@ -745,8 +745,9 @@ textarea {
 .verify-row-mismatch { background: #fff5f5; }
 .verify-row-notfound { background: var(--color-surface); }
 
-.verify-cell-label { max-width: 300px; word-wrap: break-word; }
-.verify-cell-value { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.verify-cell-label       { max-width: 220px; word-wrap: break-word; }
+.verify-cell-value       { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.verify-cell-explanation { max-width: 360px; word-wrap: break-word; color: var(--color-text-muted); font-size: 12px; }
 
 .verify-badge {
   display: inline-block;

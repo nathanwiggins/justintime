@@ -52,8 +52,8 @@ const Highlighter = (() => {
 
     const items = comparison
       .map(c => {
-        const color = !c.found_in_spreadsheet ? 'yellow'
-          : !isValueMatch(c.justification_value, c.spreadsheet_value) ? 'red'
+        const color = c.status === 'NOT_FOUND' ? 'yellow'
+          : c.status === 'MISMATCH' ? 'red'
           : null;
         if (!color) return null;
         return {

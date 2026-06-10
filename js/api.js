@@ -94,6 +94,33 @@ ${csvText}`;
     return callApi(apiKey, prompt, VerifierSchemas.comparison);
   }
 
+  async function auditResults(problemItems, justificationText, csvText, apiKey) {
+    const prompt = `You are a senior budget audit assistant reviewing discrepancies between a budget justification document and its corresponding spreadsheet.
+
+You have been given a list of problem items — values that either could not be found in the spreadsheet, or were found but do not match.
+
+Your tasks:
+
+1. For each NOT_FOUND item: determine whether this value is a calculated sum derivable from other values in the spreadsheet. A value is calculated if you can identify individual component lines (e.g. year-by-year salary rows) in the spreadsheet that add up to it. If it is a calculated sum, omit it from your output entirely — it is not a true discrepancy.
+
+2. For each remaining item (mismatches, and not-found values that are genuinely missing): include it in your output with the following fields:
+   - label: copied exactly from the input
+   - justification_value: copied exactly from the input
+   - spreadsheet_value: the spreadsheet value if one was found (omit if truly not present)
+   - status: MISMATCH if a corresponding value was found in both sources but the numbers conflict, NOT_FOUND if no match exists and it cannot be derived from spreadsheet components
+   - explanation: a plain-language sentence written for a research administrator describing the finding. Examples: "The spreadsheet shows $X but the justification states $Y — the justification may not have been updated after the budget was revised.", "This total does not appear as an explicit line in the spreadsheet and could not be derived from its components.", "The mismatch in this line item causes the [parent category] total to appear inconsistent."
+
+Problem items:
+${JSON.stringify(problemItems, null, 2)}
+
+Budget Justification:
+${justificationText}
+
+Budget Spreadsheet:
+${csvText}`;
+    return callApi(apiKey, prompt, VerifierSchemas.audit);
+  }
+
   async function test(apiKey) {
     const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
       method: 'POST',
@@ -114,5 +141,5 @@ ${csvText}`;
     }
   }
 
-  return { generateSection, extractValues, matchValues, test };
+  return { generateSection, extractValues, matchValues, auditResults, test };
 })();

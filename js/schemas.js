@@ -346,5 +346,19 @@ const VerifierSchemas = {
       },
       required: ['label', 'justification_value', 'found_in_spreadsheet']
     }
+  },
+  audit: {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        label:               { type: 'string' },
+        justification_value: { type: 'number' },
+        spreadsheet_value:   { type: 'number' },
+        status:              { type: 'string', enum: ['MISMATCH', 'NOT_FOUND'] },
+        explanation:         { type: 'string' }
+      },
+      required: ['label', 'justification_value', 'status', 'explanation']
+    }
   }
 };

@@ -109,32 +109,14 @@ const VerifierTab = (() => {
     const container = document.getElementById('verify-results');
     container.innerHTML = '';
 
-    const matched  = items.filter(i => i.found_in_spreadsheet && isMatch(i.justification_value, i.spreadsheet_value));
-    const mismatch = items.filter(i => i.found_in_spreadsheet && !isMatch(i.justification_value, i.spreadsheet_value));
-    const notFound = items.filter(i => !i.found_in_spreadsheet);
-
-    const activeFilters = new Set(['match', 'mismatch', 'notfound']);
-
-    const summary = document.createElement('div');
-    summary.className = 'verify-summary';
-
-    const chipData = [
-      { status: 'match',    label: `${matched.length} matched` },
-      { status: 'mismatch', label: `${mismatch.length} mismatched` },
-      { status: 'notfound', label: `${notFound.length} not found` }
-    ];
-
-    const chips = {};
-    chipData.forEach(({ status, label }) => {
-      const chip = document.createElement('button');
-      chip.className   = `verify-summary-chip ${status}`;
-      chip.textContent = label;
-      chip.type        = 'button';
-      chips[status]    = chip;
-      summary.appendChild(chip);
-    });
-
-    container.appendChild(summary);
+    if (!items.length) {
+      const msg = document.createElement('p');
+      msg.className   = 'verify-intro';
+      msg.textContent = 'No discrepancies found — all values match the spreadsheet.';
+      container.appendChild(msg);
+      container.classList.remove('hidden');
+      return;
+    }
 
     const tableWrap = document.createElement('div');
     tableWrap.className = 'verify-table-wrap';
@@ -147,74 +129,56 @@ const VerifierTab = (() => {
         '<th>Justification</th>' +
         '<th>Spreadsheet</th>' +
         '<th>Status</th>' +
+        '<th>Finding</th>' +
       '</tr></thead>';
 
     const tbody = document.createElement('tbody');
-    const rows  = [];
 
     for (const item of items) {
-      let statusLabel, statusClass, spreadsheetDisplay;
-
-      if (!item.found_in_spreadsheet) {
-        statusLabel        = 'Not found';
-        statusClass        = 'notfound';
-        spreadsheetDisplay = '—';
-      } else if (isMatch(item.justification_value, item.spreadsheet_value)) {
-        statusLabel        = 'Match';
-        statusClass        = 'match';
-        spreadsheetDisplay = formatCurrency(item.spreadsheet_value);
-      } else {
-        statusLabel        = 'Mismatch';
-        statusClass        = 'mismatch';
-        spreadsheetDisplay = formatCurrency(item.spreadsheet_value);
-      }
+      const isMismatch   = item.status === 'MISMATCH';
+      const statusLabel  = isMismatch ? 'Mismatch' : 'Not Found';
+      const statusClass  = isMismatch ? 'mismatch' : 'notfound';
 
       const tr = document.createElement('tr');
-      tr.className        = `verify-row-${statusClass}`;
-      tr.dataset.status   = statusClass;
-      tr.innerHTML =
-        `<td class="verify-cell-label">${item.label}</td>` +
-        `<td class="verify-cell-value">${formatCurrency(item.justification_value)}</td>` +
-        `<td class="verify-cell-value">${spreadsheetDisplay}</td>` +
-        `<td><span class="verify-badge ${statusClass}">${statusLabel}</span></td>`;
+      tr.className = `verify-row-${statusClass}`;
+
+      const tdLabel = document.createElement('td');
+      tdLabel.className   = 'verify-cell-label';
+      tdLabel.textContent = item.label;
+
+      const tdJust = document.createElement('td');
+      tdJust.className   = 'verify-cell-value';
+      tdJust.textContent = formatCurrency(item.justification_value);
+
+      const tdSheet = document.createElement('td');
+      tdSheet.className   = 'verify-cell-value';
+      tdSheet.textContent = item.spreadsheet_value !== undefined ? formatCurrency(item.spreadsheet_value) : '—';
+
+      const tdStatus = document.createElement('td');
+      const badge = document.createElement('span');
+      badge.className   = `verify-badge ${statusClass}`;
+      badge.textContent = statusLabel;
+      tdStatus.appendChild(badge);
+
+      const tdExplanation = document.createElement('td');
+      tdExplanation.className   = 'verify-cell-explanation';
+      tdExplanation.textContent = item.explanation;
+
+      tr.append(tdLabel, tdJust, tdSheet, tdStatus, tdExplanation);
       tbody.appendChild(tr);
-      rows.push(tr);
     }
-
-    function applyFilter() {
-      rows.forEach(tr => {
-        tr.classList.toggle('hidden', !activeFilters.has(tr.dataset.status));
-      });
-    }
-
-    chipData.forEach(({ status }) => {
-      chips[status].addEventListener('click', () => {
-        if (activeFilters.has(status)) {
-          activeFilters.delete(status);
-          chips[status].classList.add('inactive');
-        } else {
-          activeFilters.add(status);
-          chips[status].classList.remove('inactive');
-        }
-        applyFilter();
-      });
-    });
 
     table.appendChild(tbody);
     tableWrap.appendChild(table);
     container.appendChild(tableWrap);
 
-    const needsMarkup = items.some(i =>
-      !i.found_in_spreadsheet || !isMatch(i.justification_value, i.spreadsheet_value)
-    );
-
-    if (needsMarkup) {
+    if (items.length) {
       const btnRow = document.createElement('div');
       btnRow.className = 'verify-download-row';
 
       const btn = document.createElement('button');
-      btn.type      = 'button';
-      btn.className = 'btn btn-secondary';
+      btn.type        = 'button';
+      btn.className   = 'btn btn-secondary';
       btn.textContent = 'Download Marked Up Document';
       btn.addEventListener('click', () => Highlighter.download(justificationFile, lastExtracted, items));
 
@@ -263,13 +227,22 @@ const VerifierTab = (() => {
         { label: 'Extracted Values', content: JSON.stringify(extracted, null, 2) }
       ]);
 
-      const matchStep = addStep('Matching against spreadsheet');
+      const matchStep  = addStep('Matching against spreadsheet');
       const comparison = await Api.matchValues(extracted, csvText, apiKey);
-      matchStep.done('done', [
+      matchStep.done(`${comparison.length} values matched`, [
         { label: 'Comparison Result', content: JSON.stringify(comparison, null, 2) }
       ]);
 
-      renderResults(comparison);
+      const auditStep    = addStep('Auditing discrepancies');
+      const problemItems = comparison.filter(c =>
+        !c.found_in_spreadsheet || !isMatch(c.justification_value, c.spreadsheet_value)
+      );
+      const auditItems   = await Api.auditResults(problemItems, justificationText, csvText, apiKey);
+      auditStep.done(`${auditItems.length} finding${auditItems.length !== 1 ? 's' : ''}`, [
+        { label: 'Audit Findings', content: JSON.stringify(auditItems, null, 2) }
+      ]);
+
+      renderResults(auditItems);
     } catch (err) {
       setStatus('Error: ' + err.message, 'error');
     } finally {
