@@ -118,6 +118,8 @@ Your tasks:
    - status: MISMATCH if a corresponding value was found in both sources but the numbers conflict, NOT_FOUND if no match exists and it cannot be derived from spreadsheet components
    - cause_type: ROOT_CAUSE or CASCADING for MISMATCH items only (omit for NOT_FOUND)
 
+4. If there are no meaningful mismatches or values not found, return an empty array.
+
 Problem items:
 ${JSON.stringify(problemItems, null, 2)}
 
