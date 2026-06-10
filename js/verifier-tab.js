@@ -129,7 +129,6 @@ const VerifierTab = (() => {
         '<th>Justification</th>' +
         '<th>Spreadsheet</th>' +
         '<th>Status</th>' +
-        '<th>Finding</th>' +
       '</tr></thead>';
 
     const tbody = document.createElement('tbody');
@@ -160,16 +159,14 @@ const VerifierTab = (() => {
       badge.className   = `verify-badge ${statusClass}`;
       badge.textContent = statusLabel;
       tdStatus.appendChild(badge);
-      const causeBadge = document.createElement('span');
-      causeBadge.className   = `verify-badge cause-${item.cause_type === 'ROOT_CAUSE' ? 'root' : 'cascading'}`;
-      causeBadge.textContent = item.cause_type === 'ROOT_CAUSE' ? 'Root Cause' : 'Cascading';
-      tdStatus.appendChild(causeBadge);
+      if (item.cause_type) {
+        const causeBadge = document.createElement('span');
+        causeBadge.className   = `verify-badge cause-${item.cause_type === 'ROOT_CAUSE' ? 'root' : 'cascading'}`;
+        causeBadge.textContent = item.cause_type === 'ROOT_CAUSE' ? 'Root Cause' : 'Cascading';
+        tdStatus.appendChild(causeBadge);
+      }
 
-      const tdExplanation = document.createElement('td');
-      tdExplanation.className   = 'verify-cell-explanation';
-      tdExplanation.textContent = item.explanation;
-
-      tr.append(tdLabel, tdJust, tdSheet, tdStatus, tdExplanation);
+      tr.append(tdLabel, tdJust, tdSheet, tdStatus);
       tbody.appendChild(tr);
     }
 

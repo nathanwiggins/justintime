@@ -103,17 +103,17 @@ Your tasks:
 
 1. For each NOT_FOUND item: determine whether this value is a calculated sum derivable from other values in the spreadsheet. A value is calculated if you can identify individual component lines (e.g. year-by-year salary rows) in the spreadsheet that add up to it. If it is a calculated sum, omit it from your output entirely — it is not a true discrepancy.
 
-2. For each remaining item, analyze the full set of findings together to identify causal relationships:
-   - A ROOT_CAUSE finding is one where the incorrect value is an atomic entry — a rate, a unit cost, or a year-level amount that is not itself a sum of other mismatched items in this list. This is where the actual discrepancy originates.
-   - A CASCADING finding is one that is off only because it rolls up or derives from a ROOT_CAUSE finding. For example, if a consultant rate changed, then the consultant year total, the consultant total, and the category total are all cascading effects of that one root cause.
+2. For each remaining MISMATCH item, analyze the full set of findings together to identify causal relationships:
+   - A ROOT_CAUSE mismatch is one where the incorrect value is an atomic entry — a rate, a unit cost, or a year-level amount that is not itself a sum of other mismatched items in this list.
+   - A CASCADING mismatch is one that is off only because it rolls up or derives from a ROOT_CAUSE mismatch.
+   - Set cause_type to ROOT_CAUSE or CASCADING for MISMATCH items only. Omit cause_type for NOT_FOUND items.
 
 3. For each remaining item include:
    - label: copied exactly from the input
    - justification_value: copied exactly from the input
    - spreadsheet_value: the spreadsheet value if one was found (omit if truly not present)
    - status: MISMATCH if a corresponding value was found in both sources but the numbers conflict, NOT_FOUND if no match exists and it cannot be derived from spreadsheet components
-   - cause_type: ROOT_CAUSE or CASCADING
-   - explanation: a plain-language sentence for a research administrator. For ROOT_CAUSE items, explain what the discrepancy is. For CASCADING items, name the root cause explicitly — e.g. "This total is off because it includes [root cause label], where the justification value differs from the spreadsheet."
+   - cause_type: ROOT_CAUSE or CASCADING for MISMATCH items only (omit for NOT_FOUND)
 
 Problem items:
 ${JSON.stringify(problemItems, null, 2)}
