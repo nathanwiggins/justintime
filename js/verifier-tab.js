@@ -1,7 +1,8 @@
 const VerifierTab = (() => {
-  let justificationFile = null;
-  let budgetFile        = null;
-  let lastExtracted     = null;
+  let justificationFile  = null;
+  let budgetFile         = null;
+  let lastExtracted      = null;
+  let showSuccessOnStop  = false;
 
   function setStatus(msg, type = '') {
     const el       = document.getElementById('verify-status');
@@ -11,7 +12,16 @@ const VerifierTab = (() => {
 
   function setRunning(active) {
     document.getElementById('verify-btn').disabled = active;
-    document.getElementById('verify-loading').classList.toggle('hidden', !active);
+    const el = document.getElementById('verify-loading');
+    if (!active && showSuccessOnStop) {
+      showSuccessOnStop = false;
+      el.classList.add('success');
+      el.querySelector('.loading-text').textContent = 'All clear!';
+      setTimeout(() => { el.classList.add('hidden'); el.classList.remove('success'); }, 2500);
+    } else {
+      el.classList.toggle('hidden', !active);
+      if (active) el.classList.remove('success');
+    }
   }
 
   function clearStepLog() {
@@ -274,6 +284,7 @@ const VerifierTab = (() => {
       ]);
 
       renderResults(auditItems);
+      if (!auditItems.length) showSuccessOnStop = true;
     } catch (err) {
       setStatus('Error: ' + err.message, 'error');
     } finally {
