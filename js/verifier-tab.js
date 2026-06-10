@@ -13,6 +13,87 @@ const VerifierTab = (() => {
     document.getElementById('verify-loading').classList.toggle('hidden', !active);
   }
 
+  function clearStepLog() {
+    const log    = document.getElementById('verify-step-log');
+    const toggle = document.getElementById('verify-log-toggle');
+    log.innerHTML = '';
+    log.classList.add('hidden');
+    toggle.classList.remove('hidden');
+    toggle.textContent = 'Show details';
+  }
+
+  function addStep(label) {
+    const log  = document.getElementById('verify-step-log');
+    const item = document.createElement('div');
+    item.className = 'step-item running';
+
+    const row  = document.createElement('div');
+    row.className = 'step-row';
+
+    const icon = document.createElement('span');
+    icon.className   = 'step-icon spinning';
+    icon.textContent = '↻';
+
+    const text = document.createElement('span');
+    text.className   = 'step-text';
+    text.textContent = label;
+
+    row.appendChild(icon);
+    row.appendChild(text);
+    item.appendChild(row);
+    log.appendChild(item);
+
+    function attachDetails(sections) {
+      const toggle = document.createElement('button');
+      toggle.className   = 'step-toggle';
+      toggle.textContent = 'Details ▾';
+      row.appendChild(toggle);
+
+      const detail = document.createElement('div');
+      detail.className = 'step-detail hidden';
+
+      sections.forEach(({ label: sLabel, content }) => {
+        const section = document.createElement('div');
+        section.className = 'step-detail-section';
+
+        const heading = document.createElement('div');
+        heading.className   = 'step-detail-label';
+        heading.textContent = sLabel;
+
+        const pre = document.createElement('pre');
+        pre.className   = 'step-detail-pre';
+        pre.textContent = content;
+
+        section.appendChild(heading);
+        section.appendChild(pre);
+        detail.appendChild(section);
+      });
+
+      item.appendChild(detail);
+
+      toggle.addEventListener('click', () => {
+        const hidden = detail.classList.toggle('hidden');
+        toggle.textContent = hidden ? 'Details ▾' : 'Details ▴';
+      });
+    }
+
+    return {
+      done(summary, sections) {
+        item.className   = 'step-item done';
+        icon.className   = 'step-icon';
+        icon.textContent = '✓';
+        if (summary) text.textContent = label + ' — ' + summary;
+        if (sections && sections.length) attachDetails(sections);
+      },
+      error(summary) {
+        item.className   = 'step-item error';
+        icon.className   = 'step-icon';
+        icon.textContent = '✗';
+        if (summary) text.textContent = label + ' — ' + summary;
+      }
+    };
+  }
+
   function formatCurrency(value) {
     return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
@@ -95,20 +176,41 @@ const VerifierTab = (() => {
 
     setRunning(true);
     setStatus('');
+    clearStepLog();
     document.getElementById('verify-results').classList.add('hidden');
 
     try {
       if (justificationFile.name.toLowerCase().endsWith('.doc') && !justificationFile.name.toLowerCase().endsWith('.docx')) {
         throw new Error('Legacy .doc files cannot be parsed in the browser. Please re-save as .docx and re-upload.');
       }
+
+      const justStep = addStep('Parsing justification document');
       const buffer = await justificationFile.arrayBuffer();
       const mammothResult = await mammoth.extractRawText({ arrayBuffer: buffer });
       if (!mammothResult.value.trim()) throw new Error('Budget justification document appears to be empty.');
       const justificationText = mammothResult.value.trim();
+      justStep.done(justificationFile.name, [
+        { label: 'Extracted Text', content: justificationText }
+      ]);
 
+      const budgetStep = addStep('Parsing budget spreadsheet');
       const { csvText } = await Parser.parse(budgetFile);
+      budgetStep.done(budgetFile.name, [
+        { label: 'Extracted CSV', content: csvText }
+      ]);
 
-      const comparison = await Verifier.run(justificationText, csvText, apiKey);
+      const extractStep = addStep('Extracting values from justification');
+      const extracted = await Api.extractValues(justificationText, apiKey);
+      extractStep.done(`${extracted.length} values found`, [
+        { label: 'Extracted Values', content: JSON.stringify(extracted, null, 2) }
+      ]);
+
+      const matchStep = addStep('Matching against spreadsheet');
+      const comparison = await Api.matchValues(extracted, csvText, apiKey);
+      matchStep.done('done', [
+        { label: 'Comparison Result', content: JSON.stringify(comparison, null, 2) }
+      ]);
+
       renderResults(comparison);
     } catch (err) {
       setStatus('Error: ' + err.message, 'error');
@@ -157,6 +259,13 @@ const VerifierTab = (() => {
       file => { budgetFile = file; }
     );
     document.getElementById('verify-btn').addEventListener('click', handleVerify);
+
+    document.getElementById('verify-log-toggle').addEventListener('click', () => {
+      const log    = document.getElementById('verify-step-log');
+      const toggle = document.getElementById('verify-log-toggle');
+      const hidden = log.classList.toggle('hidden');
+      toggle.textContent = hidden ? 'Show details' : 'Hide details';
+    });
   }
 
   return { init };
