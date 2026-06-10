@@ -84,7 +84,7 @@ Instructions:
 - If found, set spreadsheet_value to the numeric value from the spreadsheet as a plain number
 - If not found or too ambiguous to match confidently, set found_in_spreadsheet to false and omit spreadsheet_value
 - Match by meaning, not just text — "Dr. Smith Year 1 Salary" may correspond to "PI Salary Y1" in the spreadsheet
-- Spreadsheet cells may contain embedded dollar amounts inside a string (e.g. "Banister Bacon ($108,000 IBS)") — extract the numeric value from the string when that is the relevant figure
+- Spreadsheet cells may contain values inside a string (e.g. "John Smith ($108,000 IBS)", "Graduate Students (x5)", etc.) — extract the numeric value from the string when that is the relevant figure
 
 Items to match:
 ${JSON.stringify(extracted, null, 2)}
