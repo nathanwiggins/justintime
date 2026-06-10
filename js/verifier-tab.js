@@ -1,6 +1,7 @@
 const VerifierTab = (() => {
   let justificationFile = null;
   let budgetFile        = null;
+  let lastExtracted     = null;
 
   function setStatus(msg, type = '') {
     const el       = document.getElementById('verify-status');
@@ -202,6 +203,25 @@ const VerifierTab = (() => {
     table.appendChild(tbody);
     tableWrap.appendChild(table);
     container.appendChild(tableWrap);
+
+    const needsMarkup = items.some(i =>
+      !i.found_in_spreadsheet || !isMatch(i.justification_value, i.spreadsheet_value)
+    );
+
+    if (needsMarkup) {
+      const btnRow = document.createElement('div');
+      btnRow.className = 'verify-download-row';
+
+      const btn = document.createElement('button');
+      btn.type      = 'button';
+      btn.className = 'btn btn-secondary';
+      btn.textContent = 'Download Marked Up Document';
+      btn.addEventListener('click', () => Highlighter.download(justificationFile, lastExtracted, items));
+
+      btnRow.appendChild(btn);
+      container.appendChild(btnRow);
+    }
+
     container.classList.remove('hidden');
   }
 
@@ -237,7 +257,8 @@ const VerifierTab = (() => {
       ]);
 
       const extractStep = addStep('Extracting values from justification');
-      const extracted = await Api.extractValues(justificationText, apiKey);
+      const extracted   = await Api.extractValues(justificationText, apiKey);
+      lastExtracted     = extracted;
       extractStep.done(`${extracted.length} values found`, [
         { label: 'Extracted Values', content: JSON.stringify(extracted, null, 2) }
       ]);

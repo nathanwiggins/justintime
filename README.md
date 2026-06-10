@@ -4,7 +4,7 @@ A lightweight, client-side NSF budget justification generator built for research
 
 ## Features
 
-- **Budget Verifier** — a dedicated Verify tab accepts any budget justification `.docx` and its corresponding spreadsheet. Two AI passes identify every dollar value in the justification, match each against the spreadsheet, and display a color-coded results table showing matches, mismatches, and values not found in the spreadsheet.
+- **Budget Verifier** — a dedicated Verifier tab accepts any budget justification `.docx` and its corresponding spreadsheet. Two AI passes identify every dollar value in the justification, match each against the spreadsheet, and display a color-coded results table showing matches, mismatches, and values not found in the spreadsheet. When discrepancies exist, a button downloads a marked-up copy of the original document with mismatched values highlighted in red and unmatched values in yellow.
 - **Generator-first UI** — opens directly on the Generator tab. Settings are a click away but stay out of the way during normal use.
 - **Drag-and-drop file uploads** — budget file and project summary both support drag-and-drop or click-to-browse. Accepted formats shown inline; filename displayed on selection.
 - **Project summary as document or text** — upload a `.doc` or `.docx` file (default) or toggle to a plain text input. Mammoth.js extracts text from the uploaded document before generation begins.
@@ -43,7 +43,8 @@ justintime/
 │   ├── schemas.js          # Full JSON schemas per template type + VerifierSchemas
 │   ├── sections.js         # Section registry: ordered section definitions per template
 │   ├── verifier.js         # Portable two-step verification core: Verifier.run(text, csv, key)
-│   ├── verifier-tab.js     # Verify tab UI: file handling, orchestration, results rendering
+│   ├── verifier-tab.js     # Verifier tab UI: file handling, orchestration, results rendering
+│   ├── highlighter.js      # DOCX markup: injects <w:highlight> into flagged runs via JSZip
 │   └── document.js         # docx output + download trigger
 └── templates/
     └── nsf.txt             # Reference: NSF section layout and field definitions
@@ -110,7 +111,7 @@ Push to the `main` branch. GitHub Pages serves `index.html` from the repository 
 
 ### Verifying a budget justification
 
-1. Go to the **Verify** tab.
+1. Go to the **Verifier** tab.
 2. Upload a budget justification `.docx` file.
 3. Upload the corresponding budget spreadsheet (`.csv`, `.xls`, or `.xlsx`).
 4. Click **Verify Budget**.
