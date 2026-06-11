@@ -1,3 +1,35 @@
+async function enforceVandalizerAuth() {
+  try {
+    const response = await fetch('/api/auth/me', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('User is not authenticated');
+    }
+    
+  } catch (error) {
+    window.location.href = `/login?redirect=/justintime/`;
+  }
+}
+
+function setupEnvironment() {
+  const hostname = window.location.hostname;
+  
+  const isGitHubPages = hostname.includes('github.io');
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+
+  if (!isGitHubPages && !isLocalhost) {
+    console.log("DGX Environment detected: Enforcing Vandalizer Authentication.");
+    enforceVandalizerAuth();
+  } else {
+    console.log("Public/Local Environment detected: Bypassing authentication.");
+  }
+}
+
 async function loadLastUpdated() {
   const el = document.getElementById('last-updated');
   if (!el) return;
@@ -38,6 +70,8 @@ function initCyclingLabel() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  setupEnvironment();
+  
   Settings.init();
   Generator.init();
   VerifierTab.init();
