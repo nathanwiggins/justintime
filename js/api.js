@@ -88,10 +88,19 @@ ${justificationText}`;
     return reconcileLabeled(preExtracted, labeled);
   }
 
+  function reconcileMatched(extracted, matched) {
+    return extracted.map((item, i) => {
+      if (matched[i] && matched[i].label === item.label) return matched[i];
+      const match = matched.find(m => m.label === item.label && m.justification_value === item.value);
+      return match || { label: item.label, justification_value: item.value, found_in_spreadsheet: false };
+    });
+  }
+
   async function matchValues(extracted, csvText, apiKey) {
     const prompt = `You are a budget verification assistant. For each item in the list below, search the spreadsheet data to find the corresponding value.
 
 Instructions:
+- Return exactly ${extracted.length} objects — one per input item, in the same order
 - Copy label and justification_value exactly from the input (justification_value comes from the input's "value" field)
 - Set found_in_spreadsheet to true if you can identify a matching line in the spreadsheet
 - If found, set spreadsheet_value to the numeric value from the spreadsheet as a plain number
@@ -104,7 +113,8 @@ ${JSON.stringify(extracted, null, 2)}
 
 Budget Spreadsheet:
 ${csvText}`;
-    return callApi(apiKey, prompt, VerifierSchemas.comparison);
+    const matched = await callApi(apiKey, prompt, VerifierSchemas.comparison);
+    return reconcileMatched(extracted, matched);
   }
 
   async function auditResults(problemItems, justificationText, csvText, apiKey) {
