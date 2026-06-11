@@ -4,11 +4,13 @@ const VerifierTab = (() => {
   let lastExtracted      = null;
   let showSuccessOnStop  = false;
 
-  let cachedJustificationText = null;
-  let cachedCsvText           = null;
-  let cachedPreExtracted      = null;
-  let cachedExtracted         = null;
-  let cachedNotFoundItems     = null;
+  let cachedJustificationText  = null;
+  let cachedCsvText            = null;
+  let cachedPreExtracted       = null;
+  let cachedExtracted          = null;
+  let cachedComparison         = null;
+  let cachedNotFoundItems      = null;
+  let cachedNotFoundAuditResult = null;
 
   function setStatus(msg, type = '') {
     const el       = document.getElementById('verify-status');
@@ -325,6 +327,7 @@ const VerifierTab = (() => {
     if (startStep === 'extract' || startStep === 'match') {
       const matchStep  = addStep('Matching against spreadsheet');
       const comparison = await Api.matchValues(extracted, cachedCsvText, apiKey);
+      cachedComparison = comparison;
       matchStep.done(`${comparison.length} values matched`, [
         { label: 'Comparison Result', content: JSON.stringify(comparison, null, 2) }
       ], () => rerunFrom('match'));
@@ -343,11 +346,38 @@ const VerifierTab = (() => {
       cachedNotFoundItems = problemItems.filter(c => !c.found_in_spreadsheet);
     }
 
-    const notFoundAuditStep   = addStep('Auditing not-found values');
-    const notFoundAuditResult = await Api.auditNotFound(cachedNotFoundItems, cachedJustificationText, cachedCsvText, apiKey);
-    notFoundAuditStep.done(`${notFoundAuditResult.length} item${notFoundAuditResult.length !== 1 ? 's' : ''} resolved`, [
-      { label: 'NOT_FOUND Audit', content: JSON.stringify(notFoundAuditResult, null, 2) }
-    ], () => rerunFrom('notFoundAudit'));
+    if (startStep !== 'mismatchAudit') {
+      const notFoundAuditStep   = addStep('Auditing not-found values');
+      const notFoundAuditResult = await Api.auditNotFound(cachedNotFoundItems, cachedJustificationText, cachedCsvText, apiKey);
+      cachedNotFoundAuditResult = notFoundAuditResult;
+      notFoundAuditStep.done(`${notFoundAuditResult.length} item${notFoundAuditResult.length !== 1 ? 's' : ''} resolved`, [
+        { label: 'NOT_FOUND Audit', content: JSON.stringify(notFoundAuditResult, null, 2) }
+      ], () => rerunFrom('notFoundAudit'));
+    }
+
+    const mismatchItems = [
+      ...(cachedComparison || [])
+        .filter(c => c.found_in_spreadsheet && !isMatch(c.justification_value, c.spreadsheet_value))
+        .map(c => {
+          const src = (cachedExtracted || []).find(e => e.label === c.label);
+          return { label: c.label, justification_value: c.justification_value, spreadsheet_value: c.spreadsheet_value, context: src?.context || '' };
+        }),
+      ...(cachedNotFoundAuditResult || [])
+        .filter(c => c.found_in_spreadsheet && !isMatch(c.justification_value, c.spreadsheet_value))
+        .map(c => ({ label: c.label, justification_value: c.justification_value, spreadsheet_value: c.spreadsheet_value, context: c.context || '' }))
+    ];
+
+    const mismatchAuditStep = addStep('Auditing mismatches');
+    if (!mismatchItems.length) {
+      mismatchAuditStep.done('no mismatches to audit', [
+        { label: 'Mismatch Audit', content: '[]' }
+      ]);
+    } else {
+      const mismatchAuditResult = await Api.auditMismatches(mismatchItems, cachedJustificationText, cachedCsvText, apiKey);
+      mismatchAuditStep.done(`${mismatchAuditResult.length} group${mismatchAuditResult.length !== 1 ? 's' : ''} identified`, [
+        { label: 'Mismatch Audit', content: JSON.stringify(mismatchAuditResult, null, 2) }
+      ], () => rerunFrom('mismatchAudit'));
+    }
   }
 
   async function rerunFrom(startStep) {

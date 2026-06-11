@@ -362,6 +362,29 @@ const VerifierSchemas = {
       required: ['label', 'justification_value', 'status']
     }
   },
+  mismatchAudit: {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        mismatch_label: { type: 'string' },
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label:               { type: 'string' },
+              justification_value: { type: 'number' },
+              spreadsheet_value:   { type: 'number' },
+              context:             { type: 'string' }
+            },
+            required: ['label', 'justification_value', 'spreadsheet_value']
+          }
+        }
+      },
+      required: ['mismatch_label', 'items']
+    }
+  },
   notFoundAudit: {
     type: 'array',
     items: {

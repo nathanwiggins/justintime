@@ -211,6 +211,33 @@ ${csvText}`;
     return callApi(apiKey, prompt, VerifierSchemas.notFoundAudit);
   }
 
+  async function auditMismatches(mismatchItems, justificationText, csvText, apiKey) {
+    const prompt = `You are a senior budget audit assistant. You have been given a list of mismatches between a budget justification document and a budget spreadsheet — values that appear in both sources but do not agree numerically.
+
+Your task is to analyze all mismatches together and group them by root cause.
+
+Instructions:
+- A root cause is a single underlying error (e.g. a wrong salary rate, an incorrect fringe rate, a miscalculated subtotal) that explains one or more of the mismatches.
+- Group all mismatches that share the same root cause together.
+- Assign each group a mismatch_label — a brief phrase describing the root cause (e.g. "Incorrect PI salary rate Year 2", "Fringe benefit rate applied to wrong base").
+- A mismatch with no clear relationship to any other may be its own group of one.
+- Every input item must appear in exactly one group.
+
+For each group return:
+- mismatch_label: brief description of the root cause
+- items: the mismatch items in this group, each with label, justification_value, spreadsheet_value, and context copied exactly from the input
+
+Mismatch items:
+${JSON.stringify(mismatchItems, null, 2)}
+
+Budget Justification:
+${justificationText}
+
+Budget Spreadsheet:
+${csvText}`;
+    return callApi(apiKey, prompt, VerifierSchemas.mismatchAudit);
+  }
+
   async function sendRaw(apiKey, prompt) {
     const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
       method: 'POST',
@@ -251,5 +278,5 @@ ${csvText}`;
     }
   }
 
-  return { generateSection, extractValues, matchValues, auditResults, auditNotFound, test, sendRaw, setRetryHandler: cb => { retryHandler = cb; } };
+  return { generateSection, extractValues, matchValues, auditResults, auditNotFound, auditMismatches, test, sendRaw, setRetryHandler: cb => { retryHandler = cb; } };
 })();
