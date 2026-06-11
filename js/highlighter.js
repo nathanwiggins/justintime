@@ -51,18 +51,21 @@ const Highlighter = (() => {
     if (!tMatch) return runMatch;
 
     const text = tMatch[1];
-    const idx  = text.indexOf(variant);
-    if (idx === -1) return runMatch;
+    if (!text.includes(variant)) return runMatch;
 
-    const before = text.slice(0, idx);
-    const after  = text.slice(idx + variant.length);
-    const rpr    = extractRpr(content);
+    const rpr   = extractRpr(content);
+    const parts = [];
+    let remaining = text;
+    let idx;
 
-    return [
-      before ? makeRun(open, rpr, before, close) : '',
-      makeRun(open, rprWithHighlight(rpr, color), variant, close),
-      after  ? makeRun(open, rpr, after,  close) : ''
-    ].join('');
+    while ((idx = remaining.indexOf(variant)) !== -1) {
+      if (idx > 0) parts.push(makeRun(open, rpr, remaining.slice(0, idx), close));
+      parts.push(makeRun(open, rprWithHighlight(rpr, color), variant, close));
+      remaining = remaining.slice(idx + variant.length);
+    }
+
+    if (remaining) parts.push(makeRun(open, rpr, remaining, close));
+    return parts.join('');
   }
 
   function applyHighlights(xml, items) {
