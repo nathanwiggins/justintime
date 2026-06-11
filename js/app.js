@@ -7,12 +7,21 @@ async function enforceVandalizerAuth() {
       }
     });
     
-    if (!response.ok) {
-      throw new Error('User is not authenticated');
+    if (response.status === 401) {
+      console.log("Vandalizer detected: User is logged out. Redirecting to login...");
+      window.location.href = `/login?redirect=/justintime/`;
+      return;
     }
     
+    if (!response.ok) {
+      console.warn(`Auth check returned ${response.status}. Assuming standalone deployment. Bypassing auth.`);
+      return; 
+    }
+
+    console.log("Vandalizer detected: User is fully authenticated.");
+    
   } catch (error) {
-    window.location.href = `/login?redirect=/justintime/`;
+    console.warn("Could not reach Vandalizer API. Assuming standalone deployment. Bypassing auth.");
   }
 }
 
@@ -71,7 +80,7 @@ function initCyclingLabel() {
 
 document.addEventListener('DOMContentLoaded', () => {
   setupEnvironment();
-  
+
   Settings.init();
   Generator.init();
   VerifierTab.init();
