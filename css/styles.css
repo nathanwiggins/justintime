@@ -798,6 +798,20 @@ textarea {
   margin-top: 14px;
 }
 
+.step-rerun-btn {
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: 6px;
+  text-decoration: none;
+  transition: color .15s;
+}
+.step-rerun-btn:hover { color: var(--color-primary); }
+
 .debug-panel { margin-top: 24px; }
 
 .debug-actions {

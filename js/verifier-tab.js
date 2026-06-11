@@ -4,6 +4,12 @@ const VerifierTab = (() => {
   let lastExtracted      = null;
   let showSuccessOnStop  = false;
 
+  let cachedJustificationText = null;
+  let cachedCsvText           = null;
+  let cachedPreExtracted      = null;
+  let cachedExtracted         = null;
+  let cachedNotFoundItems     = null;
+
   function setStatus(msg, type = '') {
     const el       = document.getElementById('verify-status');
     el.textContent = msg;
@@ -92,12 +98,19 @@ const VerifierTab = (() => {
     }
 
     return {
-      done(summary, sections) {
+      done(summary, sections, onRerun) {
         item.className   = 'step-item done';
         icon.className   = 'step-icon';
         icon.textContent = '✓';
         if (summary) text.textContent = label + ' — ' + summary;
         if (sections && sections.length) attachDetails(sections);
+        if (onRerun) {
+          const rerunBtn = document.createElement('button');
+          rerunBtn.className   = 'step-rerun-btn';
+          rerunBtn.textContent = '↻ Rerun from here';
+          rerunBtn.addEventListener('click', onRerun);
+          row.appendChild(rerunBtn);
+        }
       },
       error(summary) {
         item.className   = 'step-item error';
@@ -259,34 +272,53 @@ const VerifierTab = (() => {
       const mammothResult = await mammoth.extractRawText({ arrayBuffer: buffer });
       if (!mammothResult.value.trim()) throw new Error('Budget justification document appears to be empty.');
       const justificationText = mammothResult.value.trim();
+      cachedJustificationText = justificationText;
       justStep.done(justificationFile.name, [
         { label: 'Extracted Text', content: justificationText }
       ]);
 
       const budgetStep = addStep('Parsing budget spreadsheet');
       const { csvText } = await Parser.parse(budgetFile);
+      cachedCsvText = csvText;
       budgetStep.done(budgetFile.name, [
         { label: 'Extracted CSV', content: csvText }
       ]);
 
       const scriptStep = addStep('Scanning for dollar values');
       const preExtracted = Extractor.run(justificationText);
+      cachedPreExtracted = preExtracted;
       scriptStep.done(`${preExtracted.length} values found`, [
         { label: 'Script Extraction', content: JSON.stringify(preExtracted, null, 2) }
       ]);
 
+      await runApiStepsFrom('extract', apiKey);
+    } catch (err) {
+      setStatus('Error: ' + err.message, 'error');
+    } finally {
+      Api.setRetryHandler(null);
+      setRunning(false);
+    }
+  }
+
+  async function runApiStepsFrom(startStep, apiKey) {
+    let extracted = cachedExtracted;
+
+    if (startStep === 'extract') {
       const extractStep = addStep('Labeling extracted values');
-      const extracted   = await Api.extractValues(preExtracted, justificationText, apiKey);
+      extracted         = await Api.extractValues(cachedPreExtracted, cachedJustificationText, apiKey);
       lastExtracted     = extracted;
+      cachedExtracted   = extracted;
       extractStep.done(`${extracted.length} values labeled`, [
         { label: 'Labeled Values', content: JSON.stringify(extracted, null, 2) }
-      ]);
+      ], () => rerunFrom('extract'));
+    }
 
+    if (startStep === 'extract' || startStep === 'match') {
       const matchStep  = addStep('Matching against spreadsheet');
-      const comparison = await Api.matchValues(extracted, csvText, apiKey);
+      const comparison = await Api.matchValues(extracted, cachedCsvText, apiKey);
       matchStep.done(`${comparison.length} values matched`, [
         { label: 'Comparison Result', content: JSON.stringify(comparison, null, 2) }
-      ]);
+      ], () => rerunFrom('match'));
 
       const problemItems = comparison
         .filter(c => !c.found_in_spreadsheet || !isMatch(c.justification_value, c.spreadsheet_value))
@@ -299,12 +331,32 @@ const VerifierTab = (() => {
         { label: 'Audit Input', content: JSON.stringify(problemItems, null, 2) }
       ]);
 
-      const notFoundItems = problemItems.filter(c => !c.found_in_spreadsheet);
-      const notFoundAuditStep = addStep('Auditing not-found values');
-      const notFoundAuditResult = await Api.auditNotFound(notFoundItems, justificationText, csvText, apiKey);
-      notFoundAuditStep.done(`${notFoundAuditResult.length} item${notFoundAuditResult.length !== 1 ? 's' : ''} resolved`, [
-        { label: 'NOT_FOUND Audit', content: JSON.stringify(notFoundAuditResult, null, 2) }
-      ]);
+      cachedNotFoundItems = problemItems.filter(c => !c.found_in_spreadsheet);
+    }
+
+    const notFoundAuditStep   = addStep('Auditing not-found values');
+    const notFoundAuditResult = await Api.auditNotFound(cachedNotFoundItems, cachedJustificationText, cachedCsvText, apiKey);
+    notFoundAuditStep.done(`${notFoundAuditResult.length} item${notFoundAuditResult.length !== 1 ? 's' : ''} resolved`, [
+      { label: 'NOT_FOUND Audit', content: JSON.stringify(notFoundAuditResult, null, 2) }
+    ], () => rerunFrom('notFoundAudit'));
+  }
+
+  async function rerunFrom(startStep) {
+    const apiKey = Settings.loadApiKey();
+    if (!apiKey) { setStatus('No API key saved. Go to the Settings tab and save your Gemini API key.', 'error'); return; }
+
+    setRunning(true);
+    setStatus('');
+    clearStepLog();
+    document.getElementById('verify-results').classList.add('hidden');
+
+    const loadingTextNode = document.querySelector('#verify-loading .loading-text').firstChild;
+    Api.setRetryHandler(msg => {
+      loadingTextNode.textContent = msg || 'Analyzing your documents';
+    });
+
+    try {
+      await runApiStepsFrom(startStep, apiKey);
     } catch (err) {
       setStatus('Error: ' + err.message, 'error');
     } finally {
