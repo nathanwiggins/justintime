@@ -20,7 +20,10 @@ const VerifierTab = (() => {
       setTimeout(() => { el.classList.add('hidden'); el.classList.remove('success'); }, 2500);
     } else {
       el.classList.toggle('hidden', !active);
-      if (active) el.classList.remove('success');
+      if (active) {
+        el.classList.remove('success');
+        el.querySelector('.loading-text').firstChild.textContent = 'Analyzing your documents';
+      }
     }
   }
 
