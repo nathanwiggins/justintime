@@ -280,10 +280,15 @@ const VerifierTab = (() => {
         { label: 'Comparison Result', content: JSON.stringify(comparison, null, 2) }
       ]);
 
-      const auditStep    = addStep('Auditing discrepancies');
       const problemItems = comparison.filter(c =>
         !c.found_in_spreadsheet || !isMatch(c.justification_value, c.spreadsheet_value)
       );
+      const problemStep = addStep('Filtering discrepancies for audit');
+      problemStep.done(`${problemItems.length} item${problemItems.length !== 1 ? 's' : ''} flagged`, [
+        { label: 'Audit Input', content: JSON.stringify(problemItems, null, 2) }
+      ]);
+
+      const auditStep = addStep('Auditing discrepancies');
       const rawAuditItems = await Api.auditResults(problemItems, justificationText, csvText, apiKey);
       const auditItems    = rawAuditItems.filter(item =>
         !(item.status === 'MISMATCH' && item.spreadsheet_value !== undefined && isMatch(item.justification_value, item.spreadsheet_value))
