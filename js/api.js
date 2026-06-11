@@ -60,15 +60,18 @@ ${section.prompt}`;
     return { result, prompt };
   }
 
-  async function extractValues(justificationText, apiKey) {
-    const prompt = `You are a precise data extraction tool. Read this budget justification document and identify every numeric dollar value mentioned.
+  async function extractValues(preExtracted, justificationText, apiKey) {
+    const prompt = `You are a precise data labeling assistant. Below is a list of dollar values extracted from a budget justification document, each paired with the sentence in which it appears.
 
-For each value provide:
-- label: a descriptive identifier for what the value represents (e.g. "Dr. Smith Year 1 Salary", "Equipment: Spectrometer", "Total Indirect Costs")
-- value: the numeric amount as a plain number with no dollar signs or commas
-- context: a short phrase or sentence from the document where this value appears
+Your only task is to add a descriptive label to each item. The label should clearly identify what the value represents (e.g. "Dr. Smith Year 1 Salary", "Equipment: Spectrometer", "Total Indirect Costs Year 2").
 
-Extract ALL dollar amounts — individual line items, per-unit costs, yearly breakdowns, subtotals, and totals.
+Rules:
+- Copy value and context exactly as given — do not modify them
+- Write a label that is specific and descriptive
+- Use the context sentence and the full budget justification below to inform each label
+
+Extracted values:
+${JSON.stringify(preExtracted, null, 2)}
 
 Budget Justification:
 ${justificationText}`;
