@@ -60,12 +60,21 @@ ${section.prompt}`;
     return { result, prompt };
   }
 
+  function reconcileLabeled(preExtracted, labeled) {
+    return preExtracted.map((pre, i) => {
+      if (labeled[i] && labeled[i].value === pre.value) return labeled[i];
+      const match = labeled.find(l => l.value === pre.value && l.context === pre.context);
+      return match || { label: pre.context, value: pre.value, context: pre.context };
+    });
+  }
+
   async function extractValues(preExtracted, justificationText, apiKey) {
-    const prompt = `You are a precise data labeling assistant. Below is a list of dollar values extracted from a budget justification document, each paired with the sentence in which it appears.
+    const prompt = `You are a precise data labeling assistant. Below is a list of ${preExtracted.length} dollar values extracted from a budget justification document, each paired with the sentence in which it appears.
 
 Your only task is to add a descriptive label to each item. The label should clearly identify what the value represents (e.g. "Dr. Smith Year 1 Salary", "Equipment: Spectrometer", "Total Indirect Costs Year 2").
 
 Rules:
+- Return exactly ${preExtracted.length} objects — one per input item, in the same order
 - Copy value and context exactly as given — do not modify them
 - Write a label that is specific and descriptive
 - Use the context sentence and the full budget justification below to inform each label
@@ -75,7 +84,8 @@ ${JSON.stringify(preExtracted, null, 2)}
 
 Budget Justification:
 ${justificationText}`;
-    return callApi(apiKey, prompt, VerifierSchemas.extraction);
+    const labeled = await callApi(apiKey, prompt, VerifierSchemas.extraction);
+    return reconcileLabeled(preExtracted, labeled);
   }
 
   async function matchValues(extracted, csvText, apiKey) {
