@@ -361,5 +361,21 @@ const VerifierSchemas = {
       },
       required: ['label', 'justification_value', 'status']
     }
+  },
+  notFoundAudit: {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        label:                     { type: 'string' },
+        justification_value:       { type: 'number' },
+        context:                   { type: 'string' },
+        found_in_spreadsheet:      { type: 'boolean' },
+        spreadsheet_value:         { type: 'number' },
+        calculated_in_spreadsheet: { type: 'boolean' },
+        spreadsheet_components:    { type: 'array', items: { type: 'string' } }
+      },
+      required: ['label', 'justification_value', 'context', 'found_in_spreadsheet', 'calculated_in_spreadsheet']
+    }
   }
 };

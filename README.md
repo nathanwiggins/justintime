@@ -117,4 +117,4 @@ Push to the `main` branch. GitHub Pages serves `index.html` from the repository 
 3. Upload the corresponding budget spreadsheet (`.csv`, `.xls`, or `.xlsx`).
 4. Click **Verify Budget**.
 
-Just-In-Time makes two AI passes: the first extracts every dollar amount from the justification; the second matches each against the spreadsheet. Results are displayed in a table with color-coded status — green for matches, red for mismatches, and gray for values that could not be located in the spreadsheet.
+Just-In-Time makes several AI passes: the first labels every dollar amount in the justification; the second matches each against the spreadsheet; a third audits values not found in the spreadsheet, attempting a fresh match and — if still not found — determining whether the value is a calculated sum of spreadsheet components.

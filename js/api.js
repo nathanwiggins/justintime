@@ -154,6 +154,41 @@ ${csvText}`;
     return callApi(apiKey, prompt, VerifierSchemas.audit);
   }
 
+  async function auditNotFound(notFoundItems, justificationText, csvText, apiKey) {
+    const prompt = `You are a budget verification assistant. For each item in the list below, perform the following two tasks:
+
+1. Search the budget spreadsheet for a matching value.
+   - Match by meaning, not just text — "Dr. Smith Year 1 Salary" may correspond to "PI Salary Y1" in the spreadsheet.
+   - Spreadsheet cells may contain values embedded in strings (e.g. "John Smith ($108,000 IBS)") — extract the numeric value when relevant.
+   - If you find a match, set found_in_spreadsheet to true and spreadsheet_value to the matched number.
+
+2. If you cannot find the item in the spreadsheet, use the budget justification to determine whether this value is a calculated sum of other values that are in the spreadsheet.
+   - A value is calculated if you can identify individual component lines in the spreadsheet whose values add up to it.
+   - If it is calculated, set calculated_in_spreadsheet to true and list the spreadsheet component descriptions in spreadsheet_components.
+   - If it is neither found nor calculated, set both found_in_spreadsheet and calculated_in_spreadsheet to false.
+
+Return exactly ${notFoundItems.length} objects — one per input item, in the same order.
+
+For each item include:
+- label: copied exactly from input
+- justification_value: copied exactly from input
+- context: copied exactly from input
+- found_in_spreadsheet: true or false
+- spreadsheet_value: the matched numeric value (only if found_in_spreadsheet is true)
+- calculated_in_spreadsheet: true or false
+- spreadsheet_components: list of spreadsheet line descriptions that sum to the value (only if calculated_in_spreadsheet is true)
+
+Items:
+${JSON.stringify(notFoundItems, null, 2)}
+
+Budget Justification:
+${justificationText}
+
+Budget Spreadsheet:
+${csvText}`;
+    return callApi(apiKey, prompt, VerifierSchemas.notFoundAudit);
+  }
+
   async function sendRaw(apiKey, prompt) {
     const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
       method: 'POST',
@@ -194,5 +229,5 @@ ${csvText}`;
     }
   }
 
-  return { generateSection, extractValues, matchValues, auditResults, test, sendRaw };
+  return { generateSection, extractValues, matchValues, auditResults, auditNotFound, test, sendRaw };
 })();

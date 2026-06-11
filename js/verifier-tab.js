@@ -294,23 +294,12 @@ const VerifierTab = (() => {
         { label: 'Audit Input', content: JSON.stringify(problemItems, null, 2) }
       ]);
 
-      const auditStep = addStep('Auditing discrepancies');
-      const rawAuditItems = await Api.auditResults(problemItems, justificationText, csvText, apiKey);
-      const auditItems    = rawAuditItems
-        .map(item => {
-          if (item.status === 'MISMATCH' && item.spreadsheet_value === undefined)
-            return { label: item.label, justification_value: item.justification_value, status: 'NOT_FOUND' };
-          return item;
-        })
-        .filter(item =>
-          !(item.status === 'MISMATCH' && item.spreadsheet_value !== undefined && isMatch(item.justification_value, item.spreadsheet_value))
-        );
-      auditStep.done(`${auditItems.length} finding${auditItems.length !== 1 ? 's' : ''}`, [
-        { label: 'Audit Findings', content: JSON.stringify(auditItems, null, 2) }
+      const notFoundItems = problemItems.filter(c => !c.found_in_spreadsheet);
+      const notFoundAuditStep = addStep('Auditing not-found values');
+      const notFoundAuditResult = await Api.auditNotFound(notFoundItems, justificationText, csvText, apiKey);
+      notFoundAuditStep.done(`${notFoundAuditResult.length} item${notFoundAuditResult.length !== 1 ? 's' : ''} resolved`, [
+        { label: 'NOT_FOUND Audit', content: JSON.stringify(notFoundAuditResult, null, 2) }
       ]);
-
-      renderResults(auditItems);
-      if (!auditItems.length) showSuccessOnStop = true;
     } catch (err) {
       setStatus('Error: ' + err.message, 'error');
     } finally {
