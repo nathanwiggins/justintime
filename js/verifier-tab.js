@@ -108,7 +108,16 @@ const VerifierTab = (() => {
           const rerunBtn = document.createElement('button');
           rerunBtn.className   = 'step-rerun-btn';
           rerunBtn.textContent = '↻ Rerun from here';
-          rerunBtn.addEventListener('click', onRerun);
+          rerunBtn.addEventListener('click', () => {
+            let sibling = item.nextElementSibling;
+            while (sibling) {
+              const next = sibling.nextElementSibling;
+              sibling.remove();
+              sibling = next;
+            }
+            item.remove();
+            onRerun();
+          });
           row.appendChild(rerunBtn);
         }
       },
@@ -347,7 +356,6 @@ const VerifierTab = (() => {
 
     setRunning(true);
     setStatus('');
-    clearStepLog();
     document.getElementById('verify-results').classList.add('hidden');
 
     const loadingTextNode = document.querySelector('#verify-loading .loading-text').firstChild;
