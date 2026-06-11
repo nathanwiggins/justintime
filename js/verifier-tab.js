@@ -348,7 +348,17 @@ const VerifierTab = (() => {
       { label: 'Summary', content: JSON.stringify(summaryResult, null, 2) }
     ], () => rerunFrom('summary'));
 
-    renderSummary(summaryResult);
+    const contextLookup = new Map();
+    (cachedExtracted || []).forEach(e => { if (e.context) contextLookup.set(e.label, e.context); });
+    (cachedNotFoundAuditResult || []).forEach(e => { if (e.context) contextLookup.set(e.label, e.context); });
+    (cachedMismatchAuditResult || []).flatMap(g => g.items || []).forEach(e => { if (e.context) contextLookup.set(e.label, e.context); });
+
+    const patchedSummary = summaryResult.map(section => ({
+      ...section,
+      items: section.items.map(item => ({ ...item, context: item.context || contextLookup.get(item.label) || '' }))
+    }));
+
+    renderSummary(patchedSummary);
   }
 
   async function rerunFrom(startStep) {
