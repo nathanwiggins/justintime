@@ -261,12 +261,17 @@ const VerifierTab = (() => {
         { label: 'Extracted CSV', content: csvText }
       ]);
 
-      const extractStep = addStep('Extracting values from justification');
+      const scriptStep = addStep('Scanning for dollar values');
       const preExtracted = Extractor.run(justificationText);
+      scriptStep.done(`${preExtracted.length} values found`, [
+        { label: 'Script Extraction', content: JSON.stringify(preExtracted, null, 2) }
+      ]);
+
+      const extractStep = addStep('Labeling extracted values');
       const extracted   = await Api.extractValues(preExtracted, justificationText, apiKey);
       lastExtracted     = extracted;
-      extractStep.done(`${extracted.length} values found`, [
-        { label: 'Extracted Values', content: JSON.stringify(extracted, null, 2) }
+      extractStep.done(`${extracted.length} values labeled`, [
+        { label: 'Labeled Values', content: JSON.stringify(extracted, null, 2) }
       ]);
 
       const matchStep  = addStep('Matching against spreadsheet');
