@@ -1,11 +1,5 @@
 const Highlighter = (() => {
 
-  function isValueMatch(a, b) {
-    if (a === b) return true;
-    const diff = Math.abs(a - b);
-    return diff <= 1 || diff / Math.max(Math.abs(a), Math.abs(b)) <= 0.01;
-  }
-
   function formatVariants(value) {
     const fmt = (n, dec) => n.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
     return [...new Set([
@@ -34,15 +28,41 @@ const Highlighter = (() => {
     return p.includes(c) || c.includes(p) || p.includes(c.slice(0, 40));
   }
 
-  function injectHighlight(content, color) {
-    if (content.includes('<w:highlight')) return content;
-    if (content.includes('<w:rPr>')) {
-      return content.replace('<w:rPr>', `<w:rPr><w:highlight w:val="${color}"/>`);
+  function extractRpr(content) {
+    const m = content.match(/<w:rPr>[\s\S]*?<\/w:rPr>/);
+    return m ? m[0] : '';
+  }
+
+  function rprWithHighlight(rpr, color) {
+    if (rpr) {
+      if (rpr.includes('<w:highlight')) return rpr;
+      return rpr.replace('<w:rPr>', `<w:rPr><w:highlight w:val="${color}"/>`);
     }
-    if (/<w:rPr\s*\/>/.test(content)) {
-      return content.replace(/<w:rPr\s*\/>/, `<w:rPr><w:highlight w:val="${color}"/></w:rPr>`);
-    }
-    return content.replace(/(<w:t[ >])/, `<w:rPr><w:highlight w:val="${color}"/></w:rPr>$1`);
+    return `<w:rPr><w:highlight w:val="${color}"/></w:rPr>`;
+  }
+
+  function makeRun(open, rpr, text, close) {
+    const spaceAttr = (text.startsWith(' ') || text.endsWith(' ')) ? ' xml:space="preserve"' : '';
+    return `${open}${rpr}<w:t${spaceAttr}>${text}</w:t>${close}`;
+  }
+
+  function splitRunOnVariant(runMatch, open, content, close, variant, color) {
+    const tMatch = content.match(/<w:t[^>]*>([^<]*)<\/w:t>/);
+    if (!tMatch) return runMatch;
+
+    const text = tMatch[1];
+    const idx  = text.indexOf(variant);
+    if (idx === -1) return runMatch;
+
+    const before = text.slice(0, idx);
+    const after  = text.slice(idx + variant.length);
+    const rpr    = extractRpr(content);
+
+    return [
+      before ? makeRun(open, rpr, before, close) : '',
+      makeRun(open, rprWithHighlight(rpr, color), variant, close),
+      after  ? makeRun(open, rpr, after,  close) : ''
+    ].join('');
   }
 
   function applyHighlights(xml, items) {
@@ -50,16 +70,15 @@ const Highlighter = (() => {
 
     return xml.replace(/(<w:p(?:\s[^>]*)?>)([\s\S]*?)(<\/w:p>)/g, (_, paraOpen, paraContent, paraClose) => {
       const paragraphText = getParagraphText(paraContent);
-      const applicable = sorted.filter(item => item.context && contextMatches(paragraphText, item.context));
+      const applicable    = sorted.filter(item => item.context && contextMatches(paragraphText, item.context));
       if (!applicable.length) return paraOpen + paraContent + paraClose;
 
       const newContent = paraContent.replace(/(<w:r(?:\s[^>]*)?>)([\s\S]*?)(<\/w:r>)/g, (runMatch, open, content, close) => {
         const text = getRunText(content);
         if (!text) return runMatch;
         for (const { variants, color } of applicable) {
-          if (variants.some(v => text.includes(v))) {
-            return open + injectHighlight(content, color) + close;
-          }
+          const matched = variants.find(v => text.includes(v));
+          if (matched) return splitRunOnVariant(runMatch, open, content, close, matched, color);
         }
         return runMatch;
       });
@@ -74,7 +93,7 @@ const Highlighter = (() => {
     const items = comparison
       .map(c => {
         const color = c.status === 'NOT_FOUND' ? 'yellow'
-          : c.status === 'MISMATCH' ? 'red'
+          : c.status === 'MISMATCH'  ? 'red'
           : null;
         if (!color) return null;
         return {
