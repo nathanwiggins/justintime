@@ -32,7 +32,10 @@ ${section.prompt}`;
   async function withRetry(fn) {
     let lastError;
     for (let i = 0; i < 3; i++) {
-      try { return await fn(); } catch (err) { lastError = err; }
+      try { return await fn(); } catch (err) {
+        lastError = err;
+        if (i < 2) await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
+      }
     }
     throw lastError;
   }
