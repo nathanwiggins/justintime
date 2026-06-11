@@ -29,12 +29,19 @@ ${section.prompt}`;
     return prompt;
   }
 
+  let retryHandler = null;
+
   async function withRetry(fn) {
     let lastError;
     for (let i = 0; i < 3; i++) {
       try { return await fn(); } catch (err) {
         lastError = err;
-        if (i < 2) await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
+        if (i < 2) {
+          const delaySecs = Math.pow(2, i);
+          if (retryHandler) retryHandler(`${err.message}, retrying in ${delaySecs}s…`);
+          await new Promise(r => setTimeout(r, delaySecs * 1000));
+          if (retryHandler) retryHandler(null);
+        }
       }
     }
     throw lastError;
@@ -242,5 +249,5 @@ ${csvText}`;
     }
   }
 
-  return { generateSection, extractValues, matchValues, auditResults, auditNotFound, test, sendRaw };
+  return { generateSection, extractValues, matchValues, auditResults, auditNotFound, test, sendRaw, setRetryHandler: cb => { retryHandler = cb; } };
 })();

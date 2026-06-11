@@ -244,6 +244,11 @@ const VerifierTab = (() => {
     clearStepLog();
     document.getElementById('verify-results').classList.add('hidden');
 
+    const loadingTextNode = document.querySelector('#verify-loading .loading-text').firstChild;
+    Api.setRetryHandler(msg => {
+      loadingTextNode.textContent = msg || 'Analyzing your documents';
+    });
+
     try {
       if (justificationFile.name.toLowerCase().endsWith('.doc') && !justificationFile.name.toLowerCase().endsWith('.docx')) {
         throw new Error('Legacy .doc files cannot be parsed in the browser. Please re-save as .docx and re-upload.');
@@ -303,6 +308,7 @@ const VerifierTab = (() => {
     } catch (err) {
       setStatus('Error: ' + err.message, 'error');
     } finally {
+      Api.setRetryHandler(null);
       setRunning(false);
     }
   }
