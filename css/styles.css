@@ -798,6 +798,49 @@ textarea {
   margin-top: 14px;
 }
 
+.summary-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summary-card {
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  border: 1px solid;
+}
+
+.summary-card.not-found { background: var(--color-warning-bg);  border-color: var(--color-warning-border); }
+.summary-card.mismatch  { background: #fff5f5;                  border-color: #fca5a5; }
+
+.summary-card-header {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.summary-card.not-found .summary-card-header { color: var(--color-warning-text); }
+.summary-card.mismatch  .summary-card-header { color: #b91c1c; }
+
+.summary-card-explanation {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text);
+  margin-bottom: 10px;
+}
+
+.summary-card-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.summary-card-item      { font-size: 13px; color: var(--color-text-muted); }
+.summary-card-item-diff { font-variant-numeric: tabular-nums; }
+
 .step-rerun-btn {
   background: none;
   border: none;

@@ -347,19 +347,29 @@ const VerifierSchemas = {
       required: ['label', 'justification_value', 'found_in_spreadsheet']
     }
   },
-  audit: {
+  summaryAudit: {
     type: 'array',
     items: {
       type: 'object',
       properties: {
-        label:               { type: 'string' },
-        justification_value: { type: 'number' },
-        spreadsheet_value:   { type: 'number' },
-        status:           { type: 'string', enum: ['MISMATCH', 'NOT_FOUND'] },
-        cause_type:       { type: 'string', enum: ['ROOT_CAUSE', 'CASCADING'] },
-        root_cause_label: { type: 'string' }
+        section_label: { type: 'string' },
+        type:          { type: 'string', enum: ['not_found', 'mismatch'] },
+        explanation:   { type: 'string' },
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label:               { type: 'string' },
+              justification_value: { type: 'number' },
+              spreadsheet_value:   { type: 'number' },
+              context:             { type: 'string' }
+            },
+            required: ['label', 'justification_value']
+          }
+        }
       },
-      required: ['label', 'justification_value', 'status']
+      required: ['section_label', 'type', 'explanation', 'items']
     }
   },
   mismatchAudit: {

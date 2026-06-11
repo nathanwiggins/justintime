@@ -8,9 +8,10 @@ const VerifierTab = (() => {
   let cachedCsvText            = null;
   let cachedPreExtracted       = null;
   let cachedExtracted          = null;
-  let cachedComparison         = null;
-  let cachedNotFoundItems      = null;
+  let cachedComparison          = null;
+  let cachedNotFoundItems       = null;
   let cachedNotFoundAuditResult = null;
+  let cachedMismatchAuditResult = null;
 
   function setStatus(msg, type = '') {
     const el       = document.getElementById('verify-status');
@@ -142,117 +143,72 @@ const VerifierTab = (() => {
     return diff <= 1 || diff / Math.max(Math.abs(a), Math.abs(b)) <= 0.01;
   }
 
-  function renderResults(items) {
+  function renderSummary(sections) {
     const container = document.getElementById('verify-results');
     container.innerHTML = '';
 
-    if (!items.length) {
+    if (!sections.length) {
+      showSuccessOnStop = true;
       const msg = document.createElement('p');
       msg.className   = 'verify-intro';
-      msg.textContent = 'No discrepancies found — all values match the spreadsheet.';
+      msg.textContent = 'No issues found — all values match the spreadsheet.';
       container.appendChild(msg);
       container.classList.remove('hidden');
       return;
     }
 
-    const tableWrap = document.createElement('div');
-    tableWrap.className = 'verify-table-wrap';
+    const cards = document.createElement('div');
+    cards.className = 'summary-cards';
 
-    const table = document.createElement('table');
-    table.className = 'verify-table';
-    table.innerHTML =
-      '<thead><tr>' +
-        '<th>Label</th>' +
-        '<th>Justification</th>' +
-        '<th>Spreadsheet</th>' +
-        '<th>Status</th>' +
-        '<th>Type</th>' +
-      '</tr></thead>';
+    sections.forEach(section => {
+      const card = document.createElement('div');
+      card.className = `summary-card ${section.type === 'not_found' ? 'not-found' : 'mismatch'}`;
 
-    const tbody = document.createElement('tbody');
+      const header = document.createElement('div');
+      header.className   = 'summary-card-header';
+      header.textContent = section.section_label;
 
-    const cascadingMap = new Map();
-    items.forEach(item => {
-      if (item.cause_type === 'CASCADING' && item.root_cause_label) {
-        if (!cascadingMap.has(item.root_cause_label)) cascadingMap.set(item.root_cause_label, []);
-        cascadingMap.get(item.root_cause_label).push(item);
-      }
-    });
-    const cascadingHandled = new Set();
+      const explanation = document.createElement('p');
+      explanation.className   = 'summary-card-explanation';
+      explanation.textContent = section.explanation;
 
-    const renderRow = (item, indented) => {
-      const isMismatch  = item.status === 'MISMATCH';
-      const statusLabel = isMismatch ? 'Mismatch' : 'Not Found';
-      const statusClass = isMismatch ? 'mismatch' : 'notfound';
-
-      const tr = document.createElement('tr');
-      tr.className = `verify-row-${statusClass}${indented ? ' verify-row-indented' : ''}`;
-
-      const tdLabel = document.createElement('td');
-      tdLabel.className   = 'verify-cell-label';
-      tdLabel.textContent = item.label;
-
-      const tdJust = document.createElement('td');
-      tdJust.className   = 'verify-cell-value';
-      tdJust.textContent = formatCurrency(item.justification_value);
-
-      const tdSheet = document.createElement('td');
-      tdSheet.className   = 'verify-cell-value';
-      tdSheet.textContent = item.spreadsheet_value !== undefined ? formatCurrency(item.spreadsheet_value) : '—';
-
-      const tdStatus = document.createElement('td');
-      const badge = document.createElement('span');
-      badge.className   = `verify-badge ${statusClass}`;
-      badge.textContent = statusLabel;
-      tdStatus.appendChild(badge);
-
-      const tdType = document.createElement('td');
-      if (item.cause_type) {
-        const typeBadge = document.createElement('span');
-        typeBadge.className   = `verify-badge cause-${item.cause_type === 'ROOT_CAUSE' ? 'root' : 'cascading'}`;
-        typeBadge.textContent = item.cause_type === 'ROOT_CAUSE' ? 'Root Cause' : 'Cascading';
-        tdType.appendChild(typeBadge);
-      } else {
-        tdType.textContent = '—';
-      }
-
-      tr.append(tdLabel, tdJust, tdSheet, tdStatus, tdType);
-      tbody.appendChild(tr);
-    };
-
-    items.forEach(item => {
-      if (item.cause_type === 'CASCADING' && item.root_cause_label) return;
-      renderRow(item, false);
-      const children = cascadingMap.get(item.label) || [];
-      children.forEach(child => {
-        cascadingHandled.add(child);
-        renderRow(child, true);
+      const itemList = document.createElement('ul');
+      itemList.className = 'summary-card-items';
+      section.items.forEach(item => {
+        const li   = document.createElement('li');
+        li.className = 'summary-card-item';
+        const name = document.createElement('span');
+        name.textContent = item.label;
+        li.appendChild(name);
+        if (item.spreadsheet_value !== undefined) {
+          const diff = document.createElement('span');
+          diff.className   = 'summary-card-item-diff';
+          diff.textContent = ` — ${formatCurrency(item.justification_value)} vs ${formatCurrency(item.spreadsheet_value)}`;
+          li.appendChild(diff);
+        }
+        itemList.appendChild(li);
       });
+
+      card.appendChild(header);
+      card.appendChild(explanation);
+      card.appendChild(itemList);
+      cards.appendChild(card);
     });
 
-    items.forEach(item => {
-      if (item.cause_type === 'CASCADING' && item.root_cause_label && !cascadingHandled.has(item)) {
-        renderRow(item, false);
-      }
-    });
+    container.appendChild(cards);
 
-    table.appendChild(tbody);
-    tableWrap.appendChild(table);
-    container.appendChild(tableWrap);
+    const allItems      = sections.flatMap(s => s.items.map(item => ({ ...item, status: s.type === 'not_found' ? 'NOT_FOUND' : 'MISMATCH' })));
+    const fakeExtracted = allItems.map(item => ({ label: item.label, context: item.context || '' }));
 
-    if (items.length) {
-      const btnRow = document.createElement('div');
-      btnRow.className = 'verify-download-row';
-
-      const btn = document.createElement('button');
-      btn.type        = 'button';
-      btn.className   = 'btn btn-secondary';
-      btn.textContent = 'Download Marked Up Document';
-      btn.addEventListener('click', () => Highlighter.download(justificationFile, lastExtracted, items));
-
-      btnRow.appendChild(btn);
-      container.appendChild(btnRow);
-    }
+    const btnRow = document.createElement('div');
+    btnRow.className = 'verify-download-row';
+    const btn = document.createElement('button');
+    btn.type        = 'button';
+    btn.className   = 'btn btn-secondary';
+    btn.textContent = 'Download Marked Up Document';
+    btn.addEventListener('click', () => Highlighter.download(justificationFile, fakeExtracted, allItems));
+    btnRow.appendChild(btn);
+    container.appendChild(btnRow);
 
     container.classList.remove('hidden');
   }
@@ -346,7 +302,7 @@ const VerifierTab = (() => {
       cachedNotFoundItems = problemItems.filter(c => !c.found_in_spreadsheet);
     }
 
-    if (startStep !== 'mismatchAudit') {
+    if (startStep !== 'mismatchAudit' && startStep !== 'summary') {
       const notFoundAuditStep   = addStep('Auditing not-found values');
       const notFoundAuditResult = await Api.auditNotFound(cachedNotFoundItems, cachedJustificationText, cachedCsvText, apiKey);
       cachedNotFoundAuditResult = notFoundAuditResult;
@@ -355,29 +311,44 @@ const VerifierTab = (() => {
       ], () => rerunFrom('notFoundAudit'));
     }
 
-    const mismatchItems = [
-      ...(cachedComparison || [])
-        .filter(c => c.found_in_spreadsheet && !isMatch(c.justification_value, c.spreadsheet_value))
-        .map(c => {
-          const src = (cachedExtracted || []).find(e => e.label === c.label);
-          return { label: c.label, justification_value: c.justification_value, spreadsheet_value: c.spreadsheet_value, context: src?.context || '' };
-        }),
-      ...(cachedNotFoundAuditResult || [])
-        .filter(c => c.found_in_spreadsheet && !isMatch(c.justification_value, c.spreadsheet_value))
-        .map(c => ({ label: c.label, justification_value: c.justification_value, spreadsheet_value: c.spreadsheet_value, context: c.context || '' }))
-    ];
+    if (startStep !== 'summary') {
+      const mismatchItems = [
+        ...(cachedComparison || [])
+          .filter(c => c.found_in_spreadsheet && !isMatch(c.justification_value, c.spreadsheet_value))
+          .map(c => {
+            const src = (cachedExtracted || []).find(e => e.label === c.label);
+            return { label: c.label, justification_value: c.justification_value, spreadsheet_value: c.spreadsheet_value, context: src?.context || '' };
+          }),
+        ...(cachedNotFoundAuditResult || [])
+          .filter(c => c.found_in_spreadsheet && !isMatch(c.justification_value, c.spreadsheet_value))
+          .map(c => ({ label: c.label, justification_value: c.justification_value, spreadsheet_value: c.spreadsheet_value, context: c.context || '' }))
+      ];
 
-    const mismatchAuditStep = addStep('Auditing mismatches');
-    if (!mismatchItems.length) {
-      mismatchAuditStep.done('no mismatches to audit', [
-        { label: 'Mismatch Audit', content: '[]' }
-      ]);
-    } else {
-      const mismatchAuditResult = await Api.auditMismatches(mismatchItems, cachedJustificationText, cachedCsvText, apiKey);
-      mismatchAuditStep.done(`${mismatchAuditResult.length} group${mismatchAuditResult.length !== 1 ? 's' : ''} identified`, [
-        { label: 'Mismatch Audit', content: JSON.stringify(mismatchAuditResult, null, 2) }
-      ], () => rerunFrom('mismatchAudit'));
+      const mismatchAuditStep = addStep('Auditing mismatches');
+      if (!mismatchItems.length) {
+        cachedMismatchAuditResult = [];
+        mismatchAuditStep.done('no mismatches to audit', [
+          { label: 'Mismatch Audit', content: '[]' }
+        ]);
+      } else {
+        const mismatchAuditResult = await Api.auditMismatches(mismatchItems, cachedJustificationText, cachedCsvText, apiKey);
+        cachedMismatchAuditResult = mismatchAuditResult;
+        mismatchAuditStep.done(`${mismatchAuditResult.length} group${mismatchAuditResult.length !== 1 ? 's' : ''} identified`, [
+          { label: 'Mismatch Audit', content: JSON.stringify(mismatchAuditResult, null, 2) }
+        ], () => rerunFrom('mismatchAudit'));
+      }
     }
+
+    const trulyNotFound = (cachedNotFoundAuditResult || [])
+      .filter(c => !c.found_in_spreadsheet && !c.calculated_in_spreadsheet);
+
+    const summaryStep  = addStep('Generating summary');
+    const summaryResult = await Api.auditSummary(trulyNotFound, cachedMismatchAuditResult || [], cachedJustificationText, cachedCsvText, apiKey);
+    summaryStep.done(`${summaryResult.length} section${summaryResult.length !== 1 ? 's' : ''}`, [
+      { label: 'Summary', content: JSON.stringify(summaryResult, null, 2) }
+    ], () => rerunFrom('summary'));
+
+    renderSummary(summaryResult);
   }
 
   async function rerunFrom(startStep) {

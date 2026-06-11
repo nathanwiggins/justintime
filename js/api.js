@@ -137,43 +137,6 @@ ${csvText}`;
     return reconcileMatched(extracted, matched);
   }
 
-  async function auditResults(problemItems, justificationText, csvText, apiKey) {
-    const prompt = `You are a senior budget audit assistant reviewing discrepancies between a budget justification document and its corresponding spreadsheet.
-
-You have been given a list of problem items — values that either could not be found in the spreadsheet, or were found but do not match.
-
-Your tasks:
-
-1. For each NOT_FOUND item, determine 
-   - Whether this value is a calculated sum derivable from other values in the spreadsheet. A value is calculated if you can identify individual component lines (e.g. year-by-year salary rows) in the spreadsheet that add up to it. If it is a calculated sum, omit it from your output entirely — it is not a true discrepancy.
-   - Whether this value is actually a mismatch and was classified as NOT_FOUND by mistake. If so, assign it a status of MISMATCH.
-
-2. For each MISMATCH item, analyze the full set of findings together to identify the relationships:
-   - A ROOT_CAUSE mismatch is one where the incorrect value is an atomic entry — a rate, a unit cost, or a year-level amount that is not itself a sum of other mismatched items in this list.
-   - A CASCADING mismatch is one that is off only because it rolls up or derives from a ROOT_CAUSE mismatch.
-   - Set cause_type to ROOT_CAUSE or CASCADING for MISMATCH items only. Omit cause_type for NOT_FOUND items.
-   - For CASCADING items, also set root_cause_label to the exact label string of the ROOT_CAUSE finding it derives from.
-
-3. For each remaining item include:
-   - label: copied exactly from the input
-   - justification_value: copied exactly from the input
-   - spreadsheet_value: the spreadsheet value if one was found (omit if truly not present)
-   - status: MISMATCH if a corresponding value was found in both sources but the numbers conflict, NOT_FOUND if no match exists and it cannot be derived from spreadsheet components
-   - cause_type: ROOT_CAUSE or CASCADING for MISMATCH items only (omit for NOT_FOUND)
-
-4. If there are no meaningful mismatches or values not found, return an empty array.
-
-Problem items:
-${JSON.stringify(problemItems, null, 2)}
-
-Budget Justification:
-${justificationText}
-
-Budget Spreadsheet:
-${csvText}`;
-    return callApi(apiKey, prompt, VerifierSchemas.audit);
-  }
-
   async function auditNotFound(notFoundItems, justificationText, csvText, apiKey) {
     const prompt = `You are a budget verification assistant analyzing a budget spreadsheet to search for values corresponding with specific labels. For each item in the list below, perform the following two tasks:
 
@@ -238,6 +201,36 @@ ${csvText}`;
     return callApi(apiKey, prompt, VerifierSchemas.mismatchAudit);
   }
 
+  async function auditSummary(notFoundItems, mismatchGroups, justificationText, csvText, apiKey) {
+    const prompt = `You are a budget audit assistant generating a clear, human-readable summary of audit findings for a research administrator.
+
+You have been given two sets of findings from an audit of a budget justification document against its submitted budget spreadsheet:
+1. Values that could not be found or accounted for in the spreadsheet
+2. Groups of mismatched values, each grouped by root cause
+
+Your task is to produce a summary that explains what needs to be corrected in the budget justification.
+
+Instructions:
+- For the NOT_FOUND items (if any), create ONE section containing all of them with a clear section_label and a plain-language explanation of what values are missing and what that means for the justification.
+- For each mismatch group (if any), create ONE section with a fresh, descriptive section_label and an explanation of the root cause and how it may have produced cascading errors in other values.
+- Omit any section that has no items. Return an empty array if there are no findings at all.
+- Set type to "not_found" for the NOT_FOUND section and "mismatch" for each mismatch section.
+- Explanations should be written in plain language for a research administrator — specific, actionable, and concise.
+
+NOT_FOUND items:
+${JSON.stringify(notFoundItems, null, 2)}
+
+Mismatch groups:
+${JSON.stringify(mismatchGroups, null, 2)}
+
+Budget Justification:
+${justificationText}
+
+Budget Spreadsheet:
+${csvText}`;
+    return callApi(apiKey, prompt, VerifierSchemas.summaryAudit);
+  }
+
   async function sendRaw(apiKey, prompt) {
     const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
       method: 'POST',
@@ -278,5 +271,5 @@ ${csvText}`;
     }
   }
 
-  return { generateSection, extractValues, matchValues, auditResults, auditNotFound, auditMismatches, test, sendRaw, setRetryHandler: cb => { retryHandler = cb; } };
+  return { generateSection, extractValues, matchValues, auditNotFound, auditMismatches, auditSummary, test, sendRaw, setRetryHandler: cb => { retryHandler = cb; } };
 })();
