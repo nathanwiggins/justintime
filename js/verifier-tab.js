@@ -293,9 +293,15 @@ const VerifierTab = (() => {
 
       const auditStep = addStep('Auditing discrepancies');
       const rawAuditItems = await Api.auditResults(problemItems, justificationText, csvText, apiKey);
-      const auditItems    = rawAuditItems.filter(item =>
-        !(item.status === 'MISMATCH' && item.spreadsheet_value !== undefined && isMatch(item.justification_value, item.spreadsheet_value))
-      );
+      const auditItems    = rawAuditItems
+        .map(item => {
+          if (item.status === 'MISMATCH' && item.spreadsheet_value === undefined)
+            return { label: item.label, justification_value: item.justification_value, status: 'NOT_FOUND' };
+          return item;
+        })
+        .filter(item =>
+          !(item.status === 'MISMATCH' && item.spreadsheet_value !== undefined && isMatch(item.justification_value, item.spreadsheet_value))
+        );
       auditStep.done(`${auditItems.length} finding${auditItems.length !== 1 ? 's' : ''}`, [
         { label: 'Audit Findings', content: JSON.stringify(auditItems, null, 2) }
       ]);
