@@ -175,11 +175,11 @@ ${csvText}`;
   }
 
   async function auditNotFound(notFoundItems, justificationText, csvText, apiKey) {
-    const prompt = `You are a budget verification assistant. For each item in the list below, perform the following two tasks:
+    const prompt = `You are a budget verification assistant analyzing a budget spreadsheet to search for values corresponding with specific labels. For each item in the list below, perform the following two tasks:
 
-1. Search the spreadsheet data to find the corresponding value
+1. Search the spreadsheet data to find the corresponding value to the label
    - Match by meaning, not just text — "Dr. Smith Year 1 Salary" may correspond to "PI Salary Y1" in the spreadsheet
-   - Spreadsheet cells may contain values embedded in strings (e.g. "John Smith ($108,000 IBS)") — extract the numeric value from the string when that is the relevant figure
+   - Spreadsheet cells may contain values embedded as notes in strings (e.g. "John Smith ($108,000 IBS)") — extract the numeric value from the string when that is the relevant figure
    - Set found_in_spreadsheet to true if you can identify a matching line in the spreadsheet
    - If found, set spreadsheet_value to the numeric value from the spreadsheet as a plain number
    - If not found or too ambiguous to match confidently, set found_in_spreadsheet to false and omit spreadsheet_value
@@ -196,9 +196,9 @@ For each item include:
 - justification_value: copied exactly from input
 - context: copied exactly from input
 - found_in_spreadsheet: true or false
-- spreadsheet_value: the matched numeric value (even if it differs from justification_value) from the spreadsheet (only if found_in_spreadsheet is true)
+- spreadsheet_value: (only if found_in_spreadsheet is true) the matched numeric value (even if it differs from justification_value) (even if it is found within a string within a spreadsheet cell) to the label from the spreadsheet 
 - calculated_in_spreadsheet: true or false
-- spreadsheet_components: list of spreadsheet line descriptions that sum to the value (only if calculated_in_spreadsheet is true)
+- spreadsheet_components: (only if calculated_in_spreadsheet is true) list of spreadsheet line descriptions that sum to the value
 
 Items:
 ${JSON.stringify(notFoundItems, null, 2)}
@@ -212,9 +212,9 @@ ${csvText}`;
   }
 
   async function auditMismatches(mismatchItems, justificationText, csvText, apiKey) {
-    const prompt = `You are a senior budget audit assistant. You have been given a list of mismatches between a budget justification document and a budget spreadsheet — values that appear in both sources but do not agree numerically.
+    const prompt = `You are a senior budget audit assistant analyzing a budget justification to ensure it agrees with the submitted budget. You have been given a list of mismatches between the budget justification document and the budget spreadsheet.
 
-Your task is to analyze all mismatches together and group them by root cause.
+Your task is to analyze all the mismatches together and group them by root cause so that you can communicate to the user what values need to be updated in the budget justification.
 
 Instructions:
 - A root cause is a single underlying error (e.g. a wrong salary rate, an incorrect fringe rate, a miscalculated subtotal) that explains one or more of the mismatches.
