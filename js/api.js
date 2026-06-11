@@ -202,17 +202,17 @@ ${csvText}`;
   }
 
   async function auditSummary(notFoundItems, mismatchGroups, justificationText, csvText, apiKey) {
-    const prompt = `You are a budget audit assistant generating a clear, human-readable summary of audit findings for a research administrator.
+    const prompt = `You are a grant budget reviewer generating a clear, human-readable summary of updates that need to be made to a budget justification.
 
 You have been given two sets of findings from an audit of a budget justification document against its submitted budget spreadsheet:
-1. Values that could not be found or accounted for in the spreadsheet
-2. Groups of mismatched values, each grouped by root cause
+1. Values that could not be easily found or accounted for in the spreadsheet
+2. Groups of mismatched values between the budget and the budget justification, each grouped by root cause
 
-Your task is to produce a summary that explains what needs to be corrected in the budget justification.
+Your task is to produce a summary that explains the findings to the user so that they know what edits they need to make to the budget justification.
 
 Instructions:
-- For the NOT_FOUND items (if any), create ONE section containing all of them with a clear section_label and a plain-language explanation of what values are missing and what that means for the justification.
-- For each mismatch group (if any), create ONE section with a fresh, descriptive section_label and an explanation of the root cause and how it may have produced cascading errors in other values.
+- For the NOT_FOUND items (if any), create ONE section containing all of them with a clear section_label and a plain-language explanation of what values were not detected, the uncertainty created by that, and a suggestion to the user to review those sections.
+- For each mismatch group (if any), create ONE section with a fresh, descriptive section_label and an explanation of the root cause of the discrepancy, and the cascading errors it produced in other values.
 - Omit any section that has no items. Return an empty array if there are no findings at all.
 - Set type to "not_found" for the NOT_FOUND section and "mismatch" for each mismatch section.
 - Explanations should be written in plain language for a research administrator — specific, actionable, and concise.
