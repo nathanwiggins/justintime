@@ -149,10 +149,20 @@ const VerifierTab = (() => {
 
     if (!sections.length) {
       showSuccessOnStop = true;
-      const msg = document.createElement('p');
-      msg.className   = 'verify-intro';
-      msg.textContent = 'No issues found — all values match the spreadsheet.';
-      container.appendChild(msg);
+      const cards = document.createElement('div');
+      cards.className = 'summary-cards';
+      const card = document.createElement('div');
+      card.className = 'summary-card clean';
+      const header = document.createElement('div');
+      header.className   = 'summary-card-header';
+      header.textContent = 'Documents Match';
+      const explanation = document.createElement('p');
+      explanation.className   = 'summary-card-explanation';
+      explanation.textContent = 'Every dollar value in the budget justification was accounted for in the spreadsheet with no discrepancies. No edits are needed.';
+      card.appendChild(header);
+      card.appendChild(explanation);
+      cards.appendChild(card);
+      container.appendChild(cards);
       container.classList.remove('hidden');
       return;
     }
@@ -339,11 +349,19 @@ const VerifierTab = (() => {
       }
     }
 
-    const trulyNotFound = (cachedNotFoundAuditResult || [])
+    const trulyNotFound  = (cachedNotFoundAuditResult || [])
       .filter(c => !c.found_in_spreadsheet && !c.calculated_in_spreadsheet);
+    const mismatchGroups = cachedMismatchAuditResult || [];
+
+    if (!trulyNotFound.length && !mismatchGroups.length) {
+      const summaryStep = addStep('Generating summary');
+      summaryStep.done('all values accounted for');
+      renderSummary([]);
+      return;
+    }
 
     const summaryStep  = addStep('Generating summary');
-    const summaryResult = await Api.auditSummary(trulyNotFound, cachedMismatchAuditResult || [], cachedJustificationText, cachedCsvText, apiKey);
+    const summaryResult = await Api.auditSummary(trulyNotFound, mismatchGroups, cachedJustificationText, cachedCsvText, apiKey);
     summaryStep.done(`${summaryResult.length} section${summaryResult.length !== 1 ? 's' : ''}`, [
       { label: 'Summary', content: JSON.stringify(summaryResult, null, 2) }
     ], () => rerunFrom('summary'));
@@ -351,7 +369,7 @@ const VerifierTab = (() => {
     const contextLookup = new Map();
     (cachedExtracted || []).forEach(e => { if (e.context) contextLookup.set(e.label, e.context); });
     (cachedNotFoundAuditResult || []).forEach(e => { if (e.context) contextLookup.set(e.label, e.context); });
-    (cachedMismatchAuditResult || []).flatMap(g => g.items || []).forEach(e => { if (e.context) contextLookup.set(e.label, e.context); });
+    mismatchGroups.flatMap(g => g.items || []).forEach(e => { if (e.context) contextLookup.set(e.label, e.context); });
 
     const patchedSummary = summaryResult.map(section => ({
       ...section,

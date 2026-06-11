@@ -812,6 +812,7 @@ textarea {
 
 .summary-card.not-found { background: var(--color-warning-bg);  border-color: var(--color-warning-border); }
 .summary-card.mismatch  { background: #fff5f5;                  border-color: #fca5a5; }
+.summary-card.clean     { background: #f0fdf4;                  border-color: #86efac; }
 
 .summary-card-header {
   font-size: 14px;
@@ -821,6 +822,7 @@ textarea {
 
 .summary-card.not-found .summary-card-header { color: var(--color-warning-text); }
 .summary-card.mismatch  .summary-card-header { color: #b91c1c; }
+.summary-card.clean     .summary-card-header { color: var(--color-success); }
 
 .summary-card-explanation {
   font-size: 14px;
