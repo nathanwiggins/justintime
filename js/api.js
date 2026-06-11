@@ -29,29 +29,39 @@ ${section.prompt}`;
     return prompt;
   }
 
-  async function callApi(apiKey, prompt, schema) {
-    const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseSchema: schema
-        }
-      })
-    });
-
-    if (!response.ok) {
-      const errBody = await response.json().catch(() => ({}));
-      throw new Error(errBody.error?.message || `Gemini API error (HTTP ${response.status})`);
+  async function withRetry(fn) {
+    let lastError;
+    for (let i = 0; i < 3; i++) {
+      try { return await fn(); } catch (err) { lastError = err; }
     }
+    throw lastError;
+  }
 
-    const data    = await response.json();
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) throw new Error('Gemini returned an empty response.');
+  async function callApi(apiKey, prompt, schema) {
+    return withRetry(async () => {
+      const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: schema
+          }
+        })
+      });
 
-    return JSON.parse(rawText);
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}));
+        throw new Error(errBody.error?.message || `Gemini API error (HTTP ${response.status})`);
+      }
+
+      const data    = await response.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) throw new Error('Gemini returned an empty response.');
+
+      return JSON.parse(rawText);
+    });
   }
 
   async function generateSection({ csvText, projectSummary, templateType, apiKey, section, additionalContext }) {
