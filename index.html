@@ -104,6 +104,22 @@
         <div id="verify-results" class="hidden"></div>
       </div>
 
+      <div class="section-card debug-panel">
+        <h2 class="section-title">API Debug Console</h2>
+        <div class="form-group">
+          <label for="debug-prompt-input">Prompt</label>
+          <textarea id="debug-prompt-input" rows="6" placeholder="Enter a prompt to send directly to the Gemini API..."></textarea>
+        </div>
+        <div class="debug-actions">
+          <button id="debug-send-btn" class="btn btn-secondary">Send Prompt</button>
+          <span id="debug-status" class="status-message"></span>
+        </div>
+        <div id="debug-response" class="debug-response hidden">
+          <div class="debug-response-label">Response</div>
+          <pre id="debug-response-text" class="debug-response-pre"></pre>
+        </div>
+      </div>
+
     </section>
 
     <section id="tab-generator" class="tab-panel">

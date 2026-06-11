@@ -283,9 +283,12 @@ const VerifierTab = (() => {
         { label: 'Comparison Result', content: JSON.stringify(comparison, null, 2) }
       ]);
 
-      const problemItems = comparison.filter(c =>
-        !c.found_in_spreadsheet || !isMatch(c.justification_value, c.spreadsheet_value)
-      );
+      const problemItems = comparison
+        .filter(c => !c.found_in_spreadsheet || !isMatch(c.justification_value, c.spreadsheet_value))
+        .map(c => {
+          const src = extracted.find(e => e.label === c.label);
+          return src?.context ? { ...c, context: src.context } : c;
+        });
       const problemStep = addStep('Filtering discrepancies for audit');
       problemStep.done(`${problemItems.length} item${problemItems.length !== 1 ? 's' : ''} flagged`, [
         { label: 'Audit Input', content: JSON.stringify(problemItems, null, 2) }
@@ -341,6 +344,43 @@ const VerifierTab = (() => {
     });
   }
 
+  async function handleDebugSend() {
+    const apiKey = Settings.loadApiKey();
+    if (!apiKey) {
+      document.getElementById('debug-status').textContent = 'No API key saved. Go to the Settings tab.';
+      document.getElementById('debug-status').className = 'status-message error';
+      return;
+    }
+    const prompt = document.getElementById('debug-prompt-input').value.trim();
+    if (!prompt) {
+      document.getElementById('debug-status').textContent = 'Enter a prompt first.';
+      document.getElementById('debug-status').className = 'status-message error';
+      return;
+    }
+
+    const btn = document.getElementById('debug-send-btn');
+    const statusEl = document.getElementById('debug-status');
+    const responseEl = document.getElementById('debug-response');
+    const responseText = document.getElementById('debug-response-text');
+
+    btn.disabled = true;
+    statusEl.textContent = 'Sending...';
+    statusEl.className = 'status-message';
+    responseEl.classList.add('hidden');
+
+    try {
+      const result = await Api.sendRaw(apiKey, prompt);
+      responseText.textContent = result;
+      responseEl.classList.remove('hidden');
+      statusEl.textContent = '';
+    } catch (err) {
+      statusEl.textContent = 'Error: ' + err.message;
+      statusEl.className = 'status-message error';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
   function init() {
     initDropZone(
       'verify-justification-drop-zone',
@@ -355,6 +395,7 @@ const VerifierTab = (() => {
       file => { budgetFile = file; }
     );
     document.getElementById('verify-btn').addEventListener('click', handleVerify);
+    document.getElementById('debug-send-btn').addEventListener('click', handleDebugSend);
 
     document.getElementById('verify-log-toggle').addEventListener('click', () => {
       const log    = document.getElementById('verify-step-log');
