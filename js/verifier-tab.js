@@ -158,7 +158,7 @@ const VerifierTab = (() => {
       header.textContent = 'Documents Match';
       const explanation = document.createElement('p');
       explanation.className   = 'summary-card-explanation';
-      explanation.textContent = 'Every dollar value in the budget justification was accounted for in the spreadsheet with no discrepancies. No edits are needed.';
+      explanation.textContent = 'The budget justification is aligned with the budget spreadsheet. No edits are needed.';
       card.appendChild(header);
       card.appendChild(explanation);
       cards.appendChild(card);
@@ -428,43 +428,6 @@ const VerifierTab = (() => {
     });
   }
 
-  async function handleDebugSend() {
-    const apiKey = Settings.loadApiKey();
-    if (!apiKey) {
-      document.getElementById('debug-status').textContent = 'No API key saved. Go to the Settings tab.';
-      document.getElementById('debug-status').className = 'status-message error';
-      return;
-    }
-    const prompt = document.getElementById('debug-prompt-input').value.trim();
-    if (!prompt) {
-      document.getElementById('debug-status').textContent = 'Enter a prompt first.';
-      document.getElementById('debug-status').className = 'status-message error';
-      return;
-    }
-
-    const btn = document.getElementById('debug-send-btn');
-    const statusEl = document.getElementById('debug-status');
-    const responseEl = document.getElementById('debug-response');
-    const responseText = document.getElementById('debug-response-text');
-
-    btn.disabled = true;
-    statusEl.textContent = 'Sending...';
-    statusEl.className = 'status-message';
-    responseEl.classList.add('hidden');
-
-    try {
-      const result = await Api.sendRaw(apiKey, prompt);
-      responseText.textContent = result;
-      responseEl.classList.remove('hidden');
-      statusEl.textContent = '';
-    } catch (err) {
-      statusEl.textContent = 'Error: ' + err.message;
-      statusEl.className = 'status-message error';
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
   function init() {
     initDropZone(
       'verify-justification-drop-zone',
@@ -479,7 +442,6 @@ const VerifierTab = (() => {
       file => { budgetFile = file; }
     );
     document.getElementById('verify-btn').addEventListener('click', handleVerify);
-    document.getElementById('debug-send-btn').addEventListener('click', handleDebugSend);
 
     document.getElementById('verify-log-toggle').addEventListener('click', () => {
       const log    = document.getElementById('verify-step-log');

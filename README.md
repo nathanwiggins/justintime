@@ -5,7 +5,6 @@ A lightweight, client-side NSF budget justification generator built for research
 ## Features
 
 - **Budget Verifier** — a dedicated Verifier tab accepts any budget justification `.docx` and its corresponding spreadsheet. Two AI passes identify every dollar value in the justification, match each against the spreadsheet, and display a color-coded results table showing matches, mismatches, and values not found in the spreadsheet. When discrepancies exist, a button downloads a marked-up copy of the original document with mismatched values highlighted in red and unmatched values in yellow.
-- **API Debug Console** — a prompt box at the bottom of the Verifier tab lets developers send arbitrary free-text prompts directly to the Gemini API and view the raw text response inline, without any schema enforcement.
 - **Generator-first UI** — opens directly on the Generator tab. Settings are a click away but stay out of the way during normal use.
 - **Drag-and-drop file uploads** — budget file and project summary both support drag-and-drop or click-to-browse. Accepted formats shown inline; filename displayed on selection.
 - **Project summary as document or text** — upload a `.doc` or `.docx` file (default) or toggle to a plain text input. Mammoth.js extracts text from the uploaded document before generation begins.
@@ -40,7 +39,7 @@ justintime/
 │   ├── settings.js         # Settings tab + localStorage CRUD
 │   ├── generator.js        # Generator workflow orchestration
 │   ├── parser.js           # SheetJS parsing + source-of-truth extraction
-│   ├── api.js              # Gemini API communication (generateSection, extractValues, matchValues, sendRaw, test)
+│   ├── api.js              # Gemini API communication (generateSection, extractValues, matchValues, test)
 │   ├── schemas.js          # Full JSON schemas per template type + VerifierSchemas
 │   ├── sections.js         # Section registry: ordered section definitions per template
 │   ├── verifier.js         # Portable two-step verification core: Verifier.run(text, csv, key)

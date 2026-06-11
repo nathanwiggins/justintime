@@ -231,26 +231,6 @@ ${csvText}`;
     return callApi(apiKey, prompt, VerifierSchemas.summaryAudit);
   }
 
-  async function sendRaw(apiKey, prompt) {
-    const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }]
-      })
-    });
-
-    if (!response.ok) {
-      const errBody = await response.json().catch(() => ({}));
-      throw new Error(errBody.error?.message || `Gemini API error (HTTP ${response.status})`);
-    }
-
-    const data = await response.json();
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) throw new Error('Gemini returned an empty response.');
-    return rawText;
-  }
-
   async function test(apiKey) {
     const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
       method: 'POST',
@@ -271,5 +251,5 @@ ${csvText}`;
     }
   }
 
-  return { generateSection, extractValues, matchValues, auditNotFound, auditMismatches, auditSummary, test, sendRaw, setRetryHandler: cb => { retryHandler = cb; } };
+  return { generateSection, extractValues, matchValues, auditNotFound, auditMismatches, auditSummary, test, setRetryHandler: cb => { retryHandler = cb; } };
 })();
