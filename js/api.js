@@ -212,7 +212,7 @@ Your task is to produce a summary that explains the findings to the user so that
 
 Instructions:
 - For the NOT_FOUND items (if any), create ONE section containing all of them with a clear section_label and a plain-language explanation of what values were not detected, the uncertainty created by that, and a suggestion to the user to review those sections.
-- For each mismatch group (if any), create ONE section with a fresh, descriptive section_label and an explanation of the root cause of the discrepancy, and the cascading errors it produced in other values.
+- For each mismatch group (if any), create ONE section with a fresh, descriptive section_label and an explanation of the root cause of the discrepancy, and the cascading errors it produced in other values. Conclude your summary with a statement that begins with, "Because..."
 - Omit any section that has no items. Return an empty array if there are no findings at all.
 - Set type to "not_found" for the NOT_FOUND section and "mismatch" for each mismatch section.
 - Explanations should be written in plain language for a research administrator — specific, actionable, and concise.
