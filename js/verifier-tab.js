@@ -262,7 +262,8 @@ const VerifierTab = (() => {
       ]);
 
       const extractStep = addStep('Extracting values from justification');
-      const extracted   = await Api.extractValues(justificationText, apiKey);
+      const preExtracted = Extractor.run(justificationText);
+      const extracted   = await Api.extractValues(preExtracted, justificationText, apiKey);
       lastExtracted     = extracted;
       extractStep.done(`${extracted.length} values found`, [
         { label: 'Extracted Values', content: JSON.stringify(extracted, null, 2) }
