@@ -20,6 +20,20 @@ const Highlighter = (() => {
     return (content.match(/<w:t[^>]*>([^<]*)<\/w:t>/) || [])[1] || '';
   }
 
+  function getParagraphText(paraContent) {
+    return (paraContent.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [])
+      .map(m => (m.match(/<w:t[^>]*>([^<]*)<\/w:t>/) || [])[1] || '')
+      .join('');
+  }
+
+  function contextMatches(paragraphText, context) {
+    const norm = s => s.replace(/\s+/g, ' ').trim().toLowerCase();
+    const p = norm(paragraphText);
+    const c = norm(context);
+    if (!c || !p) return false;
+    return p.includes(c) || c.includes(p) || p.includes(c.slice(0, 40));
+  }
+
   function injectHighlight(content, color) {
     if (content.includes('<w:highlight')) return content;
     if (content.includes('<w:rPr>')) {
@@ -34,16 +48,23 @@ const Highlighter = (() => {
   function applyHighlights(xml, items) {
     const sorted = [...items].sort((a, b) => (a.color === 'red' ? -1 : 1));
 
-    return xml.replace(/(<w:r(?:\s[^>]*)?>)([\s\S]*?)(<\/w:r>)/g, (match, open, content, close) => {
-      const text = getRunText(content);
-      if (!text) return match;
+    return xml.replace(/(<w:p(?:\s[^>]*)?>)([\s\S]*?)(<\/w:p>)/g, (_, paraOpen, paraContent, paraClose) => {
+      const paragraphText = getParagraphText(paraContent);
+      const applicable = sorted.filter(item => item.context && contextMatches(paragraphText, item.context));
+      if (!applicable.length) return paraOpen + paraContent + paraClose;
 
-      for (const { variants, color } of sorted) {
-        if (variants.some(v => text.includes(v))) {
-          return open + injectHighlight(content, color) + close;
+      const newContent = paraContent.replace(/(<w:r(?:\s[^>]*)?>)([\s\S]*?)(<\/w:r>)/g, (runMatch, open, content, close) => {
+        const text = getRunText(content);
+        if (!text) return runMatch;
+        for (const { variants, color } of applicable) {
+          if (variants.some(v => text.includes(v))) {
+            return open + injectHighlight(content, color) + close;
+          }
         }
-      }
-      return match;
+        return runMatch;
+      });
+
+      return paraOpen + newContent + paraClose;
     });
   }
 
