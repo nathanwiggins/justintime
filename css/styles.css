@@ -5,9 +5,9 @@
 }
 
 :root {
-  --color-primary:       #1A3A6B;
-  --color-primary-dark:  #112A52;
-  --color-primary-light: #2A5298;
+  --color-primary:       #db0000;
+  --color-primary-dark:  #a80000;
+  --color-primary-light: #ff2020;
   --color-secondary:     #6b7280;
   --color-success:       #16a34a;
   --color-danger:        #dc2626;
