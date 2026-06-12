@@ -3,6 +3,13 @@ const Api = (() => {
 
   const isVandalizerHosted = () => window.JIT_GLOBAL_CONFIG?.useVandalizerProxy || false;
 
+  function getCsrfToken() {
+    const hostMatch = document.cookie.match(/(?:^|;\s*)__Host-csrf_token=([^;]+)/);
+    if (hostMatch) return decodeURIComponent(hostMatch[1]);
+    const legacyMatch = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+    return legacyMatch ? decodeURIComponent(legacyMatch[1]) : null;
+  }
+
   function globalRules() {
     return `- All dollar amounts must match the budget spreadsheet exactly
 - Write professional, informative narrative justifications for each line item
@@ -52,9 +59,14 @@ ${section.prompt}`;
   async function callApi(apiKey, prompt, schema, systemPrompt = null) {
     return withRetry(async () => {
       if (isVandalizerHosted()) {
+        const csrfToken = getCsrfToken();
         const response = await fetch('/api/apps/generate', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {})
+          },
           body: JSON.stringify({ prompt, system_prompt: systemPrompt, schema_def: schema })
         });
         if (!response.ok) {
