@@ -1,6 +1,8 @@
 const Api = (() => {
   const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent';
 
+  const isVandalizerHosted = () => window.JIT_GLOBAL_CONFIG?.useVandalizerProxy || false;
+
   function globalRules() {
     return `- All dollar amounts must match the budget spreadsheet exactly
 - Write professional, informative narrative justifications for each line item
@@ -47,18 +49,36 @@ ${section.prompt}`;
     throw lastError;
   }
 
-  async function callApi(apiKey, prompt, schema) {
+  async function callApi(apiKey, prompt, schema, systemPrompt = null) {
     return withRetry(async () => {
+      if (isVandalizerHosted()) {
+        const response = await fetch('/api/apps/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ prompt, system_prompt: systemPrompt, schema_def: schema })
+        });
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.detail || `Vandalizer API error (HTTP ${response.status})`);
+        }
+        const result = await response.json();
+        return result.data;
+      }
+
+      const payload = {
+        contents: [{ role: 'user', parts: [{ text: prompt }] }]
+      };
+      if (schema) {
+        payload.generationConfig = { responseMimeType: 'application/json', responseSchema: schema };
+      }
+      if (systemPrompt) {
+        payload.systemInstruction = { parts: [{ text: systemPrompt }] };
+      }
+
       const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: schema
-          }
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -66,11 +86,10 @@ ${section.prompt}`;
         throw new Error(errBody.error?.message || `Gemini API error (HTTP ${response.status})`);
       }
 
-      const data    = await response.json();
+      const data = await response.json();
       const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) throw new Error('Gemini returned an empty response.');
-
-      return JSON.parse(rawText);
+      return schema ? JSON.parse(rawText) : rawText;
     });
   }
 
@@ -232,6 +251,8 @@ ${csvText}`;
   }
 
   async function test(apiKey) {
+    if (isVandalizerHosted()) return;
+
     const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

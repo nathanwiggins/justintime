@@ -32,9 +32,11 @@ function setupEnvironment() {
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
 
   if (!isGitHubPages && !isLocalhost) {
+    window.JIT_GLOBAL_CONFIG = { useVandalizerProxy: true };
     console.log("DGX Environment detected: Enforcing Vandalizer Authentication.");
     enforceVandalizerAuth();
   } else {
+    window.JIT_GLOBAL_CONFIG = { useVandalizerProxy: false };
     console.log("Public/Local Environment detected: Bypassing authentication.");
   }
 }

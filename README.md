@@ -39,7 +39,7 @@ justintime/
 │   ├── settings.js         # Settings tab + localStorage CRUD
 │   ├── generator.js        # Generator workflow orchestration
 │   ├── parser.js           # SheetJS parsing + source-of-truth extraction
-│   ├── api.js              # Gemini API communication (generateSection, extractValues, matchValues, test)
+│   ├── api.js              # Universal API adapter: Gemini direct (standalone) or Vandalizer proxy (DGX-hosted)
 │   ├── schemas.js          # Full JSON schemas per template type + VerifierSchemas
 │   ├── sections.js         # Section registry: ordered section definitions per template
 │   ├── verifier.js         # Portable two-step verification core: Verifier.run(text, csv, key)
@@ -52,7 +52,9 @@ justintime/
 
 ## Getting Started: Obtaining a Gemini API Key
 
-Just-In-Time uses the Gemini API for AI generation. A free API key is available through Google AI Studio — no billing required for standard use.
+> **DGX / Vandalizer deployments:** When Just-In-Time is hosted on a Vandalizer server, all AI calls are routed through the `/api/apps/generate` proxy automatically. No Gemini API key is required.
+
+Just-In-Time uses the Gemini API for AI generation when running standalone. A free API key is available through Google AI Studio — no billing required for standard use.
 
 ### Get Your Key
 
