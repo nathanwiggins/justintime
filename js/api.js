@@ -272,5 +272,5 @@ ${csvText}`;
     }
   }
 
-  return { generateSection, extractValues, matchValues, auditNotFound, auditMismatches, auditSummary, test, setRetryHandler: cb => { retryHandler = cb; } };
+  return { generateSection, extractValues, matchValues, auditNotFound, auditMismatches, auditSummary, test, isVandalizerHosted, setRetryHandler: cb => { retryHandler = cb; } };
 })();

@@ -159,7 +159,7 @@ const Generator = (() => {
   }
 
   function validateForm({ profileId, file, summaryFile, summaryText, summaryMode, apiKey }) {
-    if (!apiKey)    return 'No API key saved. Go to the Settings tab and save your Gemini API key.';
+    if (!apiKey && !Api.isVandalizerHosted())    return 'No API key saved. Go to the Settings tab and save your Gemini API key.';
     if (!profileId) return 'Please select an Institutional Profile.';
     if (!file)      return 'Please upload a budget file (.csv, .xls, or .xlsx).';
     if (summaryMode === 'file' && !summaryFile) return 'Please upload a project summary (.doc or .docx).';

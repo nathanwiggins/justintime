@@ -225,7 +225,7 @@ const VerifierTab = (() => {
 
   async function handleVerify() {
     const apiKey = Settings.loadApiKey();
-    if (!apiKey)            { setStatus('No API key saved. Go to the Settings tab and save your Gemini API key.', 'error'); return; }
+    if (!apiKey && !Api.isVandalizerHosted()) { setStatus('No API key saved. Go to the Settings tab and save your Gemini API key.', 'error'); return; }
     if (!justificationFile) { setStatus('Please upload a budget justification document.', 'error'); return; }
     if (!budgetFile)        { setStatus('Please upload a budget spreadsheet.', 'error'); return; }
 
@@ -381,7 +381,7 @@ const VerifierTab = (() => {
 
   async function rerunFrom(startStep) {
     const apiKey = Settings.loadApiKey();
-    if (!apiKey) { setStatus('No API key saved. Go to the Settings tab and save your Gemini API key.', 'error'); return; }
+    if (!apiKey && !Api.isVandalizerHosted()) { setStatus('No API key saved. Go to the Settings tab and save your Gemini API key.', 'error'); return; }
 
     setRunning(true);
     setStatus('');
