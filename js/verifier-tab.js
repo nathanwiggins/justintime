@@ -4,6 +4,8 @@ const VerifierTab = (() => {
   let lastExtracted      = null;
   let showSuccessOnStop  = false;
 
+  const BATCH_SIZE = 25;
+
   let cachedJustificationText  = null;
   let cachedCsvText            = null;
   let cachedPreExtracted       = null;
@@ -281,24 +283,60 @@ const VerifierTab = (() => {
     let extracted = cachedExtracted;
 
     if (startStep === 'extract') {
-      const extractStep = addStep('Labeling extracted values');
-      extracted         = await Api.extractValues(cachedPreExtracted, cachedJustificationText, apiKey);
-      lastExtracted     = extracted;
-      cachedExtracted   = extracted;
-      extractStep.done(`${extracted.length} values labeled`, [
-        { label: 'Labeled Values', content: JSON.stringify(extracted, null, 2) }
-      ], () => rerunFrom('extract'));
+      if (Api.isVandalizerHosted()) {
+        const batches = [];
+        for (let i = 0; i < cachedPreExtracted.length; i += BATCH_SIZE) {
+          batches.push(cachedPreExtracted.slice(i, i + BATCH_SIZE));
+        }
+        const allLabeled = [];
+        for (let b = 0; b < batches.length; b++) {
+          const stepLabel = batches.length > 1 ? `Labeling values — batch ${b + 1} of ${batches.length}` : 'Labeling extracted values';
+          const batchStep = addStep(stepLabel);
+          const batchResult = await Api.extractValuesBatch(batches[b], cachedJustificationText, apiKey);
+          allLabeled.push(...batchResult);
+          batchStep.done(`${batchResult.length} values labeled`, [
+            { label: batches.length > 1 ? `Batch ${b + 1} Labeled Values` : 'Labeled Values', content: JSON.stringify(batchResult, null, 2) }
+          ]);
+        }
+        extracted = allLabeled;
+      } else {
+        const extractStep = addStep('Labeling extracted values');
+        extracted         = await Api.extractValues(cachedPreExtracted, cachedJustificationText, apiKey);
+        extractStep.done(`${extracted.length} values labeled`, [
+          { label: 'Labeled Values', content: JSON.stringify(extracted, null, 2) }
+        ], () => rerunFrom('extract'));
+      }
+      lastExtracted   = extracted;
+      cachedExtracted = extracted;
     }
 
     if (startStep === 'extract' || startStep === 'match') {
-      const matchStep  = addStep('Matching against spreadsheet');
-      const comparison = await Api.matchValues(extracted, cachedCsvText, apiKey);
-      cachedComparison = comparison;
-      matchStep.done(`${comparison.length} values matched`, [
-        { label: 'Comparison Result', content: JSON.stringify(comparison, null, 2) }
-      ], () => rerunFrom('match'));
+      if (Api.isVandalizerHosted()) {
+        const batches = [];
+        for (let i = 0; i < extracted.length; i += BATCH_SIZE) {
+          batches.push(extracted.slice(i, i + BATCH_SIZE));
+        }
+        const allMatched = [];
+        for (let b = 0; b < batches.length; b++) {
+          const stepLabel = batches.length > 1 ? `Matching against spreadsheet — batch ${b + 1} of ${batches.length}` : 'Matching against spreadsheet';
+          const batchStep = addStep(stepLabel);
+          const batchResult = await Api.matchValuesBatch(batches[b], cachedCsvText, apiKey);
+          allMatched.push(...batchResult);
+          batchStep.done(`${batchResult.length} values matched`, [
+            { label: batches.length > 1 ? `Batch ${b + 1} Comparison Result` : 'Comparison Result', content: JSON.stringify(batchResult, null, 2) }
+          ]);
+        }
+        cachedComparison = allMatched;
+      } else {
+        const matchStep  = addStep('Matching against spreadsheet');
+        const comparison = await Api.matchValues(extracted, cachedCsvText, apiKey);
+        cachedComparison = comparison;
+        matchStep.done(`${comparison.length} values matched`, [
+          { label: 'Comparison Result', content: JSON.stringify(comparison, null, 2) }
+        ], () => rerunFrom('match'));
+      }
 
-      const problemItems = comparison
+      const problemItems = cachedComparison
         .filter(c => !c.found_in_spreadsheet || !isMatch(c.justification_value, c.spreadsheet_value))
         .map(c => {
           const src = extracted.find(e => e.label === c.label);

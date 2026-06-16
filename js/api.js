@@ -139,6 +139,26 @@ ${justificationText}`;
     return reconcileLabeled(preExtracted, labeled);
   }
 
+  async function extractValuesBatch(batchItems, justificationText, apiKey) {
+    const prompt = `You are a precise data labeling assistant. Below is a list of ${batchItems.length} dollar values extracted from a budget justification document, each paired with the sentence in which it appears.
+
+Your only task is to add a descriptive label to each item. The label should clearly identify what the value represents (e.g. "Dr. Smith Year 1 Salary", "Equipment: Spectrometer", "Total Indirect Costs Year 2").
+
+Rules:
+- Return exactly ${batchItems.length} objects — one per input item, in the same order
+- Copy value and context exactly as given — do not modify them
+- Write a label that is specific and descriptive
+- Use the context sentence and the full budget justification below to inform each label
+
+Extracted values:
+${JSON.stringify(batchItems, null, 2)}
+
+Budget Justification:
+${justificationText}`;
+    const labeled = await callApi(apiKey, prompt, VerifierSchemas.extraction);
+    return reconcileLabeled(batchItems, labeled);
+  }
+
   function reconcileMatched(extracted, matched) {
     return extracted.map((item, i) => {
       if (matched[i] && matched[i].label === item.label) return matched[i];
@@ -166,6 +186,27 @@ Budget Spreadsheet:
 ${csvText}`;
     const matched = await callApi(apiKey, prompt, VerifierSchemas.comparison);
     return reconcileMatched(extracted, matched);
+  }
+
+  async function matchValuesBatch(batchItems, csvText, apiKey) {
+    const prompt = `You are a budget verification assistant. For each item in the list below, search the spreadsheet data to find the corresponding value.
+
+Instructions:
+- Return exactly ${batchItems.length} objects — one per input item, in the same order
+- Copy label and justification_value exactly from the input (justification_value comes from the input's "value" field)
+- Set found_in_spreadsheet to true if you can identify a matching line in the spreadsheet
+- If found, set spreadsheet_value to the numeric value from the spreadsheet as a plain number
+- If not found or too ambiguous to match confidently, set found_in_spreadsheet to false and omit spreadsheet_value
+- Match by meaning, not just text — "Dr. Smith Year 1 Salary" may correspond to "PI Salary Y1" in the spreadsheet
+- Spreadsheet cells may contain values inside a string (e.g. "John Smith ($108,000 IBS)", "Graduate Students (x5)", etc.) — extract the numeric value from the string when that is the relevant figure
+
+Items to match:
+${JSON.stringify(batchItems, null, 2)}
+
+Budget Spreadsheet:
+${csvText}`;
+    const matched = await callApi(apiKey, prompt, VerifierSchemas.comparison);
+    return reconcileMatched(batchItems, matched);
   }
 
   async function auditNotFound(notFoundItems, justificationText, csvText, apiKey) {
@@ -284,5 +325,5 @@ ${csvText}`;
     }
   }
 
-  return { generateSection, extractValues, matchValues, auditNotFound, auditMismatches, auditSummary, test, isVandalizerHosted, setRetryHandler: cb => { retryHandler = cb; } };
+  return { generateSection, extractValues, extractValuesBatch, matchValues, matchValuesBatch, auditNotFound, auditMismatches, auditSummary, test, isVandalizerHosted, setRetryHandler: cb => { retryHandler = cb; } };
 })();

@@ -119,3 +119,5 @@ Push to the `main` branch. GitHub Pages serves `index.html` from the repository 
 4. Click **Verify Budget**.
 
 Just-In-Time makes several AI passes: the first labels every dollar amount in the justification; the second matches each against the spreadsheet; a third audits not-found values with a fresh match attempt; a fourth groups mismatches by root cause; and a final pass generates a human-readable summary displayed as color-coded cards — yellow for values missing from the spreadsheet, red for mismatches. A marked-up copy of the justification document can be downloaded with problem values highlighted.
+
+When running on a DGX/Vandalizer deployment, the Labeling and Matching steps are automatically split into batches of 25 items each and processed sequentially. Each batch appears as its own step in the progress log with its own expandable debug view. Results are concatenated before the next stage begins. External Gemini API runs are unaffected and continue to use single large calls.
