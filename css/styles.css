@@ -601,6 +601,12 @@ textarea {
   to { transform: rotate(360deg); }
 }
 
+.step-timer {
+  font-size: 11px;
+  opacity: .5;
+  flex-shrink: 0;
+}
+
 .step-toggle {
   margin-left: auto;
   flex-shrink: 0;

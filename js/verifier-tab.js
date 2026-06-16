@@ -63,10 +63,25 @@ const VerifierTab = (() => {
     text.className   = 'step-text';
     text.textContent = label;
 
+    const timer = document.createElement('span');
+    timer.className   = 'step-timer';
+    timer.textContent = '0s';
+
     row.appendChild(icon);
     row.appendChild(text);
+    row.appendChild(timer);
     item.appendChild(row);
     log.appendChild(item);
+
+    const startTime = Date.now();
+    const interval  = setInterval(() => {
+      timer.textContent = Math.floor((Date.now() - startTime) / 1000) + 's';
+    }, 1000);
+
+    function stopTimer() {
+      clearInterval(interval);
+      timer.textContent = Math.floor((Date.now() - startTime) / 1000) + 's';
+    }
 
     function attachDetails(sections) {
       const toggle = document.createElement('button');
@@ -104,6 +119,7 @@ const VerifierTab = (() => {
 
     return {
       done(summary, sections, onRerun) {
+        stopTimer();
         item.className   = 'step-item done';
         icon.className   = 'step-icon';
         icon.textContent = '✓';
@@ -127,6 +143,7 @@ const VerifierTab = (() => {
         }
       },
       error(summary) {
+        stopTimer();
         item.className   = 'step-item error';
         icon.className   = 'step-icon';
         icon.textContent = '✗';
