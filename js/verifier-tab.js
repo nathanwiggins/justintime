@@ -296,7 +296,7 @@ const VerifierTab = (() => {
           allLabeled.push(...batchResult);
           batchStep.done(`${batchResult.length} values labeled`, [
             { label: batches.length > 1 ? `Batch ${b + 1} Labeled Values` : 'Labeled Values', content: JSON.stringify(batchResult, null, 2) }
-          ]);
+          ], b === 0 ? () => rerunFrom('extract') : null);
         }
         extracted = allLabeled;
       } else {
@@ -324,7 +324,7 @@ const VerifierTab = (() => {
           allMatched.push(...batchResult);
           batchStep.done(`${batchResult.length} values matched`, [
             { label: batches.length > 1 ? `Batch ${b + 1} Comparison Result` : 'Comparison Result', content: JSON.stringify(batchResult, null, 2) }
-          ]);
+          ], b === 0 ? () => rerunFrom('match') : null);
         }
         cachedComparison = allMatched;
       } else {
