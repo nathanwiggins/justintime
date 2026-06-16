@@ -339,12 +339,11 @@ const VerifierSchemas = {
     items: {
       type: 'object',
       properties: {
-        label:                { type: 'string' },
-        justification_value:  { type: 'number' },
-        spreadsheet_value:    { type: 'number' },
-        found_in_spreadsheet: { type: 'boolean' }
+        label:               { type: 'string' },
+        justification_value: { type: 'number' },
+        spreadsheet_value:   { type: 'number' }
       },
-      required: ['label', 'justification_value', 'found_in_spreadsheet']
+      required: ['label', 'justification_value']
     }
   },
   summaryAudit: {

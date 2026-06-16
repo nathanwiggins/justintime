@@ -167,15 +167,21 @@ ${justificationText}`;
     });
   }
 
+  function deriveFoundInSpreadsheet(matched) {
+    return matched.map(m => ({
+      ...m,
+      found_in_spreadsheet: m.spreadsheet_value !== undefined && m.spreadsheet_value !== null
+    }));
+  }
+
   async function matchValues(extracted, csvText, apiKey) {
     const prompt = `You are a budget verification assistant. For each item in the list below, search the spreadsheet data to find the corresponding value.
 
 Instructions:
 - Return exactly ${extracted.length} objects — one per input item, in the same order
 - Copy label and justification_value exactly from the input (justification_value comes from the input's "value" field)
-- Set found_in_spreadsheet to true if you can identify a matching line in the spreadsheet
-- If found, set spreadsheet_value to the numeric value from the spreadsheet as a plain number
-- If not found or too ambiguous to match confidently, set found_in_spreadsheet to false and omit spreadsheet_value
+- If you can identify a matching line in the spreadsheet, set spreadsheet_value to the numeric value as a plain number
+- If not found or too ambiguous to match confidently, omit spreadsheet_value entirely
 - Match by meaning, not just text — "Dr. Smith Year 1 Salary" may correspond to "PI Salary Y1" in the spreadsheet
 - Spreadsheet cells may contain values inside a string (e.g. "John Smith ($108,000 IBS)", "Graduate Students (x5)", etc.) — extract the numeric value from the string when that is the relevant figure
 
@@ -185,7 +191,7 @@ ${JSON.stringify(extracted, null, 2)}
 Budget Spreadsheet:
 ${csvText}`;
     const matched = await callApi(apiKey, prompt, VerifierSchemas.comparison);
-    return reconcileMatched(extracted, matched);
+    return reconcileMatched(extracted, deriveFoundInSpreadsheet(matched));
   }
 
   async function matchValuesBatch(batchItems, csvText, apiKey) {
@@ -194,9 +200,8 @@ ${csvText}`;
 Instructions:
 - Return exactly ${batchItems.length} objects — one per input item, in the same order
 - Copy label and justification_value exactly from the input (justification_value comes from the input's "value" field)
-- Set found_in_spreadsheet to true if you can identify a matching line in the spreadsheet
-- If found, set spreadsheet_value to the numeric value from the spreadsheet as a plain number
-- If not found or too ambiguous to match confidently, set found_in_spreadsheet to false and omit spreadsheet_value
+- If you can identify a matching line in the spreadsheet, set spreadsheet_value to the numeric value as a plain number
+- If not found or too ambiguous to match confidently, omit spreadsheet_value entirely
 - Match by meaning, not just text — "Dr. Smith Year 1 Salary" may correspond to "PI Salary Y1" in the spreadsheet
 - Spreadsheet cells may contain values inside a string (e.g. "John Smith ($108,000 IBS)", "Graduate Students (x5)", etc.) — extract the numeric value from the string when that is the relevant figure
 
@@ -206,7 +211,7 @@ ${JSON.stringify(batchItems, null, 2)}
 Budget Spreadsheet:
 ${csvText}`;
     const matched = await callApi(apiKey, prompt, VerifierSchemas.comparison);
-    return reconcileMatched(batchItems, matched);
+    return reconcileMatched(batchItems, deriveFoundInSpreadsheet(matched));
   }
 
   async function auditNotFound(notFoundItems, justificationText, csvText, apiKey) {
