@@ -162,18 +162,24 @@ const Generator = (() => {
     if (!apiKey && !Api.isVandalizerHosted())    return 'No API key saved. Go to the Settings tab and save your Gemini API key.';
     if (!profileId) return 'Please select an Institutional Profile.';
     if (!file)      return 'Please upload a budget file (.csv, .xls, or .xlsx).';
-    if (summaryMode === 'file' && !summaryFile) return 'Please upload a project summary (.doc or .docx).';
+    if (summaryMode === 'file' && !summaryFile) return 'Please upload a project narrative (.doc, .docx, or .pdf).';
     if (summaryMode === 'text' && !summaryText) return 'Please enter a project summary.';
     return null;
   }
 
   async function parseSummaryFile(file) {
-    if (file.name.toLowerCase().endsWith('.doc') && !file.name.toLowerCase().endsWith('.docx')) {
+    const name = file.name.toLowerCase();
+    if (name.endsWith('.doc') && !name.endsWith('.docx')) {
       throw new Error('Legacy .doc files cannot be parsed in the browser. Please re-save the file as .docx and re-upload.');
     }
     const buffer = await file.arrayBuffer();
+    if (name.endsWith('.pdf')) {
+      const text = await extractPdfText(buffer);
+      if (!text.trim()) throw new Error('Project narrative PDF appears to be empty or is a scanned image. Please use a text-based PDF or a .docx file.');
+      return text.trim();
+    }
     const result = await mammoth.extractRawText({ arrayBuffer: buffer });
-    if (!result.value.trim()) throw new Error('Project summary document appears to be empty.');
+    if (!result.value.trim()) throw new Error('Project narrative document appears to be empty.');
     return result.value.trim();
   }
 

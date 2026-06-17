@@ -259,15 +259,23 @@ const VerifierTab = (() => {
     });
 
     try {
-      if (justificationFile.name.toLowerCase().endsWith('.doc') && !justificationFile.name.toLowerCase().endsWith('.docx')) {
+      const justName = justificationFile.name.toLowerCase();
+      if (justName.endsWith('.doc') && !justName.endsWith('.docx')) {
         throw new Error('Legacy .doc files cannot be parsed in the browser. Please re-save as .docx and re-upload.');
       }
 
       const justStep = addStep('Parsing justification document');
       const buffer = await justificationFile.arrayBuffer();
-      const mammothResult = await mammoth.extractRawText({ arrayBuffer: buffer });
-      if (!mammothResult.value.trim()) throw new Error('Budget justification document appears to be empty.');
-      const justificationText = mammothResult.value.trim();
+      let justificationText;
+      if (justName.endsWith('.pdf')) {
+        justificationText = await extractPdfText(buffer);
+        if (!justificationText.trim()) throw new Error('Budget justification PDF appears to be empty or is a scanned image. Please use a text-based PDF or a .docx file.');
+        justificationText = justificationText.trim();
+      } else {
+        const mammothResult = await mammoth.extractRawText({ arrayBuffer: buffer });
+        if (!mammothResult.value.trim()) throw new Error('Budget justification document appears to be empty.');
+        justificationText = mammothResult.value.trim();
+      }
       cachedJustificationText = justificationText;
       justStep.done(justificationFile.name, [
         { label: 'Extracted Text', content: justificationText }

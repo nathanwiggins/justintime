@@ -68,11 +68,11 @@
         <div class="form-group">
           <label for="verify-justification-input">Budget Justification</label>
           <div class="drop-zone" id="verify-justification-drop-zone">
-            <input type="file" id="verify-justification-input" accept=".docx">
+            <input type="file" id="verify-justification-input" accept=".docx,.pdf">
             <div class="drop-zone-content">
               <span class="drop-zone-icon">⬆</span>
               <span class="drop-zone-text">Drag & drop or <span class="drop-zone-link">browse</span></span>
-              <span class="drop-zone-hint">.docx</span>
+              <span class="drop-zone-hint">.docx, .pdf</span>
             </div>
             <span class="drop-zone-filename hidden" id="verify-justification-filename"></span>
           </div>
@@ -142,11 +142,11 @@
             <button type="button" id="summary-toggle" class="btn-link">Type instead</button>
           </div>
           <div class="drop-zone" id="summary-drop-zone">
-            <input type="file" id="project-summary-input" accept=".doc,.docx">
+            <input type="file" id="project-summary-input" accept=".doc,.docx,.pdf">
             <div class="drop-zone-content">
               <span class="drop-zone-icon">⬆</span>
               <span class="drop-zone-text">Drag & drop or <span class="drop-zone-link">browse</span></span>
-              <span class="drop-zone-hint">.doc, .docx</span>
+              <span class="drop-zone-hint">.doc, .docx, .pdf</span>
             </div>
             <span class="drop-zone-filename hidden" id="summary-filename"></span>
           </div>
@@ -212,6 +212,7 @@
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"></script>
   <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
   <script src="js/schemas.js"></script>
   <script src="js/sections.js"></script>
