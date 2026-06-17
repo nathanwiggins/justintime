@@ -275,7 +275,7 @@ const VerifierTab = (() => {
 
       const budgetStep = addStep('Parsing budget spreadsheet');
       const { csvText } = await Parser.parse(budgetFile);
-      cachedCsvText = csvText;
+      cachedCsvText = csvText.replace(/\$(\d[\d,]*(?:\.\d+)?)/g, (_, n) => n.replace(/,/g, ''));
       budgetStep.done(budgetFile.name, [
         { label: 'Extracted CSV', content: csvText }
       ]);
