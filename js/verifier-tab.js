@@ -277,7 +277,7 @@ const VerifierTab = (() => {
       const { csvText } = await Parser.parse(budgetFile);
       cachedCsvText = csvText.replace(/\$(\d[\d,]*(?:\.\d+)?)/g, (_, n) => n.replace(/,/g, ''));
       budgetStep.done(budgetFile.name, [
-        { label: 'Extracted CSV', content: csvText }
+        { label: 'Extracted CSV', content: cachedCsvText }
       ]);
 
       const scriptStep = addStep('Scanning for dollar values');
