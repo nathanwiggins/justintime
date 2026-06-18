@@ -376,8 +376,16 @@ const VerifierTab = (() => {
     }
 
     if (startStep !== 'mismatchAudit' && startStep !== 'summary') {
-      const notFoundAuditStep   = addStep('Auditing not-found values');
-      const notFoundAuditResult = await Api.auditNotFound(cachedNotFoundItems, cachedJustificationText, cachedCsvText, apiKey);
+      const notFoundAuditStep = addStep('Auditing not-found values');
+      let notFoundAuditResult;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        notFoundAuditResult = await Api.auditNotFound(cachedNotFoundItems, cachedJustificationText, cachedCsvText, apiKey);
+        if (notFoundAuditResult.length === cachedNotFoundItems.length) break;
+        if (attempt === 2) {
+          notFoundAuditStep.error(`expected ${cachedNotFoundItems.length} item${cachedNotFoundItems.length !== 1 ? 's' : ''}, got ${notFoundAuditResult.length}`);
+          throw new Error(`Not-found audit returned ${notFoundAuditResult.length} item(s) but expected ${cachedNotFoundItems.length} after 3 attempts.`);
+        }
+      }
       cachedNotFoundAuditResult = notFoundAuditResult;
       notFoundAuditStep.done(`${notFoundAuditResult.length} item${notFoundAuditResult.length !== 1 ? 's' : ''} resolved`, [
         { label: 'NOT_FOUND Audit', content: JSON.stringify(notFoundAuditResult, null, 2) }
@@ -404,7 +412,18 @@ const VerifierTab = (() => {
           { label: 'Mismatch Audit', content: '[]' }
         ]);
       } else {
-        const mismatchAuditResult = await Api.auditMismatches(mismatchItems, cachedJustificationText, cachedCsvText, apiKey);
+        const inputLabels = new Set(mismatchItems.map(i => i.label));
+        let mismatchAuditResult;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          mismatchAuditResult = await Api.auditMismatches(mismatchItems, cachedJustificationText, cachedCsvText, apiKey);
+          const outputLabels = new Set(mismatchAuditResult.flatMap(g => (g.items || []).map(i => i.label)));
+          if ([...inputLabels].every(l => outputLabels.has(l))) break;
+          if (attempt === 2) {
+            const missing = [...inputLabels].filter(l => !outputLabels.has(l));
+            mismatchAuditStep.error(`${missing.length} item${missing.length !== 1 ? 's' : ''} missing from groups`);
+            throw new Error(`Mismatch audit dropped ${missing.length} item(s) after 3 attempts.`);
+          }
+        }
         cachedMismatchAuditResult = mismatchAuditResult;
         mismatchAuditStep.done(`${mismatchAuditResult.length} group${mismatchAuditResult.length !== 1 ? 's' : ''} identified`, [
           { label: 'Mismatch Audit', content: JSON.stringify(mismatchAuditResult, null, 2) }
