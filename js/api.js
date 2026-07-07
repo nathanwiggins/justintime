@@ -275,7 +275,8 @@ ${justificationText}
 
 Budget Spreadsheet:
 ${csvText}`;
-    return callApi(apiKey, prompt, VerifierSchemas.mismatchAudit);
+    const result = await callApi(apiKey, prompt, VerifierSchemas.mismatchAudit);
+    return result.groups;
   }
 
   async function auditSummary(notFoundItems, mismatchGroups, justificationText, csvText, apiKey) {
