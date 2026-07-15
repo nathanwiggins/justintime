@@ -773,6 +773,12 @@ textarea {
   justify-content: flex-end;
 }
 
+.chat-quick-actions.hidden,
+.chat-input-row.hidden,
+.chat-ack-row.hidden {
+  display: none;
+}
+
 .verify-intro {
   font-size: 14px;
   color: var(--color-text-muted);
