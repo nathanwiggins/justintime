@@ -752,13 +752,6 @@ textarea {
   align-items: stretch;
 }
 
-.chat-quick-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
 .chat-input-row {
   display: flex;
   gap: 10px;
@@ -773,7 +766,6 @@ textarea {
   justify-content: flex-end;
 }
 
-.chat-quick-actions.hidden,
 .chat-input-row.hidden,
 .chat-ack-row.hidden {
   display: none;

@@ -56,8 +56,6 @@ const VerifierChat = (() => {
   function progressEl()   { return document.getElementById('verify-chat-progress'); }
   function inputEl()      { return document.getElementById('verify-chat-input'); }
   function sendBtnEl()    { return document.getElementById('verify-chat-send'); }
-  function quickBtns()    { return document.querySelectorAll('#verify-chat-quick-actions .chat-quick-btn'); }
-  function quickActionsRowEl() { return document.getElementById('verify-chat-quick-actions'); }
   function inputRowEl()   { return document.getElementById('verify-chat-input-row'); }
   function ackRowEl()     { return document.getElementById('verify-chat-ack-row'); }
   function ackBtnEl()     { return document.getElementById('verify-chat-ack'); }
@@ -91,12 +89,10 @@ const VerifierChat = (() => {
     inputEl().disabled = active;
     sendBtnEl().disabled = active;
     sendBtnEl().textContent = active ? 'Thinking…' : 'Send';
-    quickBtns().forEach(btn => { btn.disabled = active; });
   }
 
   function updateFooter(section) {
     const isAckOnly = section.type === 'not_found';
-    quickActionsRowEl().classList.toggle('hidden', isAckOnly);
     inputRowEl().classList.toggle('hidden', isAckOnly);
     ackRowEl().classList.toggle('hidden', !isAckOnly);
   }
@@ -130,16 +126,6 @@ const VerifierChat = (() => {
     const section = currentSection();
     section.tag = 'acknowledged';
     section.transcript.push({ role: 'user', text: 'Got it.' });
-    persist();
-    renderThread();
-    advance();
-  }
-
-  function handleQuickTag(tag) {
-    if (sending) return;
-    const section = currentSection();
-    section.tag = tag;
-    section.transcript.push({ role: 'user', text: tag === 'real_issue' ? 'This is a real problem.' : "This isn't a concern." });
     persist();
     renderThread();
     advance();
@@ -251,12 +237,11 @@ const VerifierChat = (() => {
 
   function init() {
     document.getElementById('verify-chat-close').addEventListener('click', closeModal);
-    document.getElementById('verify-chat-send').addEventListener('click', handleSend);
-    document.getElementById('verify-chat-input').addEventListener('keydown', e => {
-      if (e.key === 'Enter') handleSend();
-    });
-    quickBtns().forEach(btn => {
-      btn.addEventListener('click', () => handleQuickTag(btn.dataset.tag));
+    sendBtnEl().addEventListener('click', handleSend);
+    inputEl().addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      handleSend();
     });
     ackBtnEl().addEventListener('click', handleAcknowledge);
   }
