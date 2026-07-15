@@ -5,6 +5,7 @@ const VerifierTab = (() => {
   let showSuccessOnStop  = false;
 
   const BATCH_SIZE = 25;
+  const DIRECT_BATCH_SIZE = 50;
 
   let cachedJustificationText  = null;
   let cachedCsvText            = null;
@@ -365,10 +366,11 @@ const VerifierTab = (() => {
     let extracted = cachedExtracted;
 
     if (startStep === 'extract') {
-      if (Api.isVandalizerHosted()) {
+      const batchSize = Api.isVandalizerHosted() ? BATCH_SIZE : DIRECT_BATCH_SIZE;
+      if (Api.isVandalizerHosted() || cachedPreExtracted.length > DIRECT_BATCH_SIZE) {
         const batches = [];
-        for (let i = 0; i < cachedPreExtracted.length; i += BATCH_SIZE) {
-          batches.push(cachedPreExtracted.slice(i, i + BATCH_SIZE));
+        for (let i = 0; i < cachedPreExtracted.length; i += batchSize) {
+          batches.push(cachedPreExtracted.slice(i, i + batchSize));
         }
         const allLabeled = [];
         for (let b = 0; b < batches.length; b++) {
@@ -393,10 +395,11 @@ const VerifierTab = (() => {
     }
 
     if (startStep === 'extract' || startStep === 'match') {
-      if (Api.isVandalizerHosted()) {
+      const batchSize = Api.isVandalizerHosted() ? BATCH_SIZE : DIRECT_BATCH_SIZE;
+      if (Api.isVandalizerHosted() || extracted.length > DIRECT_BATCH_SIZE) {
         const batches = [];
-        for (let i = 0; i < extracted.length; i += BATCH_SIZE) {
-          batches.push(extracted.slice(i, i + BATCH_SIZE));
+        for (let i = 0; i < extracted.length; i += batchSize) {
+          batches.push(extracted.slice(i, i + batchSize));
         }
         const allMatched = [];
         for (let b = 0; b < batches.length; b++) {
