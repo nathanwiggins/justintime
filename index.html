@@ -205,6 +205,30 @@
     </div>
   </div>
 
+  <div id="verify-chat-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="verify-chat-title">
+    <div class="modal-overlay"></div>
+    <div class="modal-content chat-modal-content">
+      <div class="modal-header">
+        <h3 id="verify-chat-title">Reviewing Findings</h3>
+        <span id="verify-chat-progress" class="chat-progress"></span>
+        <button id="verify-chat-close" class="btn-icon" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="verify-chat-thread" class="chat-thread"></div>
+      </div>
+      <div class="modal-footer chat-footer">
+        <div id="verify-chat-quick-actions" class="chat-quick-actions">
+          <button type="button" class="btn btn-secondary chat-quick-btn" data-tag="not_a_concern">Not a concern</button>
+          <button type="button" class="btn btn-primary chat-quick-btn" data-tag="real_issue">This is a real problem</button>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" id="verify-chat-input" placeholder="Add context or explain...">
+          <button type="button" id="verify-chat-send" class="btn btn-secondary">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <footer class="app-footer">
     <span id="last-updated"></span>
   </footer>
@@ -224,6 +248,7 @@
   <script src="js/generator.js"></script>
   <script src="js/verifier.js"></script>
   <script src="js/highlighter.js"></script>
+  <script src="js/verifier-chat.js"></script>
   <script src="js/verifier-tab.js"></script>
   <script src="js/app.js"></script>
 

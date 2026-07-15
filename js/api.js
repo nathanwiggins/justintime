@@ -262,6 +262,7 @@ Instructions:
 - Assign each group a mismatch_label — a brief phrase describing the root cause (e.g. "Incorrect PI salary rate Year 2", "Fringe benefit rate applied to wrong base").
 - A mismatch with no clear relationship to any other may be its own group of one.
 - Every input item must appear in exactly one group.
+- Prefer broader groupings — merge related root causes together so there are no more than about 4 groups total, even if that means combining several minor issues into one group, so the user isn't asked to review too many separate items.
 
 For each group return:
 - mismatch_label: brief description of the root cause
@@ -309,6 +310,27 @@ ${csvText}`;
     return callApi(apiKey, prompt, VerifierSchemas.summaryAudit);
   }
 
+  async function classifyReply(section, transcript, apiKey) {
+    const conversation = transcript.map(turn => `${turn.role === 'assistant' ? 'Assistant' : 'User'}: ${turn.text}`).join('\n');
+    const prompt = `You are a friendly budget audit assistant helping a research administrator understand one finding from a budget justification review. You are having a short conversation with the user about a single finding to determine whether it is a real problem that needs fixing, or something that turns out not to be a concern (e.g. the user has context that explains it).
+
+Finding:
+- Label: ${section.section_label}
+- Type: ${section.type}
+- Explanation: ${section.explanation}
+- Items: ${JSON.stringify(section.items, null, 2)}
+
+Conversation so far:
+${conversation}
+
+Instructions:
+- Respond with a short, plain-language assistant_reply continuing the conversation naturally (acknowledge what the user said).
+- Set tag to "real_issue" if the finding still needs to be fixed in the budget justification, or "not_a_concern" if the user's reply explains it away.
+- Give your best-guess tag even if you are not fully certain.
+- Set needs_followup to true only if one more clarifying question would meaningfully change your tag; otherwise false. If you set needs_followup to true, make assistant_reply end with that clarifying question.`;
+    return callApi(apiKey, prompt, VerifierSchemas.chatReply);
+  }
+
   async function test(apiKey) {
     if (isVandalizerHosted()) return;
 
@@ -331,5 +353,5 @@ ${csvText}`;
     }
   }
 
-  return { generateSection, extractValues, extractValuesBatch, matchValues, matchValuesBatch, auditNotFound, auditMismatches, auditSummary, test, isVandalizerHosted, setRetryHandler: cb => { retryHandler = cb; } };
+  return { generateSection, extractValues, extractValuesBatch, matchValues, matchValuesBatch, auditNotFound, auditMismatches, auditSummary, classifyReply, test, isVandalizerHosted, setRetryHandler: cb => { retryHandler = cb; } };
 })();

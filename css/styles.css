@@ -709,6 +709,65 @@ textarea {
   border-radius: 0 0 var(--radius) var(--radius);
 }
 
+.chat-modal-content { max-width: 480px; }
+
+.chat-progress {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.chat-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.chat-msg {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.chat-msg.assistant {
+  align-self: flex-start;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-msg.user {
+  align-self: flex-end;
+  background: var(--color-primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-footer {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.chat-quick-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 10px;
+}
+
+.chat-input-row input {
+  flex: 1;
+}
+
 .verify-intro {
   font-size: 14px;
   color: var(--color-text-muted);
@@ -848,6 +907,45 @@ textarea {
 
 .summary-card-item      { font-size: 13px; color: var(--color-text-muted); }
 .summary-card-item-diff { font-variant-numeric: tabular-nums; }
+
+.summary-collapsed {
+  margin-top: 14px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 14px;
+}
+
+.summary-collapsed-toggle {
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0;
+}
+
+.summary-collapsed-body { margin-top: 10px; }
+.summary-collapsed-body.hidden { display: none; }
+
+.summary-collapsed-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.summary-collapsed-item:last-child { border-bottom: none; }
+
+.summary-collapsed-item-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.summary-collapsed-item-explanation {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
 
 .step-rerun-btn {
   background: none;

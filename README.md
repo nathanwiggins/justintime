@@ -4,7 +4,7 @@ A lightweight, client-side NSF budget justification generator built for research
 
 ## Features
 
-- **Budget Verifier** — a dedicated Verifier tab accepts any budget justification `.docx` and its corresponding spreadsheet. Two AI passes identify every dollar value in the justification, match each against the spreadsheet, and display a color-coded results table showing matches, mismatches, and values not found in the spreadsheet. When discrepancies exist, a button downloads a marked-up copy of the original document with mismatched values highlighted in red and unmatched values in yellow.
+- **Budget Verifier** — a dedicated Verifier tab accepts any budget justification `.docx` and its corresponding spreadsheet. AI passes identify every dollar value in the justification, match each against the spreadsheet, and group the discrepancies by root cause. When discrepancies exist, a guided chat modal walks the user through each finding one at a time, asking whether it's a real problem or a non-issue, before rendering a simplified color-coded summary — real issues shown prominently, non-issues collapsed. A button downloads a marked-up copy of the original document with mismatched values highlighted in red and unmatched values in yellow.
 - **Generator-first UI** — opens directly on the Generator tab. Settings are a click away but stay out of the way during normal use.
 - **Drag-and-drop file uploads** — budget file and project summary both support drag-and-drop or click-to-browse. Accepted formats shown inline; filename displayed on selection.
 - **Project summary as document or text** — upload a `.doc` or `.docx` file (default) or toggle to a plain text input. Mammoth.js extracts text from the uploaded document before generation begins.
@@ -25,7 +25,7 @@ A lightweight, client-side NSF budget justification generator built for research
 | Word document parsing | [Mammoth.js](https://github.com/mwilliamson/mammoth.js) |
 | AI narrative generation | [Gemini API](https://ai.google.dev/) (structured JSON output) |
 | Word document generation | [docx](https://github.com/dolanmiu/docx) (built programmatically) |
-| Settings persistence | Browser `localStorage` |
+| Settings & review-chat persistence | Browser `localStorage` |
 
 ## File Structure
 
@@ -44,6 +44,7 @@ justintime/
 │   ├── sections.js         # Section registry: ordered section definitions per template
 │   ├── verifier.js         # Portable two-step verification core: Verifier.run(text, csv, key)
 │   ├── verifier-tab.js     # Verifier tab UI: file handling, orchestration, results rendering
+│   ├── verifier-chat.js    # Chat-driven findings review: walks the user through each finding, tags real issues vs. non-issues, persists/resumes via localStorage
 │   ├── highlighter.js      # DOCX markup: injects <w:highlight> into flagged runs via JSZip
 │   └── document.js         # docx output + download trigger
 └── templates/
@@ -118,6 +119,8 @@ Push to the `main` branch. GitHub Pages serves `index.html` from the repository 
 3. Upload the corresponding budget spreadsheet (`.csv`, `.xls`, or `.xlsx`).
 4. Click **Verify Budget**.
 
-Just-In-Time makes several AI passes: the first labels every dollar amount in the justification; the second matches each against the spreadsheet; a third audits not-found values with a fresh match attempt; a fourth groups mismatches by root cause; and a final pass generates a human-readable summary displayed as color-coded cards — yellow for values missing from the spreadsheet, red for mismatches. A marked-up copy of the justification document can be downloaded with problem values highlighted.
+Just-In-Time makes several AI passes: the first labels every dollar amount in the justification; the second matches each against the spreadsheet; a third audits not-found values with a fresh match attempt; a fourth groups mismatches by root cause (consolidated to roughly four groups); and a final pass writes a plain-language explanation for each group.
+
+If any findings remain, a chat modal opens and walks through each finding one at a time: it explains what was detected and asks whether it's a real problem or a non-issue. Quick-response buttons resolve a finding instantly; typing a reply instead sends it to the AI, which replies conversationally and may ask one clarifying follow-up before settling on a tag. Progress is saved to `localStorage` as you go, so closing the tab or reloading the page mid-review surfaces a "Continue Review" prompt that picks up where you left off — no re-upload required. Once every finding is tagged, a simplified summary renders: real issues as color-coded cards (yellow for values missing from the spreadsheet, red for mismatches), and non-issues collapsed under a "Reviewed — no action needed" toggle. A marked-up copy of the justification document can be downloaded with problem values highlighted.
 
 When running on a DGX/Vandalizer deployment, the Labeling and Matching steps are automatically split into batches of 25 items each and processed sequentially. Each batch appears as its own step in the progress log with its own expandable debug view. Results are concatenated before the next stage begins. External Gemini API runs are unaffected and continue to use single large calls.

@@ -414,5 +414,14 @@ const VerifierSchemas = {
       },
       required: ['label', 'justification_value', 'context', 'calculated_in_spreadsheet']
     }
+  },
+  chatReply: {
+    type: 'object',
+    properties: {
+      assistant_reply: { type: 'string' },
+      tag:             { type: 'string', enum: ['real_issue', 'not_a_concern'] },
+      needs_followup:  { type: 'boolean' }
+    },
+    required: ['assistant_reply', 'tag', 'needs_followup']
   }
 };

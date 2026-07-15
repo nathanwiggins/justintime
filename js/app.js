@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   Settings.init();
   Generator.init();
+  VerifierChat.init();
   VerifierTab.init();
   loadLastUpdated();
   initCyclingLabel();

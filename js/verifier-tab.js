@@ -162,6 +162,14 @@ const VerifierTab = (() => {
     return diff <= 1 || diff / Math.max(Math.abs(a), Math.abs(b)) <= 0.01;
   }
 
+  function computeDocKey(text) {
+    let hash = 5381;
+    for (let i = 0; i < text.length; i++) {
+      hash = ((hash << 5) + hash + text.charCodeAt(i)) | 0;
+    }
+    return hash.toString(36);
+  }
+
   function renderSummary(sections) {
     const container = document.getElementById('verify-results');
     container.innerHTML = '';
@@ -189,7 +197,10 @@ const VerifierTab = (() => {
     const cards = document.createElement('div');
     cards.className = 'summary-cards';
 
-    sections.forEach(section => {
+    const prominentSections = sections.filter(s => s.tag !== 'not_a_concern');
+    const dismissedSections = sections.filter(s => s.tag === 'not_a_concern');
+
+    prominentSections.forEach(section => {
       const card = document.createElement('div');
       card.className = `summary-card ${section.type === 'not_found' ? 'not-found' : 'mismatch'}`;
 
@@ -225,6 +236,48 @@ const VerifierTab = (() => {
     });
 
     container.appendChild(cards);
+
+    if (dismissedSections.length) {
+      const collapsed = document.createElement('div');
+      collapsed.className = 'summary-collapsed';
+
+      const toggle = document.createElement('button');
+      toggle.className   = 'summary-collapsed-toggle';
+      toggle.textContent = `Reviewed — no action needed (${dismissedSections.length}) ▾`;
+
+      const body = document.createElement('div');
+      body.className = 'summary-collapsed-body hidden';
+
+      dismissedSections.forEach(section => {
+        const item = document.createElement('div');
+        item.className = 'summary-collapsed-item';
+
+        const header = document.createElement('div');
+        header.className   = 'summary-collapsed-item-header';
+        header.textContent = section.section_label;
+
+        const explanation = document.createElement('p');
+        explanation.className   = 'summary-collapsed-item-explanation';
+        explanation.textContent = section.explanation;
+
+        item.appendChild(header);
+        item.appendChild(explanation);
+        body.appendChild(item);
+      });
+
+      toggle.addEventListener('click', () => {
+        const hidden = body.classList.toggle('hidden');
+        toggle.textContent = `Reviewed — no action needed (${dismissedSections.length}) ${hidden ? '▾' : '▴'}`;
+      });
+
+      collapsed.appendChild(toggle);
+      collapsed.appendChild(body);
+      container.appendChild(collapsed);
+    }
+
+    if (!prominentSections.length) {
+      showSuccessOnStop = true;
+    }
 
     const allItems      = sections.flatMap(s => s.items.map(item => ({ ...item, status: s.type === 'not_found' ? 'NOT_FOUND' : 'MISMATCH' })));
     const fakeExtracted = allItems.map(item => ({ label: item.label, context: item.context || '' }));
@@ -458,7 +511,14 @@ const VerifierTab = (() => {
       items: section.items.map(item => ({ ...item, context: item.context || contextLookup.get(item.label) || '' }))
     }));
 
-    renderSummary(patchedSummary);
+    VerifierChat.start({
+      docKey: computeDocKey(cachedJustificationText + '|' + cachedCsvText),
+      sections: patchedSummary,
+      justificationText: cachedJustificationText,
+      csvText: cachedCsvText,
+      apiKey,
+      onComplete: renderSummary
+    });
   }
 
   async function rerunFrom(startStep) {
@@ -531,6 +591,8 @@ const VerifierTab = (() => {
       const hidden = log.classList.toggle('hidden');
       toggle.textContent = hidden ? 'Show details' : 'Hide details';
     });
+
+    VerifierChat.tryResume(renderSummary);
   }
 
   return { init };
