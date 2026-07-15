@@ -21,11 +21,24 @@ const VerifierChat = (() => {
     return a.every((s, i) => s.section_label === b[i].section_label && s.type === b[i].type);
   }
 
+  function joinNatural(items) {
+    if (items.length <= 1) return items[0] || '';
+    if (items.length === 2) return `${items[0]} and ${items[1]}`;
+    return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
+  }
+
+  function formatItemList(items, limit = 5) {
+    const labels = items.map(i => i.label);
+    if (labels.length <= limit) return joinNatural(labels);
+    return `${joinNatural(labels.slice(0, limit))}, and ${labels.length - limit} more`;
+  }
+
   function buildOpenerMessage(section) {
-    const question = section.type === 'not_found'
-      ? "Is this something we need to track down, or is there a reason it's fine as-is?"
-      : "Is this something we need to fix in the justification, or is there a reason it's fine as-is?";
-    return `${section.explanation}\n\n${question}`;
+    const itemList = formatItemList(section.items);
+    if (section.type === 'not_found') {
+      return `I've completed my audit of the budget and budget justification. There were a couple of items I had trouble finding, including ${itemList}. Are you concerned about any of these values, or are you okay to move on?`;
+    }
+    return `I found a few numbers that don't quite match up between your justification and the spreadsheet, including ${itemList}. Does this look like something that needs fixing, or is there a reason it's fine as-is?`;
   }
 
   function modalEl()    { return document.getElementById('verify-chat-modal'); }
