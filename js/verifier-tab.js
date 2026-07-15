@@ -343,6 +343,10 @@ const VerifierTab = (() => {
 
       const scriptStep = addStep('Scanning for dollar values');
       const preExtracted = Extractor.run(justificationText);
+      if (!preExtracted.length) {
+        scriptStep.error('no dollar values found');
+        throw new Error('No dollar values were found in this document. Please upload a valid budget justification document.');
+      }
       cachedPreExtracted = preExtracted;
       scriptStep.done(`${preExtracted.length} values found`, [
         { label: 'Script Extraction', content: JSON.stringify(preExtracted, null, 2) }

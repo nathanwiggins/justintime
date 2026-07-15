@@ -119,6 +119,8 @@ Push to the `main` branch. GitHub Pages serves `index.html` from the repository 
 3. Upload the corresponding budget spreadsheet (`.csv`, `.xls`, or `.xlsx`).
 4. Click **Verify Budget**.
 
+Before any AI calls are made, the justification document is scanned for dollar values; if none are found, an error asks you to upload a valid budget justification document.
+
 Just-In-Time makes several AI passes: the first labels every dollar amount in the justification; the second matches each against the spreadsheet; a third audits not-found values with a fresh match attempt; a fourth groups mismatches by root cause (consolidated to roughly four groups); and a final pass writes a plain-language explanation for each group.
 
 If any findings remain, a chat modal opens and walks through each finding one at a time: it explains what was detected and asks whether it's a real problem or a non-issue. Quick-response buttons resolve a finding instantly; typing a reply instead sends it to the AI, which replies conversationally and may ask one clarifying follow-up before settling on a tag. Progress is saved to `localStorage` as you go, so closing the tab or reloading the page mid-review surfaces a "Continue Review" prompt that picks up where you left off — no re-upload required. Once every finding is tagged, a simplified summary renders: real issues as color-coded cards (yellow for values missing from the spreadsheet, red for mismatches), and non-issues collapsed under a "Reviewed — no action needed" toggle. A marked-up copy of the justification document can be downloaded with problem values highlighted.
