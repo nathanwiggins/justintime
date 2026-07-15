@@ -310,9 +310,9 @@ ${csvText}`;
     return callApi(apiKey, prompt, VerifierSchemas.summaryAudit);
   }
 
-  async function classifyReply(section, transcript, apiKey) {
+  async function classifyReply(section, transcript, justificationText, csvText, apiKey) {
     const conversation = transcript.map(turn => `${turn.role === 'assistant' ? 'Assistant' : 'User'}: ${turn.text}`).join('\n');
-    const prompt = `You are a friendly budget audit assistant helping a research administrator understand one finding from a budget justification review. You are having a short conversation with the user about a single finding to determine whether it is a real problem that needs fixing, or something that turns out not to be a concern (e.g. the user has context that explains it).
+    const prompt = `You are a friendly budget audit assistant discussing one suspected discrepancy with a research administrator. You are verifying, together with the user, whether this is a real mismatch that needs fixing in the budget justification, or something that turns out not to be a concern (e.g. the user has context that explains it, or you misread the documents).
 
 Finding:
 - Label: ${section.section_label}
@@ -323,11 +323,18 @@ Finding:
 Conversation so far:
 ${conversation}
 
+Budget Justification:
+${justificationText}
+
+Budget Spreadsheet:
+${csvText}
+
 Instructions:
+- Use the budget justification and spreadsheet above to check the user's claims when they push back or offer an explanation — don't just take their word for it if the documents say otherwise.
 - Respond with a short, plain-language assistant_reply continuing the conversation naturally (acknowledge what the user said).
-- Set tag to "real_issue" if the finding still needs to be fixed in the budget justification, or "not_a_concern" if the user's reply explains it away.
-- Give your best-guess tag even if you are not fully certain.
-- Set needs_followup to true only if one more clarifying question would meaningfully change your tag; otherwise false. If you set needs_followup to true, make assistant_reply end with that clarifying question.`;
+- Keep asking clarifying questions (set needs_followup to true) until you and the user genuinely agree on the outcome. Don't rush to a conclusion after just one reply if there's still ambiguity.
+- Once you and the user have reached agreement, set needs_followup to false and end assistant_reply with an explicit resolution statement: either that you're noting this as a real mismatch that needs fixing, or that based on the user's explanation you'll disregard this finding.
+- Set tag to "real_issue" if the finding still needs to be fixed in the budget justification, or "not_a_concern" if the user's explanation resolves it. Give your best-guess tag even when needs_followup is true.`;
     return callApi(apiKey, prompt, VerifierSchemas.chatReply);
   }
 

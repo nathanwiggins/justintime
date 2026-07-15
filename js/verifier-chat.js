@@ -33,12 +33,22 @@ const VerifierChat = (() => {
     return `${joinNatural(labels.slice(0, limit))}, and ${labels.length - limit} more`;
   }
 
+  function lowerFirst(text) {
+    return text.charAt(0).toLowerCase() + text.slice(1);
+  }
+
+  function ensureSentenceEnd(text) {
+    const trimmed = text.trim();
+    return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+  }
+
   function buildOpenerMessage(section) {
-    const itemList = formatItemList(section.items);
     if (section.type === 'not_found') {
+      const itemList = formatItemList(section.items);
       return `I've completed my audit of the budget and budget justification. There were a couple of items I had trouble finding in the spreadsheet, including ${itemList}. If any of these look important, it may be worth double-checking them — otherwise, no action needed.`;
     }
-    return `I found a few numbers that don't quite match up between your justification and the spreadsheet, including ${itemList}. Does this look like something that needs fixing, or is there a reason it's fine as-is?`;
+    const discrepancy = ensureSentenceEnd(lowerFirst(section.explanation));
+    return `It appears that ${discrepancy} Do you notice the same thing when you compare the two documents, or did I misunderstand something?`;
   }
 
   function modalEl()      { return document.getElementById('verify-chat-modal'); }
@@ -149,15 +159,13 @@ const VerifierChat = (() => {
 
     setSending(true);
     try {
-      const result = await Api.classifyReply(section, section.transcript, apiKeyRef);
+      const result = await Api.classifyReply(section, section.transcript, session.justificationText, session.csvText, apiKeyRef);
       section.transcript.push({ role: 'assistant', text: result.assistant_reply });
       section.tag = result.tag;
       persist();
       renderThread();
 
-      const userTurns    = section.transcript.filter(t => t.role === 'user').length;
-      const shouldAdvance = !result.needs_followup || userTurns >= 2;
-      if (shouldAdvance) advance();
+      if (!result.needs_followup) advance();
     } catch (err) {
       section.transcript.push({ role: 'assistant', text: 'Sorry, something went wrong reaching the AI: ' + err.message });
       persist();
