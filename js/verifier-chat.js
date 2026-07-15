@@ -124,7 +124,7 @@ const VerifierChat = (() => {
 
   function handleAcknowledge() {
     const section = currentSection();
-    section.tag = 'acknowledged';
+    section.tag = 'not_a_concern';
     section.transcript.push({ role: 'user', text: 'Got it.' });
     persist();
     renderThread();

@@ -3,6 +3,7 @@ const VerifierTab = (() => {
   let budgetFile         = null;
   let lastExtracted      = null;
   let showSuccessOnStop  = false;
+  let resumeChecked      = false;
 
   const BATCH_SIZE = 25;
   const DIRECT_BATCH_SIZE = 50;
@@ -515,6 +516,7 @@ const VerifierTab = (() => {
 
     const patchedSummary = summaryResult.map(section => ({
       ...section,
+      section_label: section.type === 'not_found' ? 'Hard to Find Items' : section.section_label,
       items: section.items.map(item => ({ ...item, context: item.context || contextLookup.get(item.label) || '' }))
     }));
 
@@ -577,18 +579,24 @@ const VerifierTab = (() => {
     });
   }
 
+  function maybeCheckResume() {
+    if (resumeChecked || !justificationFile || !budgetFile) return;
+    resumeChecked = true;
+    VerifierChat.tryResume(renderSummary);
+  }
+
   function init() {
     initDropZone(
       'verify-justification-drop-zone',
       'verify-justification-input',
       'verify-justification-filename',
-      file => { justificationFile = file; }
+      file => { justificationFile = file; maybeCheckResume(); }
     );
     initDropZone(
       'verify-budget-drop-zone',
       'verify-budget-input',
       'verify-budget-filename',
-      file => { budgetFile = file; }
+      file => { budgetFile = file; maybeCheckResume(); }
     );
     document.getElementById('verify-btn').addEventListener('click', handleVerify);
 
@@ -598,8 +606,6 @@ const VerifierTab = (() => {
       const hidden = log.classList.toggle('hidden');
       toggle.textContent = hidden ? 'Show details' : 'Hide details';
     });
-
-    VerifierChat.tryResume(renderSummary);
   }
 
   return { init };
