@@ -36,17 +36,21 @@ const VerifierChat = (() => {
   function buildOpenerMessage(section) {
     const itemList = formatItemList(section.items);
     if (section.type === 'not_found') {
-      return `I've completed my audit of the budget and budget justification. There were a couple of items I had trouble finding, including ${itemList}. Are you concerned about any of these values, or are you okay to move on?`;
+      return `I've completed my audit of the budget and budget justification. There were a couple of items I had trouble finding in the spreadsheet, including ${itemList}. If any of these look important, it may be worth double-checking them — otherwise, no action needed.`;
     }
     return `I found a few numbers that don't quite match up between your justification and the spreadsheet, including ${itemList}. Does this look like something that needs fixing, or is there a reason it's fine as-is?`;
   }
 
-  function modalEl()    { return document.getElementById('verify-chat-modal'); }
-  function threadEl()   { return document.getElementById('verify-chat-thread'); }
-  function progressEl() { return document.getElementById('verify-chat-progress'); }
-  function inputEl()    { return document.getElementById('verify-chat-input'); }
-  function sendBtnEl()  { return document.getElementById('verify-chat-send'); }
-  function quickBtns()  { return document.querySelectorAll('#verify-chat-quick-actions .chat-quick-btn'); }
+  function modalEl()      { return document.getElementById('verify-chat-modal'); }
+  function threadEl()     { return document.getElementById('verify-chat-thread'); }
+  function progressEl()   { return document.getElementById('verify-chat-progress'); }
+  function inputEl()      { return document.getElementById('verify-chat-input'); }
+  function sendBtnEl()    { return document.getElementById('verify-chat-send'); }
+  function quickBtns()    { return document.querySelectorAll('#verify-chat-quick-actions .chat-quick-btn'); }
+  function quickActionsRowEl() { return document.getElementById('verify-chat-quick-actions'); }
+  function inputRowEl()   { return document.getElementById('verify-chat-input-row'); }
+  function ackRowEl()     { return document.getElementById('verify-chat-ack-row'); }
+  function ackBtnEl()     { return document.getElementById('verify-chat-ack'); }
 
   function openModal()  { modalEl().classList.remove('hidden'); }
   function closeModal() { modalEl().classList.add('hidden'); }
@@ -80,6 +84,13 @@ const VerifierChat = (() => {
     quickBtns().forEach(btn => { btn.disabled = active; });
   }
 
+  function updateFooter(section) {
+    const isAckOnly = section.type === 'not_found';
+    quickActionsRowEl().classList.toggle('hidden', isAckOnly);
+    inputRowEl().classList.toggle('hidden', isAckOnly);
+    ackRowEl().classList.toggle('hidden', !isAckOnly);
+  }
+
   function renderCurrentSection() {
     const section = currentSection();
     if (!section) { finishSession(); return; }
@@ -88,6 +99,7 @@ const VerifierChat = (() => {
       persist();
     }
     updateProgress();
+    updateFooter(section);
     renderThread();
   }
 
@@ -102,6 +114,15 @@ const VerifierChat = (() => {
     persist();
     closeModal();
     if (onCompleteCb) onCompleteCb(session.sections);
+  }
+
+  function handleAcknowledge() {
+    const section = currentSection();
+    section.tag = 'acknowledged';
+    section.transcript.push({ role: 'user', text: 'Got it.' });
+    persist();
+    renderThread();
+    advance();
   }
 
   function handleQuickTag(tag) {
@@ -229,6 +250,7 @@ const VerifierChat = (() => {
     quickBtns().forEach(btn => {
       btn.addEventListener('click', () => handleQuickTag(btn.dataset.tag));
     });
+    ackBtnEl().addEventListener('click', handleAcknowledge);
   }
 
   return { start, tryResume, init };

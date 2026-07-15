@@ -768,6 +768,11 @@ textarea {
   flex: 1;
 }
 
+.chat-ack-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .verify-intro {
   font-size: 14px;
   color: var(--color-text-muted);
