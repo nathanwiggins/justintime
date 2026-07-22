@@ -41,12 +41,18 @@ const VerifierTab = (() => {
   }
 
   function clearStepLog() {
-    const log    = document.getElementById('verify-step-log');
-    const toggle = document.getElementById('verify-log-toggle');
+    const log = document.getElementById('verify-step-log');
     log.innerHTML = '';
-    log.classList.add('hidden');
-    toggle.classList.remove('hidden');
-    toggle.textContent = 'Show details';
+    log.classList.remove('hidden');
+  }
+
+  function pickStepIcon(label) {
+    if (/pars|scan/i.test(label))       return Icons.document;
+    if (/label/i.test(label))           return Icons.sparkle;
+    if (/match/i.test(label))           return Icons.spreadsheet;
+    if (/audit|discrepanc/i.test(label)) return Icons.folder;
+    if (/summary/i.test(label))         return Icons.chat;
+    return Icons.magnifier;
   }
 
   function addStep(label) {
@@ -56,6 +62,10 @@ const VerifierTab = (() => {
 
     const row  = document.createElement('div');
     row.className = 'step-row';
+
+    const catIcon = document.createElement('span');
+    catIcon.className = 'step-cat-icon';
+    catIcon.innerHTML  = pickStepIcon(label);
 
     const icon = document.createElement('span');
     icon.className   = 'step-icon spinning';
@@ -69,6 +79,7 @@ const VerifierTab = (() => {
     timer.className   = 'step-timer';
     timer.textContent = '0s';
 
+    row.appendChild(catIcon);
     row.appendChild(icon);
     row.appendChild(text);
     row.appendChild(timer);
@@ -620,13 +631,6 @@ const VerifierTab = (() => {
       file => { budgetFile = file; maybeCheckResume(); }
     );
     document.getElementById('verify-btn').addEventListener('click', handleVerify);
-
-    document.getElementById('verify-log-toggle').addEventListener('click', () => {
-      const log    = document.getElementById('verify-step-log');
-      const toggle = document.getElementById('verify-log-toggle');
-      const hidden = log.classList.toggle('hidden');
-      toggle.textContent = hidden ? 'Show details' : 'Hide details';
-    });
   }
 
   return { init };

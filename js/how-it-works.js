@@ -9,16 +9,6 @@ const HowItWorks = (() => {
     mismatchGroupLabel: 'Outdated fringe benefit rate'
   };
 
-  const ICONS = {
-    document: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 13h6M9.5 16.5h6M9.5 9.5h3"/></svg>',
-    spreadsheet: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="16" rx="1.5"/><path d="M3.5 9.5h17M3.5 15h17M9.5 4v16M15 4v16"/></svg>',
-    sparkle: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 5.6L19 9.5l-5.2 1.9L12 17l-1.8-5.6L5 9.5l5.2-1.9z"/><path d="M19 15l.8 2.4L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.6z"/></svg>',
-    magnifier: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>',
-    folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5A1.5 1.5 0 014.5 5H9l2 2.5h8.5A1.5 1.5 0 0121 9v9.5A1.5 1.5 0 0119.5 20h-15A1.5 1.5 0 013 18.5z"/></svg>'
-  };
-
-  const ARROW = '<svg viewBox="0 0 28 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8h22M18 3l6 5-6 5"/></svg>';
-
   function row(...children) {
     const el = document.createElement('div');
     el.className = 'step-flow-row';
@@ -42,7 +32,7 @@ const HowItWorks = (() => {
     const el = document.createElement('div');
     el.className = 'step-flow-arrow step-flow-anim';
     el.style.animationDelay = `${delay}ms`;
-    el.innerHTML = ARROW;
+    el.innerHTML = Icons.arrow;
     return el;
   }
 
@@ -79,11 +69,11 @@ const HowItWorks = (() => {
   function renderStep1(stage) {
     stage.appendChild(heading('1. Upload & Extraction'));
     stage.appendChild(row(
-      iconBox(ICONS.document, 'Justification', 0),
+      iconBox(Icons.document, 'Justification', 0),
       arrowEl(100),
-      iconBox(ICONS.spreadsheet, 'Budget Sheet', 200),
+      iconBox(Icons.spreadsheet, 'Budget Sheet', 200),
       arrowEl(300),
-      iconBox(ICONS.magnifier, 'Scan for $', 400)
+      iconBox(Icons.magnifier, 'Scan for $', 400)
     ));
 
     const line = document.createElement('p');
@@ -102,7 +92,7 @@ const HowItWorks = (() => {
     stage.appendChild(row(
       chip(`$${EXAMPLE.salaryValue.toLocaleString()}`, '', 0),
       arrowEl(150),
-      iconBox(ICONS.sparkle, 'AI labels it', 300)
+      iconBox(Icons.sparkle, 'AI labels it', 300)
     ));
     stage.appendChild(snippet({
       label: EXAMPLE.salaryLabel,
@@ -115,11 +105,11 @@ const HowItWorks = (() => {
   function renderStep3(stage) {
     stage.appendChild(heading('3. Matching'));
     stage.appendChild(row(
-      iconBox(ICONS.spreadsheet, 'Spreadsheet row', 0),
+      iconBox(Icons.spreadsheet, 'Spreadsheet row', 0),
       arrowEl(150),
-      iconBox(ICONS.sparkle, 'AI compares', 300),
+      iconBox(Icons.sparkle, 'AI compares', 300),
       arrowEl(450),
-      iconBox(ICONS.magnifier, 'Found a gap', 600)
+      iconBox(Icons.magnifier, 'Found a gap', 600)
     ));
     stage.appendChild(snippet({
       label: EXAMPLE.fringeLabel,
@@ -135,7 +125,7 @@ const HowItWorks = (() => {
     stage.appendChild(row(
       chip(EXAMPLE.fringeLabel, 'mismatch', 0),
       arrowEl(150),
-      iconBox(ICONS.folder, EXAMPLE.mismatchGroupLabel, 300)
+      iconBox(Icons.folder, EXAMPLE.mismatchGroupLabel, 300)
     ));
     stage.appendChild(caption('A dedicated audit pass re-checks anything that seemed off, then groups related mismatches by their root cause — so instead of a long list of scattered numbers, you see "one wrong fringe rate" explaining every value it touched. Just-In-Time keeps this to about four groups at most, however many mismatches there are.'));
   }
