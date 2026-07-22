@@ -34,6 +34,7 @@
 
       <div class="section-card">
         <h2 class="section-title">API Configuration</h2>
+        <div id="api-key-warning-banner" class="warning-banner"></div>
         <div class="form-group">
           <label for="api-key-input">Gemini API Key</label>
           <div class="input-with-action">
@@ -202,6 +203,22 @@
       <div class="modal-footer">
         <button id="cancel-modal" class="btn btn-secondary">Cancel</button>
         <button id="save-profile-btn" class="btn btn-primary">Save Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="api-key-warning-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="api-key-warning-title">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="api-key-warning-title">Before You Continue</h3>
+        <button id="api-key-warning-close" class="btn-icon" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="api-key-warning-modal-body" class="warning-banner"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="api-key-warning-ack" class="btn btn-primary">I Understand</button>
       </div>
     </div>
   </div>

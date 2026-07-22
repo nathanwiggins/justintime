@@ -17,6 +17,7 @@ A lightweight, client-side NSF budget justification generator built for research
 - **Step-by-step progress log** — each step displays live with a category icon and a spinner that resolves to a checkmark or error indicator, alongside an elapsed timer. On the Verifier tab this log is always visible as the pipeline runs — friendly labels and timing for everyone, with an expandable "Details" toggle per step for advanced users who want to see the exact prompt sent and the raw API response.
 - **Word document output** — the final payload builds a `.docx` file from scratch using the `docx` library. No pre-built template files required. The document downloads automatically.
 - **Last updated indicator** — a footer shows the date of the most recent push, fetched live from the GitHub API.
+- **API key data-privacy warning** — a persistent notice on the Settings tab's API Configuration card, and a pop-up shown each time an API key is saved, reminds users that a standard (free-tier) API key isn't covered by an enterprise data-processing agreement, that prompts and data may be logged or used to train models, to review the data-sharing terms of any API key before use, and to never enter sensitive or confidential information.
 
 ## Tech Stack
 

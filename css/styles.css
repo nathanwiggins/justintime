@@ -370,6 +370,33 @@ textarea {
 
 .api-key-actions { display: flex; gap: 8px; margin-top: 10px; }
 
+.warning-banner {
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-warning-text);
+}
+
+.warning-banner strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.warning-banner p { margin-bottom: 8px; }
+
+.warning-banner ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .status-message {
   font-size: 13px;
   min-height: 18px;

@@ -3,6 +3,16 @@ const Settings = (() => {
   const KEY_PROFILES = 'jit_profiles';
   const KEY_DEFAULT  = 'jit_default_profile';
 
+  const API_KEY_WARNING_HTML = `
+    <strong>⚠ Data Privacy Notice</strong>
+    <p>A standard (free-tier) Gemini API key is not covered by an enterprise data-processing agreement. Google may log, store, and use the prompts and documents you send — including budget data — to review or improve its models.</p>
+    <ul>
+      <li>Always review the data-sharing and retention terms before generating or using any API key.</li>
+      <li>Never paste sensitive, confidential, or personally identifiable information into an AI-connected field.</li>
+      <li>Treat a free API key as suitable for demos and testing only — not for real, sensitive budget data.</li>
+    </ul>
+  `;
+
   let profiles        = [];
   let editingId       = null;
 
@@ -186,7 +196,32 @@ const Settings = (() => {
     closeModal();
   }
 
+  function openApiKeyWarningModal() {
+    document.getElementById('api-key-warning-modal').classList.remove('hidden');
+  }
+
+  function closeApiKeyWarningModal() {
+    document.getElementById('api-key-warning-modal').classList.add('hidden');
+  }
+
+  function initApiKeyWarning() {
+    document.getElementById('api-key-warning-banner').innerHTML    = API_KEY_WARNING_HTML;
+    document.getElementById('api-key-warning-modal-body').innerHTML = API_KEY_WARNING_HTML;
+
+    document.getElementById('api-key-warning-close').addEventListener('click', closeApiKeyWarningModal);
+    document.getElementById('api-key-warning-ack').addEventListener('click', closeApiKeyWarningModal);
+    document.querySelector('#api-key-warning-modal .modal-overlay').addEventListener('click', closeApiKeyWarningModal);
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !document.getElementById('api-key-warning-modal').classList.contains('hidden')) {
+        closeApiKeyWarningModal();
+      }
+    });
+  }
+
   function initApiKeySection() {
+    initApiKeyWarning();
+
     const input     = document.getElementById('api-key-input');
     const toggleBtn = document.getElementById('toggle-key-visibility');
     const saveBtn   = document.getElementById('save-api-key');
@@ -215,6 +250,7 @@ const Settings = (() => {
         status.textContent = '';
         status.className   = 'status-message';
       }, 3000);
+      openApiKeyWarningModal();
     });
 
     const testBtn = document.getElementById('test-api-key');
