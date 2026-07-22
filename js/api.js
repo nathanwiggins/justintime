@@ -1,5 +1,6 @@
 const Api = (() => {
-  const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent';
+  const ENDPOINT        = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent';
+  const STREAM_ENDPOINT  = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:streamGenerateContent';
 
   const isVandalizerHosted = () => window.JIT_GLOBAL_CONFIG?.useVandalizerProxy || false;
 
@@ -38,7 +39,80 @@ ${section.prompt}`;
     return prompt;
   }
 
-  let retryHandler = null;
+  let retryHandler    = null;
+  let progressHandler = null;
+
+  async function readVandalizerSseStream(response) {
+    const reader  = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let result = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const events = buffer.split('\n\n');
+      buffer = events.pop();
+
+      for (const raw of events) {
+        const lines     = raw.split('\n');
+        const eventType = (lines.find(l => l.startsWith('event: ')) || 'event: message').slice('event: '.length).trim();
+        const dataLine  = lines.find(l => l.startsWith('data: '));
+        if (!dataLine) continue;
+        const payload = dataLine.slice('data: '.length).trim();
+        if (!payload) continue;
+
+        if (eventType === 'progress') {
+          try {
+            const { text } = JSON.parse(payload);
+            if (progressHandler) progressHandler(text);
+          } catch { /* ignore malformed progress frame */ }
+        } else if (eventType === 'result') {
+          result = JSON.parse(payload);
+        } else if (eventType === 'error') {
+          const err = JSON.parse(payload);
+          throw new Error(err.detail || 'Vandalizer streaming error');
+        }
+      }
+    }
+
+    if (!result) throw new Error('Vandalizer stream ended without a result.');
+    return result;
+  }
+
+  async function readGeminiSseStream(response) {
+    const reader  = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer   = '';
+    let fullText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const events = buffer.split('\n\n');
+      buffer = events.pop();
+
+      for (const event of events) {
+        const line = event.split('\n').find(l => l.startsWith('data: '));
+        if (!line) continue;
+        const payload = line.slice('data: '.length).trim();
+        if (!payload || payload === '[DONE]') continue;
+        try {
+          const chunk = JSON.parse(payload);
+          const delta = chunk.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (delta) {
+            fullText += delta;
+            if (progressHandler) progressHandler(fullText);
+          }
+        } catch { /* ignore partial/malformed SSE frames */ }
+      }
+    }
+    return fullText;
+  }
 
   async function withRetry(fn) {
     let lastError;
@@ -73,7 +147,10 @@ ${section.prompt}`;
           const err = await response.json().catch(() => ({}));
           throw new Error(err.detail || `Vandalizer API error (HTTP ${response.status})`);
         }
-        const result = await response.json();
+        const contentType = response.headers.get('content-type') || '';
+        const result = contentType.includes('text/event-stream')
+          ? await readVandalizerSseStream(response)
+          : await response.json();
         return result.data;
       }
 
@@ -85,6 +162,23 @@ ${section.prompt}`;
       }
       if (systemPrompt) {
         payload.systemInstruction = { parts: [{ text: systemPrompt }] };
+      }
+
+      if (progressHandler) {
+        const response = await fetch(`${STREAM_ENDPOINT}?alt=sse&key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const errBody = await response.json().catch(() => ({}));
+          throw new Error(errBody.error?.message || `Gemini API error (HTTP ${response.status})`);
+        }
+
+        const rawText = await readGeminiSseStream(response);
+        if (!rawText) throw new Error('Gemini returned an empty response.');
+        return schema ? JSON.parse(rawText) : rawText;
       }
 
       const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
@@ -360,5 +454,10 @@ Instructions:
     }
   }
 
-  return { generateSection, extractValues, extractValuesBatch, matchValues, matchValuesBatch, auditNotFound, auditMismatches, auditSummary, classifyReply, test, isVandalizerHosted, setRetryHandler: cb => { retryHandler = cb; } };
+  return {
+    generateSection, extractValues, extractValuesBatch, matchValues, matchValuesBatch,
+    auditNotFound, auditMismatches, auditSummary, classifyReply, test, isVandalizerHosted,
+    setRetryHandler: cb => { retryHandler = cb; },
+    setProgressHandler: cb => { progressHandler = cb; }
+  };
 })();
