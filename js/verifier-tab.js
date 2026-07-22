@@ -172,6 +172,27 @@ const VerifierTab = (() => {
     return hash.toString(36);
   }
 
+  async function extractJustificationText(file) {
+    const name = file.name.toLowerCase();
+    if (name.endsWith('.doc') && !name.endsWith('.docx')) {
+      throw new Error('Legacy .doc files cannot be parsed in the browser. Please re-save as .docx and re-upload.');
+    }
+    const buffer = await file.arrayBuffer();
+    if (name.endsWith('.pdf')) {
+      const text = await extractPdfText(buffer);
+      if (!text.trim()) throw new Error('Budget justification PDF appears to be empty or is a scanned image. Please use a text-based PDF or a .docx file.');
+      return text.trim();
+    }
+    const mammothResult = await mammoth.extractRawText({ arrayBuffer: buffer });
+    if (!mammothResult.value.trim()) throw new Error('Budget justification document appears to be empty.');
+    return mammothResult.value.trim();
+  }
+
+  async function extractBudgetCsv(file) {
+    const { csvText } = await Parser.parse(file);
+    return csvText.replace(/\$(\d[\d,]*(?:\.\d+)?)/g, (_, n) => n.replace(/,/g, ''));
+  }
+
   function renderSummary(sections) {
     const container = document.getElementById('verify-results');
     container.innerHTML = '';
@@ -314,31 +335,15 @@ const VerifierTab = (() => {
     });
 
     try {
-      const justName = justificationFile.name.toLowerCase();
-      if (justName.endsWith('.doc') && !justName.endsWith('.docx')) {
-        throw new Error('Legacy .doc files cannot be parsed in the browser. Please re-save as .docx and re-upload.');
-      }
-
       const justStep = addStep('Parsing justification document');
-      const buffer = await justificationFile.arrayBuffer();
-      let justificationText;
-      if (justName.endsWith('.pdf')) {
-        justificationText = await extractPdfText(buffer);
-        if (!justificationText.trim()) throw new Error('Budget justification PDF appears to be empty or is a scanned image. Please use a text-based PDF or a .docx file.');
-        justificationText = justificationText.trim();
-      } else {
-        const mammothResult = await mammoth.extractRawText({ arrayBuffer: buffer });
-        if (!mammothResult.value.trim()) throw new Error('Budget justification document appears to be empty.');
-        justificationText = mammothResult.value.trim();
-      }
+      const justificationText = await extractJustificationText(justificationFile);
       cachedJustificationText = justificationText;
       justStep.done(justificationFile.name, [
         { label: 'Extracted Text', content: justificationText }
       ]);
 
       const budgetStep = addStep('Parsing budget spreadsheet');
-      const { csvText } = await Parser.parse(budgetFile);
-      cachedCsvText = csvText.replace(/\$(\d[\d,]*(?:\.\d+)?)/g, (_, n) => n.replace(/,/g, ''));
+      cachedCsvText = await extractBudgetCsv(budgetFile);
       budgetStep.done(budgetFile.name, [
         { label: 'Extracted CSV', content: cachedCsvText }
       ]);
@@ -586,10 +591,19 @@ const VerifierTab = (() => {
     });
   }
 
-  function maybeCheckResume() {
+  async function maybeCheckResume() {
     if (resumeChecked || !justificationFile || !budgetFile) return;
     resumeChecked = true;
-    VerifierChat.tryResume(renderSummary);
+    if (!VerifierChat.hasStoredSession()) return;
+    try {
+      const [justificationText, csvText] = await Promise.all([
+        extractJustificationText(justificationFile),
+        extractBudgetCsv(budgetFile)
+      ]);
+      const docKey = computeDocKey(justificationText + '|' + csvText);
+      VerifierChat.tryResume(renderSummary, docKey);
+    } catch {
+    }
   }
 
   function init() {

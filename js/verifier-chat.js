@@ -161,10 +161,10 @@ const VerifierChat = (() => {
     }
   }
 
-  function renderResumeBanner(onComplete) {
+  function renderResumeBanner(onComplete, docKey) {
     const stored = loadStoredSession();
     const container = document.getElementById('verify-results');
-    if (!stored) return;
+    if (!stored || stored.docKey !== docKey) return;
 
     const card = document.createElement('div');
     card.className = 'summary-cards';
@@ -231,8 +231,12 @@ const VerifierChat = (() => {
     renderCurrentSection();
   }
 
-  function tryResume(onComplete) {
-    renderResumeBanner(onComplete);
+  function tryResume(onComplete, docKey) {
+    renderResumeBanner(onComplete, docKey);
+  }
+
+  function hasStoredSession() {
+    return !!loadStoredSession();
   }
 
   function init() {
@@ -246,5 +250,5 @@ const VerifierChat = (() => {
     ackBtnEl().addEventListener('click', handleAcknowledge);
   }
 
-  return { start, tryResume, init };
+  return { start, tryResume, hasStoredSession, init };
 })();
