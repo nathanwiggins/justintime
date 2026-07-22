@@ -438,19 +438,26 @@ const VerifierTab = (() => {
 
     if (startStep !== 'mismatchAudit' && startStep !== 'summary') {
       const notFoundAuditStep = addStep('Auditing not-found values');
-      let notFoundAuditResult;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        notFoundAuditResult = await Api.auditNotFound(cachedNotFoundItems, cachedJustificationText, cachedCsvText, apiKey);
-        if (notFoundAuditResult.length === cachedNotFoundItems.length) break;
-        if (attempt === 2) {
-          notFoundAuditStep.error(`expected ${cachedNotFoundItems.length} item${cachedNotFoundItems.length !== 1 ? 's' : ''}, got ${notFoundAuditResult.length}`);
-          throw new Error(`Not-found audit returned ${notFoundAuditResult.length} item(s) but expected ${cachedNotFoundItems.length} after 3 attempts.`);
+      if (!cachedNotFoundItems.length) {
+        cachedNotFoundAuditResult = [];
+        notFoundAuditStep.done('no not-found values to audit', [
+          { label: 'NOT_FOUND Audit', content: '[]' }
+        ]);
+      } else {
+        let notFoundAuditResult;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          notFoundAuditResult = await Api.auditNotFound(cachedNotFoundItems, cachedJustificationText, cachedCsvText, apiKey);
+          if (notFoundAuditResult.length === cachedNotFoundItems.length) break;
+          if (attempt === 2) {
+            notFoundAuditStep.error(`expected ${cachedNotFoundItems.length} item${cachedNotFoundItems.length !== 1 ? 's' : ''}, got ${notFoundAuditResult.length}`);
+            throw new Error(`Not-found audit returned ${notFoundAuditResult.length} item(s) but expected ${cachedNotFoundItems.length} after 3 attempts.`);
+          }
         }
+        cachedNotFoundAuditResult = notFoundAuditResult;
+        notFoundAuditStep.done(`${notFoundAuditResult.length} item${notFoundAuditResult.length !== 1 ? 's' : ''} resolved`, [
+          { label: 'NOT_FOUND Audit', content: JSON.stringify(notFoundAuditResult, null, 2) }
+        ], () => rerunFrom('notFoundAudit'));
       }
-      cachedNotFoundAuditResult = notFoundAuditResult;
-      notFoundAuditStep.done(`${notFoundAuditResult.length} item${notFoundAuditResult.length !== 1 ? 's' : ''} resolved`, [
-        { label: 'NOT_FOUND Audit', content: JSON.stringify(notFoundAuditResult, null, 2) }
-      ], () => rerunFrom('notFoundAudit'));
     }
 
     if (startStep !== 'summary') {
