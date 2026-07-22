@@ -23,8 +23,8 @@
   </header>
 
   <nav class="tab-nav">
-    <button class="tab-btn active" data-tab="generator">Generator</button>
-    <button class="tab-btn" data-tab="verify">Verifier</button>
+    <button class="tab-btn hidden" data-tab="generator">Generator</button>
+    <button class="tab-btn active" data-tab="verify">Verifier</button>
     <button class="tab-btn" data-tab="settings">Settings</button>
   </nav>
 
@@ -60,7 +60,7 @@
 
     </section>
 
-    <section id="tab-verify" class="tab-panel hidden">
+    <section id="tab-verify" class="tab-panel">
 
       <div class="section-card">
         <p class="verify-intro">Upload a budget justification document and its corresponding budget spreadsheet. Just-In-Time will identify every dollar amount in the justification and check whether it matches the spreadsheet.</p>
@@ -106,7 +106,7 @@
 
     </section>
 
-    <section id="tab-generator" class="tab-panel">
+    <section id="tab-generator" class="tab-panel hidden">
 
       <div class="section-card">
         <div class="form-group">
@@ -176,6 +176,8 @@
 
   </main>
 
+  <button id="how-it-works-btn" class="how-it-works-btn" aria-label="How Just-In-Time works" title="How it works">?</button>
+
   <div id="profile-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-overlay"></div>
     <div class="modal-content">
@@ -228,6 +230,20 @@
     </div>
   </div>
 
+  <div id="how-it-works-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="how-it-works-title">
+    <div class="modal-overlay"></div>
+    <div class="modal-content how-it-works-content">
+      <div class="modal-header">
+        <h3 id="how-it-works-title">How Just-In-Time Works</h3>
+        <button id="how-it-works-close" class="btn-icon" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="how-it-works-intro">Just-In-Time's Verifier checks a budget justification against its budget spreadsheet before you submit it — catching typos, stale rates, and unexplained gaps automatically. Here's what happens, step by step, when you click "Verify Budget."</p>
+        <div id="how-it-works-flow"></div>
+      </div>
+    </div>
+  </div>
+
   <footer class="app-footer">
     <span id="last-updated"></span>
   </footer>
@@ -249,6 +265,8 @@
   <script src="js/highlighter.js"></script>
   <script src="js/verifier-chat.js"></script>
   <script src="js/verifier-tab.js"></script>
+  <script src="js/step-flow.js"></script>
+  <script src="js/how-it-works.js"></script>
   <script src="js/app.js"></script>
 
 </body>

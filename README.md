@@ -5,7 +5,8 @@ A lightweight, client-side NSF budget justification generator built for research
 ## Features
 
 - **Budget Verifier** — a dedicated Verifier tab accepts any budget justification `.docx` and its corresponding spreadsheet. AI passes identify every dollar value in the justification, match each against the spreadsheet, and group the discrepancies by root cause. When discrepancies exist, a guided chat modal walks the user through each finding one at a time, asking whether it's a real problem or a non-issue, before rendering a simplified color-coded summary — real issues shown prominently, non-issues collapsed. A button downloads a marked-up copy of the original document with mismatched values highlighted in red and unmatched values in yellow.
-- **Generator-first UI** — opens directly on the Generator tab. Settings are a click away but stay out of the way during normal use.
+- **Verifier-first UI** — opens directly on the Verifier tab. The Generator tab is temporarily hidden from navigation; Settings are a click away but stay out of the way during normal use.
+- **"How It Works" explainer** — a floating help button (bottom-right, visible on every tab) opens a click-through, 5-step animated walkthrough of the Verifier pipeline (upload/extraction, labeling, matching, auditing, and human-in-the-loop review), aimed at non-technical users. It illustrates "structured output" — the JSON schema that forces each AI response into a predictable shape — with a real simplified example. Built on a reusable step-flow engine (`js/step-flow.js`) intended to also drive a future live progress animation during an actual verification run.
 - **Drag-and-drop file uploads** — budget file and project summary both support drag-and-drop or click-to-browse. Accepted formats shown inline; filename displayed on selection.
 - **Project summary as document or text** — upload a `.doc` or `.docx` file (default) or toggle to a plain text input. Mammoth.js extracts text from the uploaded document before generation begins.
 - **Default profile** — mark any Institutional Profile as the default in Settings. It auto-selects in the Generator dropdown on every load.
@@ -108,7 +109,7 @@ Push to the `main` branch. GitHub Pages serves `index.html` from the repository 
 1. Go to the **Settings** tab.
 2. Enter and save your Gemini API key.
 3. Create at least one Institutional Profile with your institution's fringe benefit and F&A boilerplate text. Optionally mark one as the default.
-4. Return to the **Generator** tab (opens by default).
+4. Go to the **Generator** tab. It's currently hidden from the nav bar (Verifier is the default tab); re-enable it in `index.html` to use the Generator.
 5. Select an Institutional Profile, upload your budget file, and upload your project summary document (or toggle to text input).
 6. Click **Generate Justification** — a `.docx` file will download automatically.
 
