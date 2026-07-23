@@ -181,6 +181,8 @@ const VerifierTab = (() => {
         icon.textContent = '✓';
         if (summary) text.textContent = label + ' — ' + summary;
         if (sections && sections.length) attachDetails(sections);
+        detail.classList.add('hidden');
+        toggle.textContent = 'Details ▾';
         if (onRerun) {
           const rerunBtn = document.createElement('button');
           rerunBtn.className   = 'step-rerun-btn';
