@@ -418,10 +418,11 @@ const VerifierSchemas = {
   chatReply: {
     type: 'object',
     properties: {
-      assistant_reply: { type: 'string' },
-      tag:             { type: 'string', enum: ['real_issue', 'not_a_concern'] },
-      needs_followup:  { type: 'boolean' }
+      assistant_reply:    { type: 'string' },
+      tag:                { type: 'string', enum: ['real_issue', 'not_a_concern'] },
+      needs_followup:     { type: 'boolean' },
+      resolution_summary: { type: 'string' }
     },
-    required: ['assistant_reply', 'tag', 'needs_followup']
+    required: ['assistant_reply', 'tag', 'needs_followup', 'resolution_summary']
   }
 };

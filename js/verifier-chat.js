@@ -148,7 +148,7 @@ const VerifierChat = (() => {
       const result = await Api.classifyReply(section, section.transcript, session.justificationText, session.csvText, apiKeyRef);
       section.transcript.push({ role: 'assistant', text: result.assistant_reply });
       section.tag = result.tag;
-      if (!result.needs_followup) section.resolution = result.assistant_reply;
+      if (!result.needs_followup) section.resolution = result.resolution_summary;
       persist();
       renderThread();
 
