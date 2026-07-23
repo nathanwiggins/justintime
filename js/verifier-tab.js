@@ -560,22 +560,29 @@ const VerifierTab = (() => {
           { label: 'Mismatch Audit', content: '[]' }
         ]);
       } else {
-        const inputLabels = new Set(mismatchItems.map(i => i.label));
         let mismatchAuditResult;
+        let recoveredItems = [];
         for (let attempt = 0; attempt < 3; attempt++) {
           mismatchAuditResult = await callWithProgress(mismatchAuditStep, () => Api.auditMismatches(mismatchItems, cachedJustificationText, cachedCsvText, apiKey));
           const outputLabels = new Set(mismatchAuditResult.flatMap(g => (g.items || []).map(i => i.label)));
-          if ([...inputLabels].every(l => outputLabels.has(l))) break;
-          if (attempt === 2) {
-            const missing = [...inputLabels].filter(l => !outputLabels.has(l));
-            mismatchAuditStep.error(`${missing.length} item${missing.length !== 1 ? 's' : ''} missing from groups`);
-            throw new Error(`Mismatch audit dropped ${missing.length} item(s) after 3 attempts.`);
-          }
+          recoveredItems = mismatchItems.filter(i => !outputLabels.has(i.label));
+          if (!recoveredItems.length) break;
+        }
+        if (recoveredItems.length) {
+          mismatchAuditResult = [
+            ...mismatchAuditResult,
+            ...recoveredItems.map(item => ({ mismatch_label: item.label, items: [item] }))
+          ];
         }
         cachedMismatchAuditResult = mismatchAuditResult;
-        mismatchAuditStep.done(`${mismatchAuditResult.length} group${mismatchAuditResult.length !== 1 ? 's' : ''} identified`, [
-          { label: 'Mismatch Audit', content: JSON.stringify(mismatchAuditResult, null, 2) }
-        ], () => rerunFrom('mismatchAudit'));
+        const groupSummary = `${mismatchAuditResult.length} group${mismatchAuditResult.length !== 1 ? 's' : ''} identified`;
+        mismatchAuditStep.done(
+          recoveredItems.length
+            ? `${groupSummary} (${recoveredItems.length} added individually after grouping missed ${recoveredItems.length === 1 ? 'it' : 'them'})`
+            : groupSummary,
+          [{ label: 'Mismatch Audit', content: JSON.stringify(mismatchAuditResult, null, 2) }],
+          () => rerunFrom('mismatchAudit')
+        );
       }
     }
 
