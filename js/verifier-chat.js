@@ -1,10 +1,11 @@
 const VerifierChat = (() => {
   const STORAGE_KEY = 'jit_verifier_chat_progress';
 
-  let session      = null;
-  let apiKeyRef     = null;
-  let onCompleteCb  = null;
-  let sending       = false;
+  let session             = null;
+  let apiKeyRef           = null;
+  let onCompleteCb        = null;
+  let sending             = false;
+  let previewReadyPromise = null;
 
   function loadStoredSession() {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -53,6 +54,7 @@ const VerifierChat = (() => {
 
   function modalEl()      { return document.getElementById('verify-chat-modal'); }
   function threadEl()     { return document.getElementById('verify-chat-thread'); }
+  function previewEl()    { return document.getElementById('verify-chat-preview'); }
   function progressEl()   { return document.getElementById('verify-chat-progress'); }
   function inputEl()      { return document.getElementById('verify-chat-input'); }
   function sendBtnEl()    { return document.getElementById('verify-chat-send'); }
@@ -65,6 +67,31 @@ const VerifierChat = (() => {
 
   function currentSection() {
     return session ? session.sections[session.currentIndex] : null;
+  }
+
+  function buildPreview(file, sections) {
+    const container = previewEl();
+    container.innerHTML = '<p class="doc-preview-loading">Loading document preview…</p>';
+    previewReadyPromise = DocPreview.extractHtml(file).then(html => {
+      DocPreview.render(container, html);
+      if (!html) return;
+      const items = sections.flatMap(s => s.items.map(item => ({
+        label:    item.label,
+        context:  item.context,
+        color:    s.type === 'not_found' ? 'yellow' : 'red',
+        variants: Highlighter.formatVariants(item.justification_value)
+      })));
+      DocPreview.highlightItems(container, items);
+    }).catch(() => {
+      DocPreview.render(container, null);
+    });
+  }
+
+  async function focusCurrentSection() {
+    const section = currentSection();
+    if (!section || !previewReadyPromise) return;
+    await previewReadyPromise;
+    DocPreview.setActive(previewEl(), section.items.map(i => i.label));
   }
 
   function updateProgress() {
@@ -107,6 +134,7 @@ const VerifierChat = (() => {
     updateProgress();
     updateFooter(section);
     renderThread();
+    focusCurrentSection();
   }
 
   function advance() {
@@ -162,7 +190,7 @@ const VerifierChat = (() => {
     }
   }
 
-  function renderResumeBanner(onComplete, docKey) {
+  function renderResumeBanner(onComplete, docKey, justificationFile) {
     const stored = loadStoredSession();
     const container = document.getElementById('verify-results');
     if (!stored || stored.docKey !== docKey) return;
@@ -195,6 +223,7 @@ const VerifierChat = (() => {
         session      = stored;
         apiKeyRef    = Settings.loadApiKey();
         onCompleteCb = onComplete;
+        buildPreview(justificationFile, session.sections);
         openModal();
         renderCurrentSection();
       }
@@ -228,12 +257,13 @@ const VerifierChat = (() => {
     apiKeyRef    = opts.apiKey;
     onCompleteCb = opts.onComplete;
 
+    buildPreview(opts.justificationFile, session.sections);
     openModal();
     renderCurrentSection();
   }
 
-  function tryResume(onComplete, docKey) {
-    renderResumeBanner(onComplete, docKey);
+  function tryResume(onComplete, docKey, justificationFile) {
+    renderResumeBanner(onComplete, docKey, justificationFile);
   }
 
   function hasStoredSession() {

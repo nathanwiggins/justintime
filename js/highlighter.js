@@ -130,5 +130,5 @@ const Highlighter = (() => {
     URL.revokeObjectURL(url);
   }
 
-  return { download };
+  return { download, formatVariants, contextMatches };
 })();
