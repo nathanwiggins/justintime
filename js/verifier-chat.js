@@ -211,12 +211,13 @@ const VerifierChat = (() => {
     return bubble;
   }
 
-  function appendResolutionBadge(tag) {
+  function appendResolutionBadge(tag, resolutionText) {
     const thread = threadEl();
     const badge  = document.createElement('div');
     badge.className = 'chat-msg-badge chat-msg-enter';
     badge.innerHTML = `<span class="chat-badge-check">✓</span><span class="chat-badge-text">${tag === 'real_issue' ? 'Marked as Issue' : 'Not an Issue'}</span>`;
     thread.appendChild(badge);
+    if (resolutionText) appendBubble('assistant', resolutionText);
     thread.scrollTop = thread.scrollHeight;
   }
 
@@ -330,6 +331,16 @@ const VerifierChat = (() => {
     advance();
   }
 
+  function holdThenAdvance() {
+    sending = true;
+    setChatLocked(true);
+    setTimeout(() => {
+      sending = false;
+      setChatLocked(false);
+      advance();
+    }, 3000);
+  }
+
   function handleIgnore() {
     if (sending) return;
     const section = currentSection();
@@ -338,8 +349,8 @@ const VerifierChat = (() => {
     section.transcript.push({ role: 'user', text: 'Ignore this issue.' });
     persist();
     renderThread();
-    appendResolutionBadge('not_a_concern');
-    advance();
+    appendResolutionBadge(section.tag, section.resolution);
+    holdThenAdvance();
   }
 
   async function handleSend() {
@@ -359,21 +370,23 @@ const VerifierChat = (() => {
       const priorSections = session.sections.slice(0, session.currentIndex);
       const result = await Api.classifyReply(section, section.transcript, priorSections, session.justificationText, session.csvText, apiKeyRef);
       if (text.includes('?')) result.needs_followup = true;
-      section.transcript.push({ role: 'assistant', text: result.assistant_reply });
       section.tag = result.tag;
-      if (!result.needs_followup) section.resolution = result.resolution_summary;
-      persist();
-      renderThread();
 
-      if (!result.needs_followup) {
-        appendResolutionBadge(result.tag);
-        advance();
+      if (result.needs_followup) {
+        section.transcript.push({ role: 'assistant', text: result.assistant_reply });
+        persist();
+        renderThread();
+        setSending(false);
+      } else {
+        section.resolution = result.resolution_summary;
+        persist();
+        appendResolutionBadge(result.tag, result.resolution_summary);
+        holdThenAdvance();
       }
     } catch (err) {
       section.transcript.push({ role: 'assistant', text: 'Sorry, something went wrong reaching the AI: ' + err.message });
       persist();
       renderThread();
-    } finally {
       setSending(false);
     }
   }
