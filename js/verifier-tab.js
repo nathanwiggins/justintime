@@ -377,7 +377,8 @@ const VerifierTab = (() => {
       showSuccessOnStop = true;
     }
 
-    const allItems      = sections.flatMap(s => s.items.map(item => ({ ...item, status: s.type === 'not_found' ? 'NOT_FOUND' : 'MISMATCH' })));
+    const markupSections = sections.filter(s => s.type === 'not_found' || s.tag === 'real_issue');
+    const allItems      = markupSections.flatMap(s => s.items.map(item => ({ ...item, status: s.type === 'not_found' ? 'NOT_FOUND' : 'MISMATCH' })));
     const fakeExtracted = allItems.map(item => ({ label: item.label, context: item.context || '' }));
 
     const btnRow = document.createElement('div');
