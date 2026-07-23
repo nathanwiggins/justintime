@@ -232,7 +232,14 @@
         <button id="verify-chat-close" class="btn-icon" aria-label="Close">&times;</button>
       </div>
       <div class="modal-body">
-        <div id="verify-chat-preview" class="chat-preview"></div>
+        <div id="verify-chat-preview" class="chat-preview">
+          <div class="preview-tabs">
+            <button type="button" class="preview-tab active" data-view="document">Document</button>
+            <button type="button" class="preview-tab" data-view="spreadsheet">Spreadsheet</button>
+          </div>
+          <div id="verify-chat-sheet-tabs" class="sheet-tabs hidden"></div>
+          <div id="verify-chat-preview-body" class="chat-preview-body"></div>
+        </div>
         <div id="verify-chat-thread" class="chat-thread"></div>
       </div>
       <div class="modal-footer chat-footer">
@@ -282,6 +289,7 @@
   <script src="js/verifier.js"></script>
   <script src="js/highlighter.js"></script>
   <script src="js/doc-preview.js"></script>
+  <script src="js/sheet-preview.js"></script>
   <script src="js/verifier-chat.js"></script>
   <script src="js/verifier-tab.js"></script>
   <script src="js/step-flow.js"></script>

@@ -6,6 +6,12 @@ const VerifierChat = (() => {
   let onCompleteCb        = null;
   let sending             = false;
   let previewReadyPromise = null;
+  let previewView         = 'document';
+  let cachedItems         = [];
+  let cachedSheets        = [];
+  let itemSheetMap        = new Map();
+  let activeSheetName     = null;
+  let cachedDocHtml       = null;
 
   function loadStoredSession() {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -55,6 +61,8 @@ const VerifierChat = (() => {
   function modalEl()      { return document.getElementById('verify-chat-modal'); }
   function threadEl()     { return document.getElementById('verify-chat-thread'); }
   function previewEl()    { return document.getElementById('verify-chat-preview'); }
+  function previewBodyEl(){ return document.getElementById('verify-chat-preview-body'); }
+  function sheetTabsEl()  { return document.getElementById('verify-chat-sheet-tabs'); }
   function progressEl()   { return document.getElementById('verify-chat-progress'); }
   function inputEl()      { return document.getElementById('verify-chat-input'); }
   function sendBtnEl()    { return document.getElementById('verify-chat-send'); }
@@ -69,29 +77,112 @@ const VerifierChat = (() => {
     return session ? session.sections[session.currentIndex] : null;
   }
 
-  function buildPreview(file, sections) {
-    const container = previewEl();
-    container.innerHTML = '<p class="doc-preview-loading">Loading document preview…</p>';
-    previewReadyPromise = DocPreview.extractHtml(file).then(html => {
-      DocPreview.render(container, html);
-      if (!html) return;
-      const items = sections.flatMap(s => s.items.map(item => ({
-        label:    item.label,
-        context:  item.context,
-        color:    s.type === 'not_found' ? 'yellow' : 'red',
-        variants: Highlighter.formatVariants(item.justification_value)
-      })));
-      DocPreview.highlightItems(container, items);
-    }).catch(() => {
-      DocPreview.render(container, null);
+  function renderDocumentView() {
+    const body = previewBodyEl();
+    DocPreview.render(body, cachedDocHtml);
+    if (cachedDocHtml) DocPreview.highlightItems(body, cachedItems);
+  }
+
+  function renderSpreadsheetView() {
+    const body = previewBodyEl();
+    if (!cachedSheets.length) {
+      body.innerHTML = '<p class="doc-preview-empty">No spreadsheet data to preview.</p>';
+      return;
+    }
+    if (!activeSheetName) activeSheetName = cachedSheets[0].name;
+    SheetPreview.render(body, cachedSheets, activeSheetName);
+    SheetPreview.highlightItems(body, cachedItems);
+  }
+
+  function updatePreviewTabsUI() {
+    previewEl().querySelectorAll('.preview-tab').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.view === previewView);
+    });
+
+    const tabsContainer = sheetTabsEl();
+    tabsContainer.classList.toggle('hidden', previewView !== 'spreadsheet' || cachedSheets.length <= 1);
+    tabsContainer.innerHTML = '';
+    cachedSheets.forEach(sheet => {
+      const btn = document.createElement('button');
+      btn.type        = 'button';
+      btn.className   = `sheet-tab ${sheet.name === activeSheetName ? 'active' : ''}`;
+      btn.textContent = sheet.name;
+      btn.addEventListener('click', () => selectSheet(sheet.name));
+      tabsContainer.appendChild(btn);
     });
   }
 
-  async function focusCurrentSection() {
+  function selectView(view) {
+    if (view === previewView) return;
+    previewView = view;
+    if (view === 'document') renderDocumentView(); else renderSpreadsheetView();
+    updatePreviewTabsUI();
+    highlightCurrentSection();
+  }
+
+  function selectSheet(name) {
+    if (name === activeSheetName) return;
+    activeSheetName = name;
+    updatePreviewTabsUI();
+    renderSpreadsheetView();
+    highlightCurrentSection();
+  }
+
+  function buildPreview(justificationFile, budgetFile, sections) {
+    previewView     = 'document';
+    activeSheetName = null;
+    cachedDocHtml   = null;
+    cachedSheets    = [];
+    cachedItems     = sections.flatMap(s => s.items.map(item => ({
+      label:               item.label,
+      context:             item.context,
+      justification_value: item.justification_value,
+      spreadsheet_value:   item.spreadsheet_value,
+      color:               s.type === 'not_found' ? 'yellow' : 'red',
+      variants:            Highlighter.formatVariants(item.justification_value)
+    })));
+
+    updatePreviewTabsUI();
+    previewBodyEl().innerHTML = '<p class="doc-preview-loading">Loading preview…</p>';
+
+    previewReadyPromise = Promise.all([
+      DocPreview.extractHtml(justificationFile).catch(() => null),
+      SheetPreview.extractSheets(budgetFile).catch(() => [])
+    ]).then(([html, sheets]) => {
+      cachedDocHtml = html;
+      cachedSheets  = sheets;
+      itemSheetMap  = SheetPreview.mapItemsToSheets(sheets, cachedItems);
+      renderDocumentView();
+      updatePreviewTabsUI();
+    });
+  }
+
+  function highlightCurrentSection() {
     const section = currentSection();
-    if (!section || !previewReadyPromise) return;
+    if (!section) return;
+    DocPreview.setActive(previewBodyEl(), section.items.map(i => i.label));
+  }
+
+  function applyActiveHighlight() {
+    const section = currentSection();
+    if (!section) return;
+    const labels = section.items.map(i => i.label);
+
+    if (previewView === 'spreadsheet') {
+      const targetSheet = labels.map(l => itemSheetMap.get(l)).find(Boolean);
+      if (targetSheet && targetSheet !== activeSheetName) {
+        activeSheetName = targetSheet;
+        renderSpreadsheetView();
+        updatePreviewTabsUI();
+      }
+    }
+    highlightCurrentSection();
+  }
+
+  async function focusCurrentSection() {
+    if (!previewReadyPromise) return;
     await previewReadyPromise;
-    DocPreview.setActive(previewEl(), section.items.map(i => i.label));
+    applyActiveHighlight();
   }
 
   function updateProgress() {
@@ -190,7 +281,7 @@ const VerifierChat = (() => {
     }
   }
 
-  function renderResumeBanner(onComplete, docKey, justificationFile) {
+  function renderResumeBanner(onComplete, docKey, justificationFile, budgetFile) {
     const stored = loadStoredSession();
     const container = document.getElementById('verify-results');
     if (!stored || stored.docKey !== docKey) return;
@@ -223,7 +314,7 @@ const VerifierChat = (() => {
         session      = stored;
         apiKeyRef    = Settings.loadApiKey();
         onCompleteCb = onComplete;
-        buildPreview(justificationFile, session.sections);
+        buildPreview(justificationFile, budgetFile, session.sections);
         openModal();
         renderCurrentSection();
       }
@@ -257,13 +348,13 @@ const VerifierChat = (() => {
     apiKeyRef    = opts.apiKey;
     onCompleteCb = opts.onComplete;
 
-    buildPreview(opts.justificationFile, session.sections);
+    buildPreview(opts.justificationFile, opts.budgetFile, session.sections);
     openModal();
     renderCurrentSection();
   }
 
-  function tryResume(onComplete, docKey, justificationFile) {
-    renderResumeBanner(onComplete, docKey, justificationFile);
+  function tryResume(onComplete, docKey, justificationFile, budgetFile) {
+    renderResumeBanner(onComplete, docKey, justificationFile, budgetFile);
   }
 
   function hasStoredSession() {
@@ -272,6 +363,9 @@ const VerifierChat = (() => {
 
   function init() {
     document.getElementById('verify-chat-close').addEventListener('click', closeModal);
+    previewEl().querySelectorAll('.preview-tab').forEach(btn => {
+      btn.addEventListener('click', () => selectView(btn.dataset.view));
+    });
     sendBtnEl().addEventListener('click', handleSend);
     inputEl().addEventListener('keydown', e => {
       if (e.key !== 'Enter') return;

@@ -53,7 +53,7 @@ const DocPreview = (() => {
   function setActive(container, labels) {
     const activeSet = new Set(labels);
     let first = null;
-    container.querySelectorAll('mark.doc-highlight').forEach(mark => {
+    container.querySelectorAll('.doc-highlight').forEach(mark => {
       const isActive = activeSet.has(mark.dataset.label);
       mark.classList.toggle('active', isActive);
       if (isActive && !first) first = mark;

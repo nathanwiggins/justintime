@@ -788,16 +788,89 @@ textarea {
 .chat-preview {
   flex: 1 1 55%;
   min-width: 0;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.preview-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px 0;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.preview-tab {
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 8px 12px;
+  border-bottom: 2px solid transparent;
+}
+
+.preview-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.sheet-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+  flex-shrink: 0;
+}
+
+.sheet-tabs.hidden { display: none; }
+
+.sheet-tab {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px 10px;
+}
+
+.sheet-tab.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.chat-preview-body {
+  flex: 1;
+  overflow: auto;
   padding: 24px 28px;
   font-size: 14px;
   line-height: 1.7;
 }
 
-.chat-preview p { margin: 0 0 12px; }
+.chat-preview-body p { margin: 0 0 12px; }
+
+.chat-preview-body table {
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.chat-preview-body table td,
+.chat-preview-body table th {
+  border: 1px solid var(--color-border);
+  padding: 4px 8px;
+}
 
 .doc-preview-empty,
 .doc-preview-loading {
@@ -815,6 +888,11 @@ mark.doc-highlight {
 
 mark.doc-highlight.yellow { border-color: var(--color-warning-border); }
 mark.doc-highlight.red    { border-color: #fca5a5; }
+
+td.doc-highlight.yellow { background: rgba(252, 211, 77, .3); }
+td.doc-highlight.red    { background: rgba(252, 165, 165, .4); }
+td.doc-highlight.active.yellow { background: var(--color-warning-border); font-weight: 700; }
+td.doc-highlight.active.red    { background: #fca5a5; font-weight: 700; }
 
 mark.doc-highlight.active.yellow { background: var(--color-warning-border); }
 mark.doc-highlight.active.red    { background: #fca5a5; }

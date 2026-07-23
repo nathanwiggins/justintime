@@ -628,6 +628,7 @@ const VerifierTab = (() => {
       justificationText: cachedJustificationText,
       csvText: cachedCsvText,
       justificationFile,
+      budgetFile,
       apiKey,
       onComplete: renderSummary
     });
@@ -692,7 +693,7 @@ const VerifierTab = (() => {
         extractBudgetCsv(budgetFile)
       ]);
       const docKey = computeDocKey(justificationText + '|' + csvText);
-      VerifierChat.tryResume(renderSummary, docKey, justificationFile);
+      VerifierChat.tryResume(renderSummary, docKey, justificationFile, budgetFile);
     } catch {
     }
   }
