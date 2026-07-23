@@ -211,13 +211,12 @@ const VerifierChat = (() => {
     return bubble;
   }
 
-  function appendResolutionBadge(tag, resolutionText) {
+  function appendResolutionBadge(tag) {
     const thread = threadEl();
     const badge  = document.createElement('div');
     badge.className = 'chat-msg-badge chat-msg-enter';
     badge.innerHTML = `<span class="chat-badge-check">✓</span><span class="chat-badge-text">${tag === 'real_issue' ? 'Marked as Issue' : 'Not an Issue'}</span>`;
     thread.appendChild(badge);
-    if (resolutionText) appendBubble('assistant', resolutionText);
     thread.scrollTop = thread.scrollHeight;
   }
 
@@ -349,7 +348,7 @@ const VerifierChat = (() => {
     section.transcript.push({ role: 'user', text: 'Ignore this issue.' });
     persist();
     renderThread();
-    appendResolutionBadge(section.tag, section.resolution);
+    appendResolutionBadge(section.tag);
     holdThenAdvance();
   }
 
@@ -380,7 +379,7 @@ const VerifierChat = (() => {
       } else {
         section.resolution = result.resolution_summary;
         persist();
-        appendResolutionBadge(result.tag, result.resolution_summary);
+        appendResolutionBadge(result.tag);
         holdThenAdvance();
       }
     } catch (err) {
