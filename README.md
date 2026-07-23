@@ -1,23 +1,14 @@
 # Just-In-Time
 
-A lightweight, client-side NSF budget justification generator and verifier for research administrators. No backend, no build step — hosted on GitHub Pages.
+A lightweight, client-side budget justification verifier for research administrators. No backend, no build step — hosted on GitHub Pages.
 
 ## Features
 
-### Verifier
 - Upload a budget justification (`.docx`) and its spreadsheet (`.csv`/`.xls`/`.xlsx`) to catch mismatches before you submit.
 - AI labels every dollar value, matches it against the spreadsheet, and groups discrepancies by root cause.
 - A guided chat walks you through each finding — confirm it, explain it away, or click "Ignore Issue" to skip it.
 - The justification and spreadsheet are shown side-by-side with the chat, with flagged values highlighted and auto-tracked as you go.
 - Ends with a plain-language summary and a downloadable marked-up copy of the justification with flagged values highlighted.
-
-### Generator
-- Upload a budget spreadsheet and project summary to get a formatted `.docx` justification back.
-- Institutional Profiles store your fringe/F&A boilerplate so the AI weaves institution-specific language into the narrative.
-- Template Mode produces a structured draft with placeholder text instead of full AI-written narrative.
-- Currently hidden from the nav bar (Verifier is the default tab) — re-enable it in `index.html` to use it.
-
-### Shared
 - Drag-and-drop uploads, a live step-by-step progress log with expandable debug details per step, and a "How It Works" walkthrough for first-time users.
 - API keys are stored only in your browser's `localStorage` — a warning reminds you to check your key's data-sharing terms before use.
 
@@ -96,10 +87,3 @@ Push to `main` — GitHub Pages serves `index.html` from the repository root aut
 5. Review the summary and download the marked-up document.
 
 Behind the scenes: values are labeled, matched against the spreadsheet, audited, and grouped by root cause before the chat opens. On DGX/Vandalizer deployments, large documents are processed in batches of 25 automatically; direct Gemini API calls batch at 50+ values to avoid truncation on very large documents.
-
-### Generating a budget justification
-1. Go to the **Settings** tab, enter and save your Gemini API key.
-2. Create at least one Institutional Profile with your fringe/F&A boilerplate.
-3. Go to the **Generator** tab (re-enable it in `index.html` first — see Features above).
-4. Select a profile, upload your budget file and project summary.
-5. Click **Generate Justification** — a `.docx` downloads automatically.
