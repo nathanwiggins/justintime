@@ -279,6 +279,7 @@ const VerifierChat = (() => {
     try {
       const priorSections = session.sections.slice(0, session.currentIndex);
       const result = await Api.classifyReply(section, section.transcript, priorSections, session.justificationText, session.csvText, apiKeyRef);
+      if (text.includes('?')) result.needs_followup = true;
       section.transcript.push({ role: 'assistant', text: result.assistant_reply });
       section.tag = result.tag;
       if (!result.needs_followup) section.resolution = result.resolution_summary;
