@@ -298,8 +298,23 @@ const VerifierTab = (() => {
       explanation.className   = 'summary-card-explanation';
       explanation.textContent = section.explanation;
 
+      card.appendChild(header);
+      card.appendChild(explanation);
+
+      if (section.tag === 'real_issue' && section.resolution) {
+        const resolution = document.createElement('p');
+        resolution.className   = 'summary-card-resolution';
+        resolution.textContent = section.resolution;
+        card.appendChild(resolution);
+      }
+
+      const detailsToggle = document.createElement('button');
+      detailsToggle.type        = 'button';
+      detailsToggle.className   = 'summary-collapsed-toggle';
+      detailsToggle.textContent = `See details (${section.items.length}) ▾`;
+
       const itemList = document.createElement('ul');
-      itemList.className = 'summary-card-items';
+      itemList.className = 'summary-card-items hidden';
       section.items.forEach(item => {
         const li   = document.createElement('li');
         li.className = 'summary-card-item';
@@ -315,8 +330,12 @@ const VerifierTab = (() => {
         itemList.appendChild(li);
       });
 
-      card.appendChild(header);
-      card.appendChild(explanation);
+      detailsToggle.addEventListener('click', () => {
+        const nowHidden = itemList.classList.toggle('hidden');
+        detailsToggle.textContent = `See details (${section.items.length}) ${nowHidden ? '▾' : '▴'}`;
+      });
+
+      card.appendChild(detailsToggle);
       card.appendChild(itemList);
       cards.appendChild(card);
     });
@@ -348,6 +367,14 @@ const VerifierTab = (() => {
 
         item.appendChild(header);
         item.appendChild(explanation);
+
+        if (section.resolution) {
+          const resolution = document.createElement('p');
+          resolution.className   = 'summary-collapsed-item-explanation';
+          resolution.textContent = section.resolution;
+          item.appendChild(resolution);
+        }
+
         body.appendChild(item);
       });
 

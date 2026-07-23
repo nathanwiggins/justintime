@@ -384,11 +384,12 @@ You have been given two sets of findings from an audit of a budget justification
 Your task is to produce a summary that explains the findings to the user so that they know what edits they need to make to the budget justification.
 
 Instructions:
-- For the NOT_FOUND items (if any), create ONE section containing all of them with a clear section_label and a plain-language explanation of what values were not detected, the uncertainty created by that, and a suggestion to the user to review those sections.
-- For each mismatch group (if any), create ONE section with a fresh, descriptive section_label and an explanation of the root cause of the discrepancy, and the cascading errors it produced in other values. Conclude your summary with a statement that begins with, "Because..."
+- For the NOT_FOUND items (if any), create ONE section containing all of them with a clear section_label and a short, neutral explanation of what values were not detected and the uncertainty that creates. Do not tell the user what to do about it — that language is only added later, once a human confirms it's a real concern.
+- For each mismatch group (if any), create ONE section with a fresh, descriptive section_label and a short, neutral explanation of what differs between the justification and the spreadsheet. State the observed discrepancy only — do not prescribe a fix, judge severity, or say what "needs" to change. That language is only added later, once a human confirms it's a real issue.
+- Keep each explanation to 1-2 short sentences. Leave deeper detail (specific cascading values, root-cause reasoning) to the itemized items list rather than the prose.
 - Omit any section that has no items. Return an empty array if there are no findings at all.
 - Set type to "not_found" for the NOT_FOUND section and "mismatch" for each mismatch section.
-- Explanations should be written in plain language for a research administrator — specific, actionable, and concise.
+- Explanations should be written in plain language for a research administrator.
 
 NOT_FOUND items:
 ${JSON.stringify(notFoundItems, null, 2)}
@@ -426,8 +427,9 @@ ${csvText}
 Instructions:
 - Use the budget justification and spreadsheet above to check the user's claims when they push back or offer an explanation — don't just take their word for it if the documents say otherwise.
 - Respond with a short, plain-language assistant_reply continuing the conversation naturally (acknowledge what the user said).
-- Keep asking clarifying questions (set needs_followup to true) until you and the user genuinely agree on the outcome. Don't rush to a conclusion after just one reply if there's still ambiguity.
-- Once you and the user have reached agreement, set needs_followup to false and end assistant_reply with an explicit resolution statement: either that you're noting this as a real mismatch that needs fixing, or that based on the user's explanation you'll disregard this finding.
+- Close the conversation (set needs_followup to false) as soon as the user's latest reply is a clear affirmation (they agree, confirm, or say it needs fixing) OR a clear deferral (they say they'll look into it, or accept the finding without being fully sure). Both count as resolved — don't ask the user to restate their agreement in different words before closing.
+- Only keep needs_followup true when there is something substantive left to resolve: the user asks a genuine question, requests more explanation, or provides new context or facts that could change whether this is a real issue.
+- When you set needs_followup to false, end assistant_reply with a resolution statement reflecting the final agreed-upon understanding. If the user revealed information during the conversation that changes the root cause, the correct values, or the right fix, incorporate that into the resolution instead of just repeating the original automated finding. This resolution text is shown to the user as the final word on this issue, so make it self-contained and specific about what, if anything, needs to change and why.
 - Set tag to "real_issue" if the finding still needs to be fixed in the budget justification, or "not_a_concern" if the user's explanation resolves it. Give your best-guess tag even when needs_followup is true.`;
     return callApi(apiKey, prompt, VerifierSchemas.chatReply);
   }
