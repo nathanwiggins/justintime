@@ -12,6 +12,7 @@ const VerifierChat = (() => {
   let itemSheetMap        = new Map();
   let activeSheetName     = null;
   let cachedDocHtml       = null;
+  let introPending        = false;
 
   function loadStoredSession() {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -47,6 +48,16 @@ const VerifierChat = (() => {
   function ensureSentenceEnd(text) {
     const trimmed = text.trim();
     return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+  }
+
+  function buildIntroMessage(sections) {
+    const hasNotFound = sections.some(s => s.type === 'not_found');
+    const hasMismatch = sections.some(s => s.type !== 'not_found');
+    let tail;
+    if (hasNotFound && hasMismatch) tail = 'what items I had trouble finding, as well as the possible discrepancies I came across';
+    else if (hasNotFound) tail = 'what items I had trouble finding';
+    else tail = 'the possible discrepancies I came across';
+    return `I am the Just-In-Time AI Assistant. I have analyzed the budget and budget justification that you provided. Let's complete the review together! I'll walk you through ${tail}.`;
   }
 
   function buildOpenerMessage(section) {
@@ -190,17 +201,41 @@ const VerifierChat = (() => {
     progressEl().textContent = `Item ${session.currentIndex + 1} of ${session.sections.length}`;
   }
 
+  function appendBubble(role, text, extraClass) {
+    const thread = threadEl();
+    const bubble = document.createElement('div');
+    bubble.className   = `chat-msg ${role} chat-msg-enter${extraClass ? ' ' + extraClass : ''}`;
+    bubble.textContent = text;
+    thread.appendChild(bubble);
+    thread.scrollTop = thread.scrollHeight;
+    return bubble;
+  }
+
+  function appendResolutionBadge(tag) {
+    const thread = threadEl();
+    const badge  = document.createElement('div');
+    badge.className = 'chat-msg-badge chat-msg-enter';
+    badge.innerHTML = `<span class="chat-badge-check">✓</span><span class="chat-badge-text">${tag === 'real_issue' ? 'Marked as Issue' : 'Not an Issue'}</span>`;
+    thread.appendChild(badge);
+    thread.scrollTop = thread.scrollHeight;
+  }
+
   function renderThread() {
     const section = currentSection();
     const thread   = threadEl();
-    thread.innerHTML = '';
-    section.transcript.forEach(turn => {
-      const bubble = document.createElement('div');
-      bubble.className   = `chat-msg ${turn.role}`;
-      bubble.textContent = turn.text;
-      thread.appendChild(bubble);
-    });
-    thread.scrollTop = thread.scrollHeight;
+
+    if (thread.dataset.sectionIndex !== String(session.currentIndex)) {
+      thread.innerHTML = '';
+      thread.dataset.sectionIndex   = String(session.currentIndex);
+      thread.dataset.renderedCount = '0';
+      thread.classList.remove('chat-thread-enter');
+      void thread.offsetWidth;
+      thread.classList.add('chat-thread-enter');
+    }
+
+    const renderedCount = Number(thread.dataset.renderedCount || 0);
+    section.transcript.slice(renderedCount).forEach(turn => appendBubble(turn.role, turn.text));
+    thread.dataset.renderedCount = String(section.transcript.length);
   }
 
   function setSending(active) {
@@ -211,15 +246,45 @@ const VerifierChat = (() => {
     sendBtnEl().textContent = active ? 'Thinking…' : 'Send';
   }
 
+  function setChatLocked(locked) {
+    inputEl().disabled = locked;
+    sendBtnEl().disabled = locked;
+    ignoreBtnEl().disabled = locked;
+    ackBtnEl().disabled = locked;
+  }
+
   function updateFooter(section) {
     const isAckOnly = section.type === 'not_found';
     inputRowEl().classList.toggle('hidden', isAckOnly);
     ackRowEl().classList.toggle('hidden', !isAckOnly);
   }
 
+  function showIntroThenOpener(section) {
+    updateProgress();
+    updateFooter(section);
+    renderThread();
+    appendBubble('assistant', buildIntroMessage(session.sections));
+    setChatLocked(true);
+
+    setTimeout(() => {
+      section.transcript.push({ role: 'assistant', text: buildOpenerMessage(section) });
+      persist();
+      renderThread();
+      setChatLocked(false);
+      focusCurrentSection();
+    }, 3000);
+  }
+
   function renderCurrentSection() {
     const section = currentSection();
     if (!section) { finishSession(); return; }
+
+    if (introPending) {
+      introPending = false;
+      showIntroThenOpener(section);
+      return;
+    }
+
     if (section.transcript.length === 0) {
       section.transcript.push({ role: 'assistant', text: buildOpenerMessage(section) });
       persist();
@@ -231,9 +296,22 @@ const VerifierChat = (() => {
   }
 
   function advance() {
+    const isLast = session.currentIndex + 1 >= session.sections.length;
     session.currentIndex += 1;
     persist();
-    renderCurrentSection();
+
+    if (isLast) {
+      appendBubble('assistant', "That's it! I'll write a summary of the findings and provide you with a marked up document for you to reference.");
+      setTimeout(renderCurrentSection, 2200);
+      return;
+    }
+
+    const thread = threadEl();
+    thread.classList.add('chat-thread-exit');
+    setTimeout(() => {
+      thread.classList.remove('chat-thread-exit');
+      renderCurrentSection();
+    }, 200);
   }
 
   function finishSession() {
@@ -260,6 +338,7 @@ const VerifierChat = (() => {
     section.transcript.push({ role: 'user', text: 'Ignore this issue.' });
     persist();
     renderThread();
+    appendResolutionBadge('not_a_concern');
     advance();
   }
 
@@ -286,7 +365,10 @@ const VerifierChat = (() => {
       persist();
       renderThread();
 
-      if (!result.needs_followup) advance();
+      if (!result.needs_followup) {
+        appendResolutionBadge(result.tag);
+        advance();
+      }
     } catch (err) {
       section.transcript.push({ role: 'assistant', text: 'Sorry, something went wrong reaching the AI: ' + err.message });
       persist();
@@ -358,6 +440,7 @@ const VerifierChat = (() => {
         completedAt: null
       };
       persist();
+      introPending = true;
     }
 
     apiKeyRef    = opts.apiKey;
