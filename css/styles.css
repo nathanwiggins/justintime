@@ -946,11 +946,19 @@ mark.doc-highlight.active.red    { background: #fca5a5; }
 
 .chat-input-row {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.chat-input-row input {
-  flex: 1;
+.chat-input-row textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.chat-input-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .chat-ack-row {
@@ -1104,15 +1112,6 @@ mark.doc-highlight.active.red    { background: #fca5a5; }
 .summary-card-item-diff { font-variant-numeric: tabular-nums; }
 
 .summary-card-items.hidden { display: none; }
-
-.summary-card-resolution {
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--color-text);
-  padding-top: 10px;
-  margin: 0 0 10px;
-  border-top: 1px dashed var(--color-border);
-}
 
 .summary-card .summary-collapsed-toggle { display: block; margin-bottom: 8px; }
 

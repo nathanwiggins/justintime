@@ -405,8 +405,12 @@ ${csvText}`;
     return callApi(apiKey, prompt, VerifierSchemas.summaryAudit);
   }
 
-  async function classifyReply(section, transcript, justificationText, csvText, apiKey) {
+  async function classifyReply(section, transcript, priorSections, justificationText, csvText, apiKey) {
     const conversation = transcript.map(turn => `${turn.role === 'assistant' ? 'Assistant' : 'User'}: ${turn.text}`).join('\n');
+    const priorFindings = (priorSections || []).filter(s => s.resolution).map(s =>
+      `- ${s.section_label}: ${s.resolution}`
+    ).join('\n');
+
     const prompt = `You are a friendly budget audit assistant discussing one suspected discrepancy with a research administrator. You are verifying, together with the user, whether this is a real mismatch that needs fixing in the budget justification, or something that turns out not to be a concern (e.g. the user has context that explains it, or you misread the documents).
 
 Finding:
@@ -414,7 +418,7 @@ Finding:
 - Type: ${section.type}
 - Explanation: ${section.explanation}
 - Items: ${JSON.stringify(section.items, null, 2)}
-
+${priorFindings ? `\nEarlier findings already resolved in this same review (the user may reference these by name or number — use this to understand what they mean):\n${priorFindings}\n` : ''}
 Conversation so far:
 ${conversation}
 
@@ -427,10 +431,9 @@ ${csvText}
 Instructions:
 - Use the budget justification and spreadsheet above to check the user's claims when they push back or offer an explanation — don't just take their word for it if the documents say otherwise. If a claim conflicts with what the source text actually says, point that out rather than accepting it.
 - Respond with a short, plain-language assistant_reply continuing the conversation naturally (acknowledge what the user said). This is a live chat message, so it can be conversational.
-- Close the conversation (set needs_followup to false) as soon as the user's latest reply is a clear affirmation (they agree, confirm, or say it needs fixing) OR a clear deferral (they say they'll look into it, or accept the finding without being fully sure). Both count as resolved — don't ask the user to restate their agreement in different words before closing.
-- Only keep needs_followup true when there is something substantive left to resolve: the user asks a genuine question, requests more explanation, or provides new context or facts that could change whether this is a real issue.
-- When you set needs_followup to false, also fill resolution_summary. This is NOT a chat reply — it's a standalone paragraph that will replace this conversation in a written report, so it must make sense on its own with no reference to "you said" or "thanks for confirming." State the issue, the relevant context or explanation the user provided (if any), and the fix or next step (or, if dismissed, why no fix is needed) in a clear, professional tone. If the user revealed information that changes the root cause, the correct values, or the right fix, reflect that — don't just repeat the original automated finding. Leave resolution_summary as an empty string while needs_followup is true.
-- Set tag to "real_issue" if the finding still needs to be fixed in the budget justification, or "not_a_concern" if the user's explanation resolves it. Give your best-guess tag even when needs_followup is true.`;
+- Default to closing the conversation (needs_followup: false) and treating this as a real issue. Only keep needs_followup true when the user's latest reply is a genuine question, or gives new context/information that helps clarify or explain the discrepancy and warrants a response before this can be resolved. If the user's latest reply states or clearly implies this isn't actually a problem, close the conversation with tag "not_a_concern" instead. In every other case — including a simple acknowledgement or agreement — close the conversation and mark it a real issue rather than asking the user to confirm again. The user should be the one driving whether the conversation continues, not the assistant.
+- When you set needs_followup to false, also fill resolution_summary. This is NOT a chat reply — it's a standalone paragraph that will replace this conversation in a written report, so it must make sense on its own with no reference to "you said," "thanks for confirming," or "the user." Write it as a factual statement about the documents themselves — what the justification states, what the spreadsheet shows, and what should change (or why no change is needed) — folding in any clarifying information surfaced during the conversation without attributing it to a person. State the issue, the relevant context, and the fix or next step in a clear, professional tone. Leave resolution_summary as an empty string while needs_followup is true.
+- Set tag to "real_issue" if the finding still needs to be fixed in the budget justification, or "not_a_concern" if the explanation resolves it. Give your best-guess tag even when needs_followup is true.`;
     return callApi(apiKey, prompt, VerifierSchemas.chatReply);
   }
 

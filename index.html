@@ -244,8 +244,11 @@
       </div>
       <div class="modal-footer chat-footer">
         <div id="verify-chat-input-row" class="chat-input-row">
-          <input type="text" id="verify-chat-input" placeholder="Add context or explain...">
-          <button type="button" id="verify-chat-send" class="btn btn-secondary">Send</button>
+          <textarea id="verify-chat-input" placeholder="Add context or explain..." rows="3"></textarea>
+          <div class="chat-input-buttons">
+            <button type="button" id="verify-chat-ignore" class="btn btn-secondary">Ignore Issue</button>
+            <button type="button" id="verify-chat-send" class="btn btn-primary">Send</button>
+          </div>
         </div>
         <div id="verify-chat-ack-row" class="chat-ack-row">
           <button type="button" id="verify-chat-ack" class="btn btn-primary">Got it</button>

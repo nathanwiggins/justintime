@@ -51,7 +51,7 @@ const VerifierTab = (() => {
     if (/label/i.test(label))           return Icons.sparkle;
     if (/match/i.test(label))           return Icons.spreadsheet;
     if (/audit|discrepanc/i.test(label)) return Icons.folder;
-    if (/summary/i.test(label))         return Icons.chat;
+    if (/summary|review/i.test(label))  return Icons.chat;
     return Icons.magnifier;
   }
 
@@ -296,17 +296,10 @@ const VerifierTab = (() => {
 
       const explanation = document.createElement('p');
       explanation.className   = 'summary-card-explanation';
-      explanation.textContent = section.explanation;
+      explanation.textContent = section.resolution || section.explanation;
 
       card.appendChild(header);
       card.appendChild(explanation);
-
-      if (section.tag === 'real_issue' && section.resolution) {
-        const resolution = document.createElement('p');
-        resolution.className   = 'summary-card-resolution';
-        resolution.textContent = section.resolution;
-        card.appendChild(resolution);
-      }
 
       const detailsToggle = document.createElement('button');
       detailsToggle.type        = 'button';
@@ -363,18 +356,10 @@ const VerifierTab = (() => {
 
         const explanation = document.createElement('p');
         explanation.className   = 'summary-collapsed-item-explanation';
-        explanation.textContent = section.explanation;
+        explanation.textContent = section.resolution || section.explanation;
 
         item.appendChild(header);
         item.appendChild(explanation);
-
-        if (section.resolution) {
-          const resolution = document.createElement('p');
-          resolution.className   = 'summary-collapsed-item-explanation';
-          resolution.textContent = section.resolution;
-          item.appendChild(resolution);
-        }
-
         body.appendChild(item);
       });
 
@@ -622,6 +607,8 @@ const VerifierTab = (() => {
       items: section.items.map(item => ({ ...item, context: item.context || contextLookup.get(item.label) || '' }))
     }));
 
+    const reviewStep = addStep('Reviewing findings');
+
     VerifierChat.start({
       docKey: computeDocKey(cachedJustificationText + '|' + cachedCsvText),
       sections: patchedSummary,
@@ -630,8 +617,22 @@ const VerifierTab = (() => {
       justificationFile,
       budgetFile,
       apiKey,
-      onComplete: renderSummary
+      onComplete: sections => {
+        finalizeReviewStep(reviewStep, sections);
+        renderSummary(sections);
+      }
     });
+  }
+
+  function finalizeReviewStep(step, sections) {
+    const confirmedCount = sections.filter(s => s.tag === 'real_issue').length;
+    const details = sections.map(section => ({
+      label: section.section_label,
+      content: section.transcript.length
+        ? section.transcript.map(turn => `${turn.role === 'assistant' ? 'Assistant' : 'User'}: ${turn.text}`).join('\n\n')
+        : '(acknowledged directly, no discussion)'
+    }));
+    step.done(`${confirmedCount} issue${confirmedCount !== 1 ? 's' : ''} confirmed`, details);
   }
 
   async function rerunFrom(startStep) {

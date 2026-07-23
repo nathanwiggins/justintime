@@ -66,6 +66,7 @@ const VerifierChat = (() => {
   function progressEl()   { return document.getElementById('verify-chat-progress'); }
   function inputEl()      { return document.getElementById('verify-chat-input'); }
   function sendBtnEl()    { return document.getElementById('verify-chat-send'); }
+  function ignoreBtnEl()  { return document.getElementById('verify-chat-ignore'); }
   function inputRowEl()   { return document.getElementById('verify-chat-input-row'); }
   function ackRowEl()     { return document.getElementById('verify-chat-ack-row'); }
   function ackBtnEl()     { return document.getElementById('verify-chat-ack'); }
@@ -206,6 +207,7 @@ const VerifierChat = (() => {
     sending = active;
     inputEl().disabled = active;
     sendBtnEl().disabled = active;
+    ignoreBtnEl().disabled = active;
     sendBtnEl().textContent = active ? 'Thinking…' : 'Send';
   }
 
@@ -250,6 +252,17 @@ const VerifierChat = (() => {
     advance();
   }
 
+  function handleIgnore() {
+    if (sending) return;
+    const section = currentSection();
+    section.tag = 'not_a_concern';
+    section.resolution = 'This finding was skipped without further review.';
+    section.transcript.push({ role: 'user', text: 'Ignore this issue.' });
+    persist();
+    renderThread();
+    advance();
+  }
+
   async function handleSend() {
     if (sending) return;
     const input = inputEl();
@@ -264,7 +277,8 @@ const VerifierChat = (() => {
 
     setSending(true);
     try {
-      const result = await Api.classifyReply(section, section.transcript, session.justificationText, session.csvText, apiKeyRef);
+      const priorSections = session.sections.slice(0, session.currentIndex);
+      const result = await Api.classifyReply(section, section.transcript, priorSections, session.justificationText, session.csvText, apiKeyRef);
       section.transcript.push({ role: 'assistant', text: result.assistant_reply });
       section.tag = result.tag;
       if (!result.needs_followup) section.resolution = result.resolution_summary;
@@ -367,8 +381,9 @@ const VerifierChat = (() => {
       btn.addEventListener('click', () => selectView(btn.dataset.view));
     });
     sendBtnEl().addEventListener('click', handleSend);
+    ignoreBtnEl().addEventListener('click', handleIgnore);
     inputEl().addEventListener('keydown', e => {
-      if (e.key !== 'Enter') return;
+      if (e.key !== 'Enter' || e.shiftKey) return;
       e.preventDefault();
       handleSend();
     });
