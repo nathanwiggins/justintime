@@ -28,11 +28,12 @@ const VerifierTab = (() => {
     const el = document.getElementById('verify-loading');
     if (!active && showSuccessOnStop) {
       showSuccessOnStop = false;
+      el.classList.remove('hidden');
       el.classList.add('success');
       el.querySelector('.loading-text').textContent = 'All clear!';
       setTimeout(() => { el.classList.add('hidden'); el.classList.remove('success'); }, 2500);
     } else {
-      el.classList.toggle('hidden', !active);
+      el.classList.add('hidden');
       if (active) {
         el.classList.remove('success');
         el.querySelector('.loading-text').firstChild.textContent = 'Analyzing your documents';
@@ -43,7 +44,7 @@ const VerifierTab = (() => {
   function clearStepLog() {
     const log = document.getElementById('verify-step-log');
     log.innerHTML = '';
-    log.classList.remove('hidden');
+    log.classList.add('hidden');
   }
 
   function pickStepIcon(label) {
@@ -352,6 +353,7 @@ const VerifierTab = (() => {
     setStatus('');
     clearStepLog();
     document.getElementById('verify-results').classList.add('hidden');
+    VerifyAnim.start();
 
     const loadingTextNode = document.querySelector('#verify-loading .loading-text').firstChild;
     Api.setRetryHandler(msg => {
@@ -359,6 +361,8 @@ const VerifierTab = (() => {
     });
 
     try {
+      VerifyAnim.stage('scan');
+
       const justStep = addStep('Parsing justification document');
       const justificationText = await extractJustificationText(justificationFile);
       cachedJustificationText = justificationText;
@@ -382,9 +386,11 @@ const VerifierTab = (() => {
       scriptStep.done(`${preExtracted.length} values found`, [
         { label: 'Script Extraction', content: JSON.stringify(preExtracted, null, 2) }
       ]);
+      VerifyAnim.complete(preExtracted.length, 'dollar values found');
 
       await runApiStepsFrom('extract', apiKey);
     } catch (err) {
+      VerifyAnim.fail();
       setStatus('Error: ' + err.message, 'error');
     } finally {
       Api.setRetryHandler(null);
@@ -396,6 +402,7 @@ const VerifierTab = (() => {
     let extracted = cachedExtracted;
 
     if (startStep === 'extract') {
+      VerifyAnim.stage('label');
       const batchSize = Api.isVandalizerHosted() ? BATCH_SIZE : DIRECT_BATCH_SIZE;
       if (Api.isVandalizerHosted() || cachedPreExtracted.length > DIRECT_BATCH_SIZE) {
         const batches = [];
@@ -406,6 +413,7 @@ const VerifierTab = (() => {
         for (let b = 0; b < batches.length; b++) {
           const stepLabel = batches.length > 1 ? `Labeling values — batch ${b + 1} of ${batches.length}` : 'Labeling extracted values';
           const batchStep = addStep(stepLabel);
+          VerifyAnim.updateBatch(b + 1, batches.length);
           const batchResult = await Api.extractValuesBatch(batches[b], cachedJustificationText, apiKey);
           allLabeled.push(...batchResult);
           batchStep.done(`${batchResult.length} values labeled`, [
@@ -422,9 +430,11 @@ const VerifierTab = (() => {
       }
       lastExtracted   = extracted;
       cachedExtracted = extracted;
+      VerifyAnim.complete(extracted.length, 'values labeled');
     }
 
     if (startStep === 'extract' || startStep === 'match') {
+      VerifyAnim.stage('match');
       const batchSize = Api.isVandalizerHosted() ? BATCH_SIZE : DIRECT_BATCH_SIZE;
       if (Api.isVandalizerHosted() || extracted.length > DIRECT_BATCH_SIZE) {
         const batches = [];
@@ -435,6 +445,7 @@ const VerifierTab = (() => {
         for (let b = 0; b < batches.length; b++) {
           const stepLabel = batches.length > 1 ? `Matching against spreadsheet — batch ${b + 1} of ${batches.length}` : 'Matching against spreadsheet';
           const batchStep = addStep(stepLabel);
+          VerifyAnim.updateBatch(b + 1, batches.length);
           const batchResult = await Api.matchValuesBatch(batches[b], cachedCsvText, apiKey);
           allMatched.push(...batchResult);
           batchStep.done(`${batchResult.length} values matched`, [
@@ -450,6 +461,7 @@ const VerifierTab = (() => {
           { label: 'Comparison Result', content: JSON.stringify(comparison, null, 2) }
         ], () => rerunFrom('match'));
       }
+      VerifyAnim.complete(cachedComparison.length, 'values matched');
 
       const problemItems = cachedComparison
         .filter(c => !c.found_in_spreadsheet || !isMatch(c.justification_value, c.spreadsheet_value))
@@ -465,7 +477,11 @@ const VerifierTab = (() => {
       cachedNotFoundItems = problemItems.filter(c => !c.found_in_spreadsheet);
     }
 
+    VerifyAnim.stage('audit');
+    let auditedCount = 0;
+
     if (startStep !== 'mismatchAudit' && startStep !== 'summary') {
+      auditedCount += cachedNotFoundItems.length;
       const notFoundAuditStep = addStep('Auditing not-found values');
       if (!cachedNotFoundItems.length) {
         cachedNotFoundAuditResult = [];
@@ -501,6 +517,7 @@ const VerifierTab = (() => {
           .filter(c => c.found_in_spreadsheet && !isMatch(c.justification_value, c.spreadsheet_value))
           .map(c => ({ label: c.label, justification_value: c.justification_value, spreadsheet_value: c.spreadsheet_value, context: c.context || '' }))
       ];
+      auditedCount += mismatchItems.length;
 
       const mismatchAuditStep = addStep('Auditing mismatches');
       if (!mismatchItems.length) {
@@ -534,14 +551,18 @@ const VerifierTab = (() => {
         );
       }
     }
+    VerifyAnim.complete(auditedCount, 'items audited');
 
     const trulyNotFound  = (cachedNotFoundAuditResult || [])
       .filter(c => !c.found_in_spreadsheet && !c.calculated_in_spreadsheet);
     const mismatchGroups = cachedMismatchAuditResult || [];
 
+    VerifyAnim.stage('summarize');
+
     if (!trulyNotFound.length && !mismatchGroups.length) {
       const summaryStep = addStep('Generating summary');
       summaryStep.done('all values accounted for');
+      VerifyAnim.finish('clean');
       renderSummary([]);
       return;
     }
@@ -551,6 +572,7 @@ const VerifierTab = (() => {
     summaryStep.done(`${summaryResult.length} section${summaryResult.length !== 1 ? 's' : ''}`, [
       { label: 'Summary', content: JSON.stringify(summaryResult, null, 2) }
     ], () => rerunFrom('summary'));
+    VerifyAnim.complete(summaryResult.reduce((n, s) => n + s.items.length, 0), 'items to review');
 
     const contextLookup = new Map();
     (cachedExtracted || []).forEach(e => { if (e.context) contextLookup.set(e.label, e.context); });
@@ -565,6 +587,7 @@ const VerifierTab = (() => {
 
     const reviewStep = addStep('Reviewing findings');
 
+    VerifyAnim.finish('chat');
     VerifierChat.start({
       docKey: computeDocKey(cachedJustificationText + '|' + cachedCsvText),
       sections: patchedSummary,
@@ -656,6 +679,7 @@ const VerifierTab = (() => {
   }
 
   function init() {
+    VerifyAnim.mount();
     initDropZone(
       'verify-justification-drop-zone',
       'verify-justification-input',
@@ -669,6 +693,10 @@ const VerifierTab = (() => {
       file => { budgetFile = file; maybeCheckResume(); }
     );
     document.getElementById('verify-btn').addEventListener('click', handleVerify);
+    document.getElementById('verify-expand-details-btn').addEventListener('click', () => {
+      document.getElementById('verify-step-log').classList.remove('hidden');
+      document.getElementById('verify-expand-details-btn').classList.add('hidden');
+    });
   }
 
   return { init };

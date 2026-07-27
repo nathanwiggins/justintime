@@ -9,7 +9,7 @@ A lightweight, client-side budget justification verifier for research administra
 - A guided chat walks you through each finding — confirm it, explain it away, or click "Ignore Issue" to skip it.
 - The justification and spreadsheet are shown side-by-side with the chat, with flagged values highlighted and auto-tracked as you go.
 - Ends with a plain-language summary and a downloadable marked-up copy of the justification with flagged values highlighted.
-- Drag-and-drop uploads, a live step-by-step progress log with expandable debug details per step, and a "How It Works" walkthrough for first-time users.
+- Drag-and-drop uploads, an animated scan → label → match → audit → summarize progress sequence (full technical log available via "Expand Analysis Details"), and a "How It Works" walkthrough for first-time users.
 - API keys are stored only in your browser's `localStorage` — a warning reminds you to check your key's data-sharing terms before use.
 
 ## Tech Stack
@@ -20,6 +20,7 @@ A lightweight, client-side budget justification verifier for research administra
 | Word document parsing | [Mammoth.js](https://github.com/mwilliamson/mammoth.js) |
 | AI generation | [Gemini API](https://ai.google.dev/) (structured JSON output) |
 | Word document generation | [docx](https://github.com/dolanmiu/docx) (built programmatically) |
+| Verifier progress animation | [anime.js](https://animejs.com/) (CDN) |
 | Settings & review-chat persistence | Browser `localStorage` |
 
 ## File Structure
@@ -39,6 +40,7 @@ justintime/
 │   ├── sections.js         # Section registry: ordered section definitions per template
 │   ├── verifier.js         # Portable two-step verification core: Verifier.run(text, csv, key)
 │   ├── verifier-tab.js     # Verifier tab UI: file handling, orchestration, results rendering
+│   ├── verify-anim.js      # Animated scan/label/match/audit/summarize progress sequence
 │   ├── verifier-chat.js    # Chat-driven findings review, persists/resumes via localStorage
 │   ├── highlighter.js      # DOCX markup: injects <w:highlight> into flagged runs via JSZip
 │   ├── doc-preview.js      # Live in-browser justification preview

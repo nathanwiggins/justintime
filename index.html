@@ -99,9 +99,23 @@
           <div class="loading-spinner"></div>
           <p class="loading-text">Analyzing your documents<span class="loading-dots"></span></p>
         </div>
-        <div id="verify-step-log" class="step-log hidden" aria-live="polite"></div>
+        <div id="verify-anim" class="verify-anim hidden" aria-hidden="true">
+          <div class="verify-anim-dots">
+            <span class="verify-anim-dot" data-stage="scan"></span>
+            <span class="verify-anim-dot" data-stage="label"></span>
+            <span class="verify-anim-dot" data-stage="match"></span>
+            <span class="verify-anim-dot" data-stage="audit"></span>
+            <span class="verify-anim-dot" data-stage="summarize"></span>
+          </div>
+          <div class="verify-anim-viewport"></div>
+          <p class="verify-anim-batch hidden"></p>
+          <p class="verify-anim-count hidden"></p>
+        </div>
+        <p id="verify-anim-live" class="visually-hidden" aria-live="polite"></p>
         <p id="verify-status" class="status-message" aria-live="polite"></p>
         <div id="verify-results" class="hidden"></div>
+        <button id="verify-expand-details-btn" class="btn-link hidden" type="button">Expand Analysis Details ▾</button>
+        <div id="verify-step-log" class="step-log hidden" aria-live="polite"></div>
       </div>
 
     </section>
@@ -279,6 +293,7 @@
   <script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"></script>
   <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 
   <script src="js/icons.js"></script>
   <script src="js/schemas.js"></script>
@@ -294,6 +309,7 @@
   <script src="js/doc-preview.js"></script>
   <script src="js/sheet-preview.js"></script>
   <script src="js/verifier-chat.js"></script>
+  <script src="js/verify-anim.js"></script>
   <script src="js/verifier-tab.js"></script>
   <script src="js/step-flow.js"></script>
   <script src="js/how-it-works.js"></script>
