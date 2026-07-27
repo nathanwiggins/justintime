@@ -55,8 +55,6 @@ const VerifierTab = (() => {
     return Icons.magnifier;
   }
 
-  const SLOW_STEP_MS = 60000;
-
   function addStep(label) {
     const log  = document.getElementById('verify-step-log');
     const item = document.createElement('div');
@@ -81,31 +79,12 @@ const VerifierTab = (() => {
     timer.className   = 'step-timer';
     timer.textContent = '0s';
 
-    const toggle = document.createElement('button');
-    toggle.className   = 'step-toggle hidden';
-    toggle.textContent = 'Details ▾';
-
     row.appendChild(catIcon);
     row.appendChild(icon);
     row.appendChild(text);
     row.appendChild(timer);
-    row.appendChild(toggle);
     item.appendChild(row);
-
-    const detail = document.createElement('div');
-    detail.className = 'step-detail hidden';
-    item.appendChild(detail);
-
     log.appendChild(item);
-
-    toggle.addEventListener('click', () => {
-      const hidden = detail.classList.toggle('hidden');
-      toggle.textContent = hidden ? 'Details ▾' : 'Details ▴';
-    });
-
-    let finished          = false;
-    let liveSectionShown  = false;
-    let latestProgressText = '';
 
     const startTime = Date.now();
     const interval  = setInterval(() => {
@@ -113,42 +92,18 @@ const VerifierTab = (() => {
     }, 1000);
 
     function stopTimer() {
-      finished = true;
       clearInterval(interval);
-      clearTimeout(slowTimeout);
       timer.textContent = Math.floor((Date.now() - startTime) / 1000) + 's';
     }
 
-    function renderLiveSection() {
-      detail.innerHTML = '';
-      const section = document.createElement('div');
-      section.className = 'step-detail-section';
-
-      const heading = document.createElement('div');
-      heading.className   = 'step-detail-label';
-      heading.textContent = 'Live Response (still generating…)';
-
-      const pre = document.createElement('pre');
-      pre.className   = 'step-detail-pre';
-      pre.textContent = latestProgressText || 'Waiting for a response…';
-
-      section.appendChild(heading);
-      section.appendChild(pre);
-      detail.appendChild(section);
-    }
-
-    const slowTimeout = setTimeout(() => {
-      if (finished) return;
-      liveSectionShown = true;
-      toggle.classList.remove('hidden');
-      detail.classList.remove('hidden');
-      toggle.textContent = 'Details ▴';
-      renderLiveSection();
-    }, SLOW_STEP_MS);
-
     function attachDetails(sections) {
-      detail.innerHTML = '';
-      toggle.classList.remove('hidden');
+      const toggle = document.createElement('button');
+      toggle.className   = 'step-toggle';
+      toggle.textContent = 'Details ▾';
+      row.appendChild(toggle);
+
+      const detail = document.createElement('div');
+      detail.className = 'step-detail hidden';
 
       sections.forEach(({ label: sLabel, content }) => {
         const section = document.createElement('div');
@@ -166,14 +121,16 @@ const VerifierTab = (() => {
         section.appendChild(pre);
         detail.appendChild(section);
       });
+
+      item.appendChild(detail);
+
+      toggle.addEventListener('click', () => {
+        const hidden = detail.classList.toggle('hidden');
+        toggle.textContent = hidden ? 'Details ▾' : 'Details ▴';
+      });
     }
 
     return {
-      progress(partialText) {
-        if (finished) return;
-        latestProgressText = partialText;
-        if (liveSectionShown) renderLiveSection();
-      },
       done(summary, sections, onRerun) {
         stopTimer();
         item.className   = 'step-item done';
@@ -181,8 +138,6 @@ const VerifierTab = (() => {
         icon.textContent = '✓';
         if (summary) text.textContent = label + ' — ' + summary;
         if (sections && sections.length) attachDetails(sections);
-        detail.classList.add('hidden');
-        toggle.textContent = 'Details ▾';
         if (onRerun) {
           const rerunBtn = document.createElement('button');
           rerunBtn.className   = 'step-rerun-btn';
@@ -226,15 +181,6 @@ const VerifierTab = (() => {
       hash = ((hash << 5) + hash + text.charCodeAt(i)) | 0;
     }
     return hash.toString(36);
-  }
-
-  async function callWithProgress(stepHandle, apiCall) {
-    Api.setProgressHandler(text => stepHandle.progress(text));
-    try {
-      return await apiCall();
-    } finally {
-      Api.setProgressHandler(null);
-    }
   }
 
   async function extractJustificationText(file) {
@@ -460,7 +406,7 @@ const VerifierTab = (() => {
         for (let b = 0; b < batches.length; b++) {
           const stepLabel = batches.length > 1 ? `Labeling values — batch ${b + 1} of ${batches.length}` : 'Labeling extracted values';
           const batchStep = addStep(stepLabel);
-          const batchResult = await callWithProgress(batchStep, () => Api.extractValuesBatch(batches[b], cachedJustificationText, apiKey));
+          const batchResult = await Api.extractValuesBatch(batches[b], cachedJustificationText, apiKey);
           allLabeled.push(...batchResult);
           batchStep.done(`${batchResult.length} values labeled`, [
             { label: batches.length > 1 ? `Batch ${b + 1} Labeled Values` : 'Labeled Values', content: JSON.stringify(batchResult, null, 2) }
@@ -469,7 +415,7 @@ const VerifierTab = (() => {
         extracted = allLabeled;
       } else {
         const extractStep = addStep('Labeling extracted values');
-        extracted         = await callWithProgress(extractStep, () => Api.extractValues(cachedPreExtracted, cachedJustificationText, apiKey));
+        extracted         = await Api.extractValues(cachedPreExtracted, cachedJustificationText, apiKey);
         extractStep.done(`${extracted.length} values labeled`, [
           { label: 'Labeled Values', content: JSON.stringify(extracted, null, 2) }
         ], () => rerunFrom('extract'));
@@ -489,7 +435,7 @@ const VerifierTab = (() => {
         for (let b = 0; b < batches.length; b++) {
           const stepLabel = batches.length > 1 ? `Matching against spreadsheet — batch ${b + 1} of ${batches.length}` : 'Matching against spreadsheet';
           const batchStep = addStep(stepLabel);
-          const batchResult = await callWithProgress(batchStep, () => Api.matchValuesBatch(batches[b], cachedCsvText, apiKey));
+          const batchResult = await Api.matchValuesBatch(batches[b], cachedCsvText, apiKey);
           allMatched.push(...batchResult);
           batchStep.done(`${batchResult.length} values matched`, [
             { label: batches.length > 1 ? `Batch ${b + 1} Comparison Result` : 'Comparison Result', content: JSON.stringify(batchResult, null, 2) }
@@ -498,7 +444,7 @@ const VerifierTab = (() => {
         cachedComparison = allMatched;
       } else {
         const matchStep  = addStep('Matching against spreadsheet');
-        const comparison = await callWithProgress(matchStep, () => Api.matchValues(extracted, cachedCsvText, apiKey));
+        const comparison = await Api.matchValues(extracted, cachedCsvText, apiKey);
         cachedComparison = comparison;
         matchStep.done(`${comparison.length} values matched`, [
           { label: 'Comparison Result', content: JSON.stringify(comparison, null, 2) }
@@ -529,7 +475,7 @@ const VerifierTab = (() => {
       } else {
         let notFoundAuditResult;
         for (let attempt = 0; attempt < 3; attempt++) {
-          notFoundAuditResult = await callWithProgress(notFoundAuditStep, () => Api.auditNotFound(cachedNotFoundItems, cachedJustificationText, cachedCsvText, apiKey));
+          notFoundAuditResult = await Api.auditNotFound(cachedNotFoundItems, cachedJustificationText, cachedCsvText, apiKey);
           if (notFoundAuditResult.length === cachedNotFoundItems.length) break;
           if (attempt === 2) {
             notFoundAuditStep.error(`expected ${cachedNotFoundItems.length} item${cachedNotFoundItems.length !== 1 ? 's' : ''}, got ${notFoundAuditResult.length}`);
@@ -566,7 +512,7 @@ const VerifierTab = (() => {
         let mismatchAuditResult;
         let recoveredItems = [];
         for (let attempt = 0; attempt < 3; attempt++) {
-          mismatchAuditResult = await callWithProgress(mismatchAuditStep, () => Api.auditMismatches(mismatchItems, cachedJustificationText, cachedCsvText, apiKey));
+          mismatchAuditResult = await Api.auditMismatches(mismatchItems, cachedJustificationText, cachedCsvText, apiKey);
           const outputLabels = new Set(mismatchAuditResult.flatMap(g => (g.items || []).map(i => i.label)));
           recoveredItems = mismatchItems.filter(i => !outputLabels.has(i.label));
           if (!recoveredItems.length) break;
@@ -601,7 +547,7 @@ const VerifierTab = (() => {
     }
 
     const summaryStep  = addStep('Generating summary');
-    const summaryResult = await callWithProgress(summaryStep, () => Api.auditSummary(trulyNotFound, mismatchGroups, cachedJustificationText, cachedCsvText, apiKey));
+    const summaryResult = await Api.auditSummary(trulyNotFound, mismatchGroups, cachedJustificationText, cachedCsvText, apiKey);
     summaryStep.done(`${summaryResult.length} section${summaryResult.length !== 1 ? 's' : ''}`, [
       { label: 'Summary', content: JSON.stringify(summaryResult, null, 2) }
     ], () => rerunFrom('summary'));

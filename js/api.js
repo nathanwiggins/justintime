@@ -38,48 +38,7 @@ ${section.prompt}`;
     return prompt;
   }
 
-  let retryHandler    = null;
-  let progressHandler = null;
-
-  async function readVandalizerSseStream(response) {
-    const reader  = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let result = null;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      const events = buffer.split('\n\n');
-      buffer = events.pop();
-
-      for (const raw of events) {
-        const lines     = raw.split('\n');
-        const eventType = (lines.find(l => l.startsWith('event: ')) || 'event: message').slice('event: '.length).trim();
-        const dataLine  = lines.find(l => l.startsWith('data: '));
-        if (!dataLine) continue;
-        const payload = dataLine.slice('data: '.length).trim();
-        if (!payload) continue;
-
-        if (eventType === 'progress') {
-          try {
-            const { text } = JSON.parse(payload);
-            if (progressHandler) progressHandler(text);
-          } catch { /* ignore malformed progress frame */ }
-        } else if (eventType === 'result') {
-          result = JSON.parse(payload);
-        } else if (eventType === 'error') {
-          const err = JSON.parse(payload);
-          throw new Error(err.detail || 'Vandalizer streaming error');
-        }
-      }
-    }
-
-    if (!result) throw new Error('Vandalizer stream ended without a result.');
-    return result;
-  }
+  let retryHandler = null;
 
   async function withRetry(fn) {
     let lastError;
@@ -114,10 +73,7 @@ ${section.prompt}`;
           const err = await response.json().catch(() => ({}));
           throw new Error(err.detail || `Vandalizer API error (HTTP ${response.status})`);
         }
-        const contentType = response.headers.get('content-type') || '';
-        const result = contentType.includes('text/event-stream')
-          ? await readVandalizerSseStream(response)
-          : await response.json();
+        const result = await response.json();
         return result.data;
       }
 
@@ -412,7 +368,6 @@ Instructions:
   return {
     generateSection, extractValues, extractValuesBatch, matchValues, matchValuesBatch,
     auditNotFound, auditMismatches, auditSummary, classifyReply, test, isVandalizerHosted,
-    setRetryHandler: cb => { retryHandler = cb; },
-    setProgressHandler: cb => { progressHandler = cb; }
+    setRetryHandler: cb => { retryHandler = cb; }
   };
 })();
