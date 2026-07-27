@@ -204,49 +204,13 @@ ${section.prompt}`;
     });
   }
 
-  function escapeBareControlCharsInStrings(text) {
-    let result = '';
-    let inString = false;
-    let escaped = false;
-    for (const ch of text) {
-      if (inString) {
-        if (escaped) {
-          result += ch;
-          escaped = false;
-        } else if (ch === '\\') {
-          result += ch;
-          escaped = true;
-        } else if (ch === '"') {
-          result += ch;
-          inString = false;
-        } else if (ch === '\n') {
-          result += '\\n';
-        } else if (ch === '\r') {
-          result += '\\r';
-        } else if (ch === '\t') {
-          result += '\\t';
-        } else {
-          result += ch;
-        }
-      } else {
-        if (ch === '"') inString = true;
-        result += ch;
-      }
-    }
-    return result;
-  }
-
   function parseGeminiText(rawText, schema) {
     if (!schema) return rawText;
     try {
       return JSON.parse(rawText);
     } catch (err) {
-      try {
-        return JSON.parse(escapeBareControlCharsInStrings(rawText));
-      } catch {
-        console.error('Gemini returned malformed JSON:', rawText);
-        throw new Error(`Gemini returned malformed JSON (${err.message}) — see console for the full text.`);
-      }
+      console.error('Gemini returned malformed JSON:', rawText);
+      throw new Error(`Gemini returned malformed JSON (${err.message}) — see console for the full text.`);
     }
   }
 
