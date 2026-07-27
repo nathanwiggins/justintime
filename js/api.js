@@ -88,6 +88,21 @@ ${section.prompt}`;
     let buffer   = '';
     let fullText = '';
 
+    const processEvent = (event) => {
+      const line = event.split('\n').find(l => l.startsWith('data: '));
+      if (!line) return;
+      const payload = line.slice('data: '.length).trim();
+      if (!payload || payload === '[DONE]') return;
+      try {
+        const chunk = JSON.parse(payload);
+        const delta = chunk.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (delta) {
+          fullText += delta;
+          if (progressHandler) progressHandler(fullText);
+        }
+      } catch { /* ignore partial/malformed SSE frames */ }
+    };
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -96,21 +111,9 @@ ${section.prompt}`;
       const events = buffer.split('\n\n');
       buffer = events.pop();
 
-      for (const event of events) {
-        const line = event.split('\n').find(l => l.startsWith('data: '));
-        if (!line) continue;
-        const payload = line.slice('data: '.length).trim();
-        if (!payload || payload === '[DONE]') continue;
-        try {
-          const chunk = JSON.parse(payload);
-          const delta = chunk.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (delta) {
-            fullText += delta;
-            if (progressHandler) progressHandler(fullText);
-          }
-        } catch { /* ignore partial/malformed SSE frames */ }
-      }
+      for (const event of events) processEvent(event);
     }
+    if (buffer) processEvent(buffer);
     return fullText;
   }
 
