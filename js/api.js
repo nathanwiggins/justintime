@@ -95,7 +95,8 @@ ${section.prompt}`;
       if (!payload || payload === '[DONE]') return;
       try {
         const chunk = JSON.parse(payload);
-        const delta = chunk.candidates?.[0]?.content?.parts?.[0]?.text;
+        const parts = chunk.candidates?.[0]?.content?.parts || [];
+        const delta = parts.filter(p => !p.thought).map(p => p.text || '').join('');
         if (delta) {
           fullText += delta;
           if (progressHandler) progressHandler(fullText);
@@ -181,7 +182,7 @@ ${section.prompt}`;
 
         const rawText = await readGeminiSseStream(response);
         if (!rawText) throw new Error('Gemini returned an empty response.');
-        return schema ? JSON.parse(rawText) : rawText;
+        return parseGeminiText(rawText, schema);
       }
 
       const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
@@ -196,10 +197,21 @@ ${section.prompt}`;
       }
 
       const data = await response.json();
-      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      const rawText = parts.filter(p => !p.thought).map(p => p.text || '').join('');
       if (!rawText) throw new Error('Gemini returned an empty response.');
-      return schema ? JSON.parse(rawText) : rawText;
+      return parseGeminiText(rawText, schema);
     });
+  }
+
+  function parseGeminiText(rawText, schema) {
+    if (!schema) return rawText;
+    try {
+      return JSON.parse(rawText);
+    } catch (err) {
+      console.error('Gemini returned malformed JSON:', rawText);
+      throw new Error(`Gemini returned malformed JSON (${err.message}) — see console for the full text.`);
+    }
   }
 
   async function generateSection({ csvText, projectSummary, templateType, apiKey, section, additionalContext }) {
