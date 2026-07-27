@@ -1,6 +1,5 @@
 const Api = (() => {
-  const ENDPOINT        = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent';
-  const STREAM_ENDPOINT  = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:streamGenerateContent';
+  const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent';
 
   const isVandalizerHosted = () => window.JIT_GLOBAL_CONFIG?.useVandalizerProxy || false;
 
@@ -82,38 +81,6 @@ ${section.prompt}`;
     return result;
   }
 
-  async function readGeminiSseStream(response) {
-    const reader  = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer   = '';
-    let fullText = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      const events = buffer.split('\n\n');
-      buffer = events.pop();
-
-      for (const event of events) {
-        const line = event.split('\n').find(l => l.startsWith('data: '));
-        if (!line) continue;
-        const payload = line.slice('data: '.length).trim();
-        if (!payload || payload === '[DONE]') continue;
-        try {
-          const chunk = JSON.parse(payload);
-          const delta = chunk.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (delta) {
-            fullText += delta;
-            if (progressHandler) progressHandler(fullText);
-          }
-        } catch { /* ignore partial/malformed SSE frames */ }
-      }
-    }
-    return fullText;
-  }
-
   async function withRetry(fn) {
     let lastError;
     for (let i = 0; i < 3; i++) {
@@ -162,23 +129,6 @@ ${section.prompt}`;
       }
       if (systemPrompt) {
         payload.systemInstruction = { parts: [{ text: systemPrompt }] };
-      }
-
-      if (progressHandler) {
-        const response = await fetch(`${STREAM_ENDPOINT}?alt=sse&key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-          const errBody = await response.json().catch(() => ({}));
-          throw new Error(errBody.error?.message || `Gemini API error (HTTP ${response.status})`);
-        }
-
-        const rawText = await readGeminiSseStream(response);
-        if (!rawText) throw new Error('Gemini returned an empty response.');
-        return schema ? JSON.parse(rawText) : rawText;
       }
 
       const response = await fetch(`${ENDPOINT}?key=${apiKey}`, {
