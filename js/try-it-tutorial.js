@@ -1,6 +1,6 @@
 const TryItTutorial = (() => {
-  const JUSTIFICATION_FILE = 'examples/NSF_5_Year_Budget_Justification.docx';
-  const BUDGET_FILE        = 'examples/NSF_5_Year_Budget_Banister_Bacon.xlsx';
+  const JUSTIFICATION_FILE = 'examples/NSF_1_Year_Budget_Justification.docx';
+  const BUDGET_FILE        = 'examples/NSF_1_Year_Budget_Banister_Bacon.xlsx';
 
   let active = false;
   let stageCleanup = [];
