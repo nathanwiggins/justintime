@@ -16,3 +16,4 @@ When contributing to this repository, every time you make a change that affects 
 
 Do not include code comments. This codebase should be free of all code comments.
 
+After implementing a new feature, do not start up virtual environments to test features. The user will test features for visual correctness manually.

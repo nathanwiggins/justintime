@@ -165,12 +165,30 @@ const HowItWorks = (() => {
     stage.appendChild(caption("Nothing is marked as a real problem until you agree. The assistant walks through each finding conversationally, checking your explanation against the actual documents — and only then produces the final, color-coded summary you review before submitting."));
   }
 
+  function renderStep6(stage) {
+    stage.appendChild(heading('Try it out!'));
+    stage.appendChild(caption('See it for yourself with two sample documents — download them, upload them, and watch Just-In-Time catch a real mismatch.'));
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-primary step-flow-try-it-btn step-flow-anim';
+    btn.style.animationDelay = '200ms';
+    btn.textContent = 'Try it out!';
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      closeModal();
+      TryItTutorial.start();
+    });
+    stage.appendChild(btn);
+  }
+
   const STEPS = [
     { render: renderStep1 },
     { render: renderStep2 },
     { render: renderStep3 },
     { render: renderStep4 },
-    { render: renderStep5 }
+    { render: renderStep5 },
+    { render: renderStep6 }
   ];
 
   let flow = null;

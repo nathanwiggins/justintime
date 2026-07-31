@@ -10,6 +10,7 @@ A lightweight, client-side budget justification verifier for research administra
 - The justification and spreadsheet are shown side-by-side with the chat, with flagged values highlighted and auto-tracked as you go.
 - Ends with a plain-language summary and a downloadable marked-up copy of the justification with flagged values highlighted.
 - Drag-and-drop uploads, an animated scan → label → match → audit → summarize progress sequence (full technical log available via "Expand Analysis Details"), and a "How It Works" walkthrough for first-time users.
+- "Try it out!" at the end of the walkthrough launches a guided, sample-document run-through of the whole Verifier flow, with on-screen arrows pointing to what to click next. Exit it at any time.
 - API keys are stored only in your browser's `localStorage` — a warning reminds you to check your key's data-sharing terms before use.
 
 ## Tech Stack
@@ -45,9 +46,11 @@ justintime/
 │   ├── highlighter.js      # DOCX markup: injects <w:highlight> into flagged runs via JSZip
 │   ├── doc-preview.js      # Live in-browser justification preview
 │   ├── sheet-preview.js    # Live in-browser spreadsheet preview
-│   └── document.js         # docx output + download trigger
-└── templates/
-    └── nsf.txt             # Reference: NSF section layout and field definitions
+│   ├── document.js         # docx output + download trigger
+│   └── try-it-tutorial.js  # Guided "Try it out!" sample-document walkthrough
+├── templates/
+│   └── nsf.txt             # Reference: NSF section layout and field definitions
+└── examples/                # Sample justification + spreadsheet used by "Try it out!"
 ```
 
 ## Getting Started: Obtaining a Gemini API Key
