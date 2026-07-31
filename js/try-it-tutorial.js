@@ -69,14 +69,18 @@ const TryItTutorial = (() => {
       wrap.style.left = `${left}px`;
     }
 
-    reposition();
-    window.addEventListener('scroll', reposition, true);
-    window.addEventListener('resize', reposition);
-    onStage(() => {
+    function destroy() {
       window.removeEventListener('scroll', reposition, true);
       window.removeEventListener('resize', reposition);
       wrap.remove();
-    });
+    }
+
+    reposition();
+    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('resize', reposition);
+    onStage(destroy);
+
+    return { destroy };
   }
 
   function switchToVerifyTab() {
@@ -173,8 +177,8 @@ const TryItTutorial = (() => {
     switchToVerifyTab();
 
     guideCard('Upload the two sample files you just downloaded into the matching drop zones below.');
-    pointAt(document.getElementById('verify-justification-drop-zone'), 'Upload the justification document here');
-    pointAt(document.getElementById('verify-budget-drop-zone'), 'Upload the budget spreadsheet here');
+    const justPointer   = pointAt(document.getElementById('verify-justification-drop-zone'), 'Upload the justification document here');
+    const budgetPointer = pointAt(document.getElementById('verify-budget-drop-zone'), 'Upload the budget spreadsheet here');
 
     const justInput   = document.getElementById('verify-justification-input');
     const budgetInput = document.getElementById('verify-budget-input');
@@ -186,8 +190,8 @@ const TryItTutorial = (() => {
       if (justUploaded && budgetUploaded) showVerifyStage(showFirstResultStage);
     }
 
-    function onJust()   { justUploaded = true; checkDone(); }
-    function onBudget()  { budgetUploaded = true; checkDone(); }
+    function onJust()   { justUploaded = true; justPointer.destroy(); checkDone(); }
+    function onBudget()  { budgetUploaded = true; budgetPointer.destroy(); checkDone(); }
 
     justInput.addEventListener('change', onJust);
     budgetInput.addEventListener('change', onBudget);
@@ -203,7 +207,12 @@ const TryItTutorial = (() => {
     clearStage();
 
     guideCard("Now click \"Verify Budget\" to run the check.");
-    pointAt(document.getElementById('verify-btn'), 'Click here to verify');
+    const verifyBtn = document.getElementById('verify-btn');
+    const verifyPointer = pointAt(verifyBtn, 'Click here to verify');
+
+    function onClick() { verifyPointer.destroy(); }
+    verifyBtn.addEventListener('click', onClick, { once: true });
+    onStage(() => verifyBtn.removeEventListener('click', onClick));
 
     function onComplete() { onDone(); }
     document.addEventListener('verify:complete', onComplete, { once: true });
@@ -214,10 +223,10 @@ const TryItTutorial = (() => {
     clearStage();
 
     guideCard('Nice! Now try editing a value in the spreadsheet you downloaded — change a dollar amount, save it, and upload the edited file here to see if Just-In-Time catches the discrepancy.');
-    pointAt(document.getElementById('verify-budget-drop-zone'), 'Re-upload the edited spreadsheet here');
+    const reuploadPointer = pointAt(document.getElementById('verify-budget-drop-zone'), 'Re-upload the edited spreadsheet here');
 
     const budgetInput = document.getElementById('verify-budget-input');
-    function onReupload() { showVerifyStage(finish); }
+    function onReupload() { reuploadPointer.destroy(); showVerifyStage(finish); }
     budgetInput.addEventListener('change', onReupload);
     onStage(() => budgetInput.removeEventListener('change', onReupload));
   }
