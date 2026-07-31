@@ -208,6 +208,7 @@ const VerifierTab = (() => {
   function renderSummary(sections) {
     const container = document.getElementById('verify-results');
     container.innerHTML = '';
+    document.dispatchEvent(new CustomEvent('verify:complete', { detail: { sections } }));
 
     if (!sections.length) {
       showSuccessOnStop = true;

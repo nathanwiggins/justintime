@@ -1619,6 +1619,132 @@ mark.doc-highlight.active.red    { background: #fca5a5; }
 
 .step-flow-restart.hidden { display: none; }
 
+.step-flow-try-it-btn {
+  align-self: center;
+  padding: 16px 40px;
+  font-size: 18px;
+}
+
+.tutorial-download-modal .modal-content { max-width: 520px; }
+
+.tutorial-sample-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.tutorial-sample-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+}
+
+.tutorial-sample-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  color: var(--color-primary);
+}
+
+.tutorial-sample-icon svg { width: 100%; height: 100%; }
+
+.tutorial-sample-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.tutorial-downloaded, .tutorial-downloaded:hover {
+  background: transparent;
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.tutorial-hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.tutorial-guide-card {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 110;
+  max-width: 340px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 16px 36px 16px 16px;
+}
+
+.tutorial-guide-card p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tutorial-guide-card .tutorial-exit-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.tutorial-pointer {
+  position: fixed;
+  z-index: 111;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: tutorial-bounce 1.4s ease-in-out infinite;
+}
+
+.tutorial-pointer-below { flex-direction: column-reverse; }
+
+.tutorial-pointer-bubble {
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 6px;
+  box-shadow: var(--shadow-lg);
+  max-width: 240px;
+  text-align: center;
+}
+
+.tutorial-pointer-arrow {
+  width: 16px;
+  height: 10px;
+}
+
+.tutorial-pointer-arrow::before {
+  content: '';
+  display: block;
+  width: 0;
+  height: 0;
+  margin: 0 auto;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 10px solid var(--color-primary);
+}
+
+.tutorial-pointer-below .tutorial-pointer-arrow::before {
+  border-top: none;
+  border-bottom: 10px solid var(--color-primary);
+}
+
+@keyframes tutorial-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
 .app-footer {
   text-align: center;
   padding: 16px 32px 24px;
@@ -1643,4 +1769,5 @@ mark.doc-highlight.active.red    { background: #fca5a5; }
   .step-flow-snippet { font-size: 14px; padding: 16px 18px; }
   .step-flow-chip { font-size: 15px; padding: 6px 16px; }
   .step-flow-controls .btn { padding: 12px 22px; font-size: 15px; }
+  .tutorial-guide-card { left: 16px; right: 16px; max-width: none; }
 }
