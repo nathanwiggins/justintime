@@ -1,0 +1,350 @@
+import logging
+import sys
+from contextlib import asynccontextmanager
+from functools import lru_cache
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
+from starlette.datastructures import MutableHeaders
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+from app.config import Settings
+from app.database import init_db
+from app.exceptions import AppError
+from app.middleware.csrf import CSRFMiddleware
+from app.observability import init_sentry
+from app.rate_limit import limiter
+from app.routers import activity, admin, audit, auth, automations, browser_automation, certification, chat, config, credentials, demo, documents, extractions, feedback, feedback_admin, feedback_prompt, files, folders, graph_webhooks, knowledge, library, mgmt, notifications, office, optimizer_inbox, organizations, projects, reviews, spaces, support, teams, telemetry, verification, workflows
+from app.routers import apps
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+# ---------------------------------------------------------------------------
+# Structured logging
+# ---------------------------------------------------------------------------
+def _configure_logging(settings: Settings) -> None:
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    handler = logging.StreamHandler(sys.stdout)
+    if settings.log_format == "json":
+        from pythonjsonlogger.json import JsonFormatter
+
+        handler.setFormatter(
+            JsonFormatter(
+                fmt="%(asctime)s %(levelname)s %(name)s %(message)s",
+                rename_fields={"asctime": "timestamp", "levelname": "level"},
+            )
+        )
+    else:
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)s [%(name)s] %(message)s")
+        )
+    root.handlers = [handler]
+
+
+_boot_settings = get_settings()
+_configure_logging(_boot_settings)
+init_sentry(_boot_settings)
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
+    logger.info("Starting Vandalizer backend")
+    await init_db(get_settings())
+
+    # Unique (kb, url) index for KB sources. Lives outside Beanie's index
+    # management because it self-heals: duplicates created by the old racy
+    # check-then-insert are deleted (chunks included) before the build is
+    # retried. Best-effort — never block startup on it.
+    try:
+        from app.services.knowledge_service import ensure_source_url_unique_index
+        await ensure_source_url_unique_index()
+    except Exception:
+        logger.warning("KB source unique-index ensure failed during startup", exc_info=True)
+
+    # Seed default feedback prompts for trial check-ins
+    if get_settings().enable_trial_system:
+        from app.services.feedback_prompt_service import seed_default_prompts
+        await seed_default_prompts()
+
+    # One-time bell notification to admins when the bundled catalog is newer
+    # than what's applied. Best-effort — never block startup on it.
+    try:
+        from app.services.catalog_service import notify_admins_of_catalog_update_if_new
+        await notify_admins_of_catalog_update_if_new()
+    except Exception:
+        logger.warning("Catalog update check failed during startup", exc_info=True)
+
+    yield
+    logger.info("Shutting down Vandalizer backend")
+
+
+app = FastAPI(
+    title="Vandalizer",
+    lifespan=lifespan,
+    docs_url=None if _boot_settings.is_production else "/api/docs",
+    redoc_url=None if _boot_settings.is_production else "/api/redoc",
+    openapi_url=None if _boot_settings.is_production else "/api/openapi.json",
+)
+app.state.limiter = limiter
+
+
+def _rate_limit_exceeded_handler(request: Request, exc: Exception) -> JSONResponse:
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Rate limit exceeded. Please try again later."},
+    )
+
+
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+def _app_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    app_exc: AppError = exc  # type: ignore[assignment]
+    return JSONResponse(
+        status_code=app_exc.status_code,
+        content={"detail": app_exc.message},
+    )
+
+
+app.add_exception_handler(AppError, _app_error_handler)
+
+
+# In development, return the full traceback in the response so errors are
+# immediately visible in API test tools and scripts. In production the Sentry
+# integration (see app/observability.py) captures unhandled exceptions and
+# uvicorn logs them, so we deliberately don't register a catch-all handler here:
+# a handler that returns a response makes Sentry's Starlette integration capture
+# the same error twice, doubling up issues.
+if not _boot_settings.is_production:
+    import traceback as _tb
+
+    async def _dev_unhandled_error(request: Request, exc: Exception) -> JSONResponse:
+        tb = _tb.format_exception(type(exc), exc, exc.__traceback__)
+        logger.error("Unhandled exception:\n%s", "".join(tb))
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": str(exc),
+                "traceback": "".join(tb),
+            },
+        )
+
+    app.add_exception_handler(Exception, _dev_unhandled_error)
+
+
+# ---------------------------------------------------------------------------
+# Security headers middleware
+# ---------------------------------------------------------------------------
+# Implemented as pure ASGI middleware (not BaseHTTPMiddleware) so that client
+# disconnects mid-response don't leak pending asyncio tasks from Starlette's
+# internal task group.
+class SecurityHeadersMiddleware:
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        is_production = get_settings().is_production
+
+        async def send_with_headers(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(scope=message)
+                headers["X-Content-Type-Options"] = "nosniff"
+                headers["X-Frame-Options"] = "DENY"
+                headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+                headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+                headers["X-XSS-Protection"] = "1; mode=block"
+                headers["Content-Security-Policy"] = (
+                    "default-src 'self'; "
+                    "script-src 'self'; "
+                    "style-src 'self' 'unsafe-inline'; "
+                    "img-src 'self' data: blob:; "
+                    "connect-src 'self'; "
+                    "frame-ancestors 'none'"
+                )
+                if is_production:
+                    headers["Strict-Transport-Security"] = (
+                        "max-age=63072000; includeSubDomains"
+                    )
+            await send(message)
+
+        await self.app(scope, receive, send_with_headers)
+
+
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(CSRFMiddleware)
+
+
+# ---------------------------------------------------------------------------
+# CORS
+# ---------------------------------------------------------------------------
+settings = get_settings()
+if settings.is_production and not settings.use_secure_cookies:
+    logger.warning(
+        "Production deployment served over plain HTTP (frontend_url=%s): "
+        "auth/CSRF cookies will NOT carry the Secure attribute. This is "
+        "expected for isolated/intranet installs; put the site behind HTTPS "
+        "for anything internet-facing.",
+        settings.frontend_url,
+    )
+_cors_origins = [settings.frontend_url]
+if not settings.is_production:
+    _cors_origins.append("http://localhost:5173")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key", "X-CSRF-Token"],
+    expose_headers=["X-Conversation-UUID", "X-Activity-ID"],
+)
+
+app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+
+# Azure AD may be registered with a redirect URI that differs from the
+# canonical /api/auth/oauth/azure/callback path.  Mount the same callback
+# handler at the legacy path so it is reachable without changing the Azure
+# app registration.
+app.get("/login/azure/authorized", include_in_schema=False)(auth.oauth_azure_callback)
+app.include_router(files.router, prefix="/api/files", tags=["files"])
+app.include_router(folders.router, prefix="/api/folders", tags=["folders"])
+app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
+app.include_router(teams.router, prefix="/api/teams", tags=["teams"])
+app.include_router(extractions.router, prefix="/api/extractions", tags=["extractions"])
+app.include_router(workflows.router, prefix="/api/workflows", tags=["workflows"])
+app.include_router(config.router, prefix="/api/config", tags=["config"])
+app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
+app.include_router(activity.router, prefix="/api/activity", tags=["activity"])
+app.include_router(library.router, prefix="/api/library", tags=["library"])
+app.include_router(feedback.router, prefix="/api/feedback", tags=["feedback"])
+app.include_router(feedback_admin.router, prefix="/api/feedback/admin", tags=["feedback-admin"])
+app.include_router(verification.router, prefix="/api/verification", tags=["verification"])
+app.include_router(office.router, prefix="/api/office", tags=["office"])
+app.include_router(automations.router, prefix="/api/automations", tags=["automations"])
+app.include_router(credentials.router, prefix="/api/credentials", tags=["credentials"])
+app.include_router(knowledge.router, prefix="/api/knowledge", tags=["knowledge"])
+if _boot_settings.enable_trial_system:
+    app.include_router(demo.router, prefix="/api/demo", tags=["demo"])
+app.include_router(graph_webhooks.router, prefix="/api/webhooks/graph", tags=["webhooks"])
+app.include_router(browser_automation.router, prefix="/api/browser-automation", tags=["browser-automation"])
+app.include_router(certification.router, prefix="/api/certification", tags=["certification"])
+app.include_router(organizations.router, prefix="/api/organizations", tags=["organizations"])
+app.include_router(audit.router, prefix="/api/audit", tags=["audit"])
+app.include_router(optimizer_inbox.router, prefix="/api/optimizer", tags=["optimizer"])
+app.include_router(reviews.router, prefix="/api/reviews", tags=["reviews"])
+app.include_router(notifications.router, prefix="/api/notifications", tags=["notifications"])
+app.include_router(spaces.router, prefix="/api/spaces", tags=["spaces"])
+app.include_router(projects.router, prefix="/api/projects", tags=["projects"])
+app.include_router(support.router, prefix="/api/support", tags=["support"])
+app.include_router(mgmt.router, prefix="/api/mgmt/v1", tags=["mgmt"])
+if _boot_settings.enable_trial_system:
+    app.include_router(feedback_prompt.router, prefix="/api/feedback/prompts", tags=["feedback-prompts"])
+# Telemetry RECEIVER — only on the collector instance. Every other deployment of
+# this codebase leaves both the public ingest route and the admin analytics
+# route unregistered (404), so the feature is fully hidden off-collector.
+if _boot_settings.telemetry_collector_enabled:
+    app.include_router(telemetry.router, prefix="/api/telemetry", tags=["telemetry"])
+
+app.include_router(apps.router, prefix="/api/apps", tags=["apps"])
+
+# ---------------------------------------------------------------------------
+# Prometheus metrics
+# ---------------------------------------------------------------------------
+from prometheus_fastapi_instrumentator import Instrumentator  # noqa: E402
+
+Instrumentator().instrument(app).expose(app, endpoint="/api/metrics")
+
+
+def _fd_usage() -> dict[str, object]:
+    """Report this process's open file-descriptor count and soft limit.
+
+    A steadily climbing ``open_fds`` is the early signal of an fd leak — the
+    kind that has repeatedly surfaced only as a misleading Mongo
+    ``AutoReconnect`` once the table is already exhausted. Surfacing it here
+    lets monitoring alert on the rising line instead of the eventual crash.
+
+    ``open_fds`` is None on platforms without ``/proc`` (e.g. macOS dev); the
+    limit is still read via ``resource``. ``pct`` is the soft-limit usage so a
+    scrape/alert can threshold without re-deriving it.
+    """
+    import os
+    import resource
+
+    open_fds: int | None = None
+    try:
+        open_fds = len(os.listdir("/proc/self/fd"))
+    except OSError:
+        open_fds = None
+
+    limit: int | None = None
+    try:
+        soft, _hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+        limit = soft if soft != resource.RLIM_INFINITY else None
+    except (ValueError, OSError):
+        limit = None
+
+    pct = round(100 * open_fds / limit, 1) if open_fds is not None and limit else None
+    return {"open_fds": open_fds, "fd_limit": limit, "fd_pct": pct}
+
+
+@app.get("/api/health")
+async def health() -> JSONResponse:
+    """Health check that verifies all critical dependencies."""
+    checks: dict[str, str] = {}
+    settings = get_settings()
+
+    # MongoDB — reuse the app's pooled client; never open a new one per probe
+    # (that leaks file descriptors over the life of the process).
+    try:
+        from app.database import get_client
+
+        await get_client()[settings.mongo_db].command("ping")
+        checks["mongodb"] = "ok"
+    except Exception as e:
+        checks["mongodb"] = f"error: {e}"
+
+    # Redis
+    try:
+        import redis.asyncio as aioredis
+
+        r = aioredis.Redis(
+            host=settings.redis_host, port=6379, db=0, socket_timeout=2
+        )
+        await r.ping()
+        await r.aclose()
+        checks["redis"] = "ok"
+    except Exception as e:
+        checks["redis"] = f"error: {e}"
+
+    # ChromaDB
+    try:
+        from app.services.document_manager import get_chroma_client
+
+        chroma = get_chroma_client(settings.chromadb_persist_dir)
+        chroma.heartbeat()
+        checks["chromadb"] = "ok"
+    except Exception as e:
+        checks["chromadb"] = f"error: {e}"
+
+    all_ok = all(v == "ok" for v in checks.values())
+    status_code = 200 if all_ok else 503
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "ok" if all_ok else "degraded",
+            "checks": checks,
+            "resources": _fd_usage(),
+        },
+    )

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /workspaces/justintime log --oneline -- examples/)"
+    ]
+  }
+}
