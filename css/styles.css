@@ -106,6 +106,10 @@ body {
   border-bottom-color: var(--color-primary);
 }
 
+.tab-btn-aside {
+  margin-left: auto;
+}
+
 .app-main {
   max-width: 860px;
   margin: 32px auto;
