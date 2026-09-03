@@ -24,6 +24,11 @@ const VerifierChat = (() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
   }
 
+  function clear() {
+    localStorage.removeItem(STORAGE_KEY);
+    session = null;
+  }
+
   function sectionsMatch(a, b) {
     if (a.length !== b.length) return false;
     return a.every((s, i) => s.section_label === b[i].section_label && s.type === b[i].type);
@@ -78,6 +83,7 @@ const VerifierChat = (() => {
   function inputEl()      { return document.getElementById('verify-chat-input'); }
   function sendBtnEl()    { return document.getElementById('verify-chat-send'); }
   function ignoreBtnEl()  { return document.getElementById('verify-chat-ignore'); }
+  function flagBtnEl()    { return document.getElementById('verify-chat-flag'); }
   function inputRowEl()   { return document.getElementById('verify-chat-input-row'); }
   function ackRowEl()     { return document.getElementById('verify-chat-ack-row'); }
   function ackBtnEl()     { return document.getElementById('verify-chat-ack'); }
@@ -243,6 +249,7 @@ const VerifierChat = (() => {
     inputEl().disabled = active;
     sendBtnEl().disabled = active;
     ignoreBtnEl().disabled = active;
+    flagBtnEl().disabled = active;
     sendBtnEl().textContent = active ? 'Thinking…' : 'Send';
   }
 
@@ -250,6 +257,7 @@ const VerifierChat = (() => {
     inputEl().disabled = locked;
     sendBtnEl().disabled = locked;
     ignoreBtnEl().disabled = locked;
+    flagBtnEl().disabled = locked;
     ackBtnEl().disabled = locked;
   }
 
@@ -346,6 +354,18 @@ const VerifierChat = (() => {
     section.tag = 'not_a_concern';
     section.resolution = 'This finding was skipped without further review.';
     section.transcript.push({ role: 'user', text: 'Ignore this issue.' });
+    persist();
+    renderThread();
+    appendResolutionBadge(section.tag);
+    holdThenAdvance();
+  }
+
+  function handleFlag() {
+    if (sending) return;
+    const section = currentSection();
+    section.tag = 'real_issue';
+    section.resolution = 'This finding was manually flagged by the user without further review.';
+    section.transcript.push({ role: 'user', text: 'Flag this issue.' });
     persist();
     renderThread();
     appendResolutionBadge(section.tag);
@@ -478,6 +498,7 @@ const VerifierChat = (() => {
     });
     sendBtnEl().addEventListener('click', handleSend);
     ignoreBtnEl().addEventListener('click', handleIgnore);
+    flagBtnEl().addEventListener('click', handleFlag);
     inputEl().addEventListener('keydown', e => {
       if (e.key !== 'Enter' || e.shiftKey) return;
       e.preventDefault();
@@ -486,5 +507,5 @@ const VerifierChat = (() => {
     ackBtnEl().addEventListener('click', handleAcknowledge);
   }
 
-  return { start, tryResume, hasStoredSession, init };
+  return { start, tryResume, hasStoredSession, clear, init };
 })();

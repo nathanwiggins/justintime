@@ -68,7 +68,7 @@ ${section.prompt}`;
     throw lastError;
   }
 
-  async function callApi(apiKey, prompt, schema, systemPrompt = null) {
+  async function callApi(apiKey, prompt, schema, systemPrompt = null, temperature = null) {
     return withRetry(async () => {
       if (isVandalizerHosted()) {
         const doFetch = () => fetch('/api/apps/generate', {
@@ -78,7 +78,7 @@ ${section.prompt}`;
             'Accept': 'application/json',
             ...(getCsrfToken() ? { 'X-CSRF-Token': getCsrfToken() } : {})
           },
-          body: JSON.stringify({ prompt, system_prompt: systemPrompt, schema_def: schema })
+          body: JSON.stringify({ prompt, system_prompt: systemPrompt, schema_def: schema, temperature })
         });
 
         let response = await doFetch();
@@ -98,6 +98,9 @@ ${section.prompt}`;
       };
       if (schema) {
         payload.generationConfig = { responseMimeType: 'application/json', responseSchema: schema };
+      }
+      if (temperature !== null) {
+        payload.generationConfig = { ...payload.generationConfig, temperature };
       }
       if (systemPrompt) {
         payload.systemInstruction = { parts: [{ text: systemPrompt }] };
@@ -151,7 +154,7 @@ ${JSON.stringify(preExtracted, null, 2)}
 
 Budget Justification:
 ${justificationText}`;
-    const labeled = await callApi(apiKey, prompt, VerifierSchemas.extraction);
+    const labeled = await callApi(apiKey, prompt, VerifierSchemas.extraction, null, 0.1);
     return reconcileLabeled(preExtracted, labeled);
   }
 
@@ -171,7 +174,7 @@ ${JSON.stringify(batchItems, null, 2)}
 
 Budget Justification:
 ${justificationText}`;
-    const labeled = await callApi(apiKey, prompt, VerifierSchemas.extraction);
+    const labeled = await callApi(apiKey, prompt, VerifierSchemas.extraction, null, 0.1);
     return reconcileLabeled(batchItems, labeled);
   }
 
@@ -206,7 +209,7 @@ ${JSON.stringify(extracted, null, 2)}
 
 Budget Spreadsheet:
 ${csvText}`;
-    const matched = await callApi(apiKey, prompt, VerifierSchemas.comparison);
+    const matched = await callApi(apiKey, prompt, VerifierSchemas.comparison, null, 0.1);
     return reconcileMatched(extracted, deriveFoundInSpreadsheet(matched));
   }
 
@@ -226,7 +229,7 @@ ${JSON.stringify(batchItems, null, 2)}
 
 Budget Spreadsheet:
 ${csvText}`;
-    const matched = await callApi(apiKey, prompt, VerifierSchemas.comparison);
+    const matched = await callApi(apiKey, prompt, VerifierSchemas.comparison, null, 0.1);
     return reconcileMatched(batchItems, deriveFoundInSpreadsheet(matched));
   }
 
@@ -263,7 +266,7 @@ ${justificationText}
 
 Budget Spreadsheet:
 ${csvText}`;
-    const result = await callApi(apiKey, prompt, VerifierSchemas.notFoundAudit);
+    const result = await callApi(apiKey, prompt, VerifierSchemas.notFoundAudit, null, 0.1);
     return deriveFoundInSpreadsheet(result);
   }
 
@@ -292,7 +295,7 @@ ${justificationText}
 
 Budget Spreadsheet:
 ${csvText}`;
-    const result = await callApi(apiKey, prompt, VerifierSchemas.mismatchAudit);
+    const result = await callApi(apiKey, prompt, VerifierSchemas.mismatchAudit, null, 0.1);
     return result.groups;
   }
 
