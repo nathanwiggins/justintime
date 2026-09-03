@@ -55,7 +55,7 @@ justintime/
 
 ## Getting Started: Obtaining a Gemini API Key
 
-> **DGX / Vandalizer deployments:** AI calls route through the `/api/apps/generate` proxy automatically. No Gemini API key needed.
+> **DGX / Vandalizer deployments:** AI calls route through the `/api/apps/generate` proxy automatically. No Gemini API key needed. If your Vandalizer session expires mid-use, it's refreshed automatically and the request retries — no reload needed.
 
 Just-In-Time uses the Gemini API when running standalone. A free key is available through Google AI Studio — no billing required for standard use.
 

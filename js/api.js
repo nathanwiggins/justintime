@@ -38,6 +38,18 @@ ${section.prompt}`;
     return prompt;
   }
 
+  let refreshPromise = null;
+
+  function refreshSession() {
+    if (!refreshPromise) {
+      refreshPromise = fetch('/api/auth/refresh', { method: 'POST' })
+        .then(res => res.ok)
+        .catch(() => false)
+        .finally(() => { refreshPromise = null; });
+    }
+    return refreshPromise;
+  }
+
   let retryHandler = null;
 
   async function withRetry(fn) {
@@ -59,16 +71,20 @@ ${section.prompt}`;
   async function callApi(apiKey, prompt, schema, systemPrompt = null) {
     return withRetry(async () => {
       if (isVandalizerHosted()) {
-        const csrfToken = getCsrfToken();
-        const response = await fetch('/api/apps/generate', {
+        const doFetch = () => fetch('/api/apps/generate', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {})
+            ...(getCsrfToken() ? { 'X-CSRF-Token': getCsrfToken() } : {})
           },
           body: JSON.stringify({ prompt, system_prompt: systemPrompt, schema_def: schema })
         });
+
+        let response = await doFetch();
+        if (response.status === 401 && (await refreshSession())) {
+          response = await doFetch();
+        }
         if (!response.ok) {
           const err = await response.json().catch(() => ({}));
           throw new Error(err.detail || `Vandalizer API error (HTTP ${response.status})`);
