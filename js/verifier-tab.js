@@ -353,6 +353,7 @@ const VerifierTab = (() => {
     setRunning(true);
     setStatus('');
     clearStepLog();
+    VerifierChat.clear();
     document.getElementById('verify-results').classList.add('hidden');
     VerifyAnim.start();
 

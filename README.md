@@ -6,7 +6,7 @@ A lightweight, client-side budget justification verifier for research administra
 
 - Upload a budget justification (`.docx`) and its spreadsheet (`.csv`/`.xls`/`.xlsx`) to catch mismatches before you submit.
 - AI labels every dollar value, matches it against the spreadsheet, and groups discrepancies by root cause.
-- A guided chat walks you through each finding — confirm it, explain it away, or click "Ignore Issue" to skip it.
+- A guided chat walks you through each finding — confirm it, explain it away, click "Ignore Issue" to skip it, or click "Flag Issue" to mark it as a confirmed issue without discussion.
 - The justification and spreadsheet are shown side-by-side with the chat, with flagged values highlighted and auto-tracked as you go.
 - Ends with a plain-language summary and a downloadable marked-up copy of the justification with flagged values highlighted.
 - Drag-and-drop uploads, an animated scan → label → match → audit → summarize progress sequence (full technical log available via "Expand Analysis Details"), and a "How It Works" walkthrough for first-time users.
