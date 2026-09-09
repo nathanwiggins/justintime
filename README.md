@@ -18,6 +18,7 @@ A lightweight, client-side budget justification generator and verifier for resea
 - Institutional Profiles store your fringe/F&A boilerplate so the AI weaves institution-specific language into the narrative.
 - Each section is generated in two passes — verified data extraction, then narrative writing — with the numbers automatically reconciled so the writing pass can't quietly change a figure.
 - Travel line items break down into itemized cost components (Airfare, Mileage, Lodging, Per Diem, Registration, Other) with a computed subtotal, when the budget spreadsheet itemizes them.
+- Items in the generic "Other" category are automatically checked against every other budget category and dropped if they appear to be the same expense counted twice.
 - Template Mode produces a structured draft with placeholder text instead of full AI-written narrative.
 
 ### Shared

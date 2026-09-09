@@ -67,9 +67,20 @@ const Schemas = {
           properties: {
             item_name:              { type: 'string' },
             cost:                   { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  year: { type: 'number' },
+                  cost: { type: 'number' }
+                },
+                required: ['year', 'cost']
+              }
+            },
             narrative_justification:{ type: 'string' }
           },
-          required: ['item_name', 'cost', 'narrative_justification']
+          required: ['item_name', 'cost', 'yearly_breakdown', 'narrative_justification']
         }
       },
       domestic_travel: {
@@ -411,9 +422,20 @@ const Schemas = {
           properties: {
             item_name:              { type: 'string' },
             cost:                   { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  year: { type: 'number' },
+                  cost: { type: 'number' }
+                },
+                required: ['year', 'cost']
+              }
+            },
             narrative_justification:{ type: 'string' }
           },
-          required: ['item_name', 'cost', 'narrative_justification']
+          required: ['item_name', 'cost', 'yearly_breakdown', 'narrative_justification']
         }
       },
       domestic_travel: {
@@ -805,5 +827,21 @@ const VerifierSchemas = {
       resolution_summary: { type: 'string' }
     },
     required: ['assistant_reply', 'tag', 'needs_followup', 'resolution_summary']
+  }
+};
+
+const GeneratorAuditSchemas = {
+  otherDuplicates: {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        item_name:    { type: 'string' },
+        cost:         { type: 'number' },
+        is_duplicate: { type: 'boolean' },
+        duplicate_of: { type: 'string' }
+      },
+      required: ['item_name', 'cost', 'is_duplicate', 'duplicate_of']
+    }
   }
 };

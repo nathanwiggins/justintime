@@ -229,9 +229,13 @@ const Document = (() => {
     const equipmentTotal = (p.equipment || []).reduce((sum, x) => sum + (x.cost || 0), 0);
     rows.push(sectionHeader(`D. Equipment ($${fmt(equipmentTotal)})`));
     if ((p.equipment || []).length) {
-      p.equipment.forEach(x => rows.push(lineItem(
-        `${x.item_name} ($${fmt(x.cost)}):`, x.narrative_justification
-      )));
+      p.equipment.forEach(x => {
+        const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
+        rows.push(lineItem(
+          `${x.item_name} ($${fmt(x.cost)}):`,
+          `${x.narrative_justification}${yearlyStr ? ` (${yearlyStr})` : ''}`
+        ));
+      });
 
       if (p.equipment.length > 1) {
         const itemsStr    = p.equipment.map(x => `$${fmt(x.cost)} for ${x.item_name}`).join(', ');
@@ -589,9 +593,13 @@ const Document = (() => {
     const equipmentTotal = equipment.reduce((sum, x) => sum + (x.cost || 0), 0);
     rows.push(sectionHeader(`D. Equipment ($${fmt(equipmentTotal)})`));
     if (equipment.length) {
-      equipment.forEach(x => rows.push(lineItem(
-        `${x.item_name} ($${fmt(x.cost)}):`, x.narrative_justification
-      )));
+      equipment.forEach(x => {
+        const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
+        rows.push(lineItem(
+          `${x.item_name} ($${fmt(x.cost)}):`,
+          `${x.narrative_justification}${yearlyStr ? ` (${yearlyStr})` : ''}`
+        ));
+      });
 
       if (equipment.length > 1) {
         const itemsStr    = equipment.map(x => `$${fmt(x.cost)} for ${x.item_name}`).join(', ');
@@ -720,8 +728,25 @@ const Document = (() => {
     if (ic.narrative_description) rows.push(plain(`${ic.narrative_description}${icYearlyStr ? ` (${icYearlyStr})` : ''}`));
 
     const grandTotal = personnelTotal + (fb.total_cost || 0) + travelTotal + equipmentTotal + suppliesTotal + contractualTotal + constructionTotal + hTotal + (ic.total_cost || 0);
+
+    const yearItems = [
+      ...seniorPersonnel, ...otherPersonnel,
+      ...(fb.rate_groups || []),
+      ...domestic, ...foreign,
+      ...equipment,
+      ...supplies,
+      ...consultants, ...subawards,
+      ...construction,
+      ...activeCategories.flatMap(c => c.items), ...hSubsections.flatMap(s => s.items),
+      ic
+    ];
+    const yearTotals = yearMapOf(yearItems);
+
+    const years   = Object.keys(yearTotals).sort((a, b) => a - b);
+    const yearStr = years.map(yr => `$${fmt(yearTotals[yr])} in Year ${yr}`).join(', ');
+
     rows.push(sectionHeader(`J. Total Costs ($${fmt(grandTotal)})`));
-    rows.push(plain(`The total budget request across all categories (A–I) is $${fmt(grandTotal)}.`));
+    rows.push(plain(`The total budget request across all categories (A–I) is $${fmt(grandTotal)}${yearStr ? ` (${yearStr})` : ''}.`));
 
     return rows;
   }

@@ -166,6 +166,35 @@ ${csvText}`;
     return { result, prompt };
   }
 
+  function reconcileDuplicateAudit(items, audited) {
+    return items.map((item, i) => {
+      if (audited[i] && audited[i].item_name === item.item_name && audited[i].cost === item.cost) return audited[i];
+      const match = audited.find(a => a.item_name === item.item_name && a.cost === item.cost);
+      return match || { item_name: item.item_name, cost: item.cost, is_duplicate: false, duplicate_of: '' };
+    });
+  }
+
+  async function auditOtherDuplicates(otherItems, capturedItems, apiKey) {
+    const prompt = `You are a budget audit assistant checking a budget justification for accidental double-counting.
+
+Below is a list of items proposed for the generic "Other" budget category, and a separate list of items already captured under specific budget categories (Equipment, Travel, Supplies, Contractual, Construction, Participant Support, Publications, Computer Services) for this same budget.
+
+For each item in the "Other" list, determine whether it represents the SAME underlying expense as one of the already-captured items — judge by matching description/purpose and approximate cost (rounding differences still count as a match), not just an exact dollar match. If it is the same expense, set is_duplicate to true and duplicate_of to a brief description of the already-captured item it matches. If it is a genuinely distinct expense, set is_duplicate to false and duplicate_of to an empty string.
+
+Rules:
+- Return exactly ${otherItems.length} objects — one per "Other" item, in the same order
+- Copy item_name and cost exactly as given in the input — do not modify them
+
+"Other" items to check:
+${JSON.stringify(otherItems, null, 2)}
+
+Already-captured items in other categories:
+${JSON.stringify(capturedItems, null, 2)}`;
+
+    const audited = await callApi(apiKey, prompt, GeneratorAuditSchemas.otherDuplicates, null, 0.1);
+    return reconcileDuplicateAudit(otherItems, audited);
+  }
+
   function reconcileLabeled(preExtracted, labeled) {
     return preExtracted.map((pre, i) => {
       if (labeled[i] && labeled[i].value === pre.value) return labeled[i];
@@ -421,7 +450,7 @@ Instructions:
   }
 
   return {
-    generateSection, refineNarrative, extractValues, extractValuesBatch, matchValues, matchValuesBatch,
+    generateSection, refineNarrative, auditOtherDuplicates, extractValues, extractValuesBatch, matchValues, matchValuesBatch,
     auditNotFound, auditMismatches, auditSummary, classifyReply, test, isVandalizerHosted,
     setRetryHandler: cb => { retryHandler = cb; }
   };

@@ -259,6 +259,29 @@ const Generator = (() => {
     });
   }
 
+  function collectCapturedItems(aiJson) {
+    const out = [];
+    const add = (arr, labelFn) => (arr || []).forEach(x => {
+      if (x.cost) out.push({ label: labelFn(x), cost: x.cost });
+    });
+
+    add(aiJson.equipment,            x => x.item_name);
+    add(aiJson.domestic_travel,      x => x.trip_purpose);
+    add(aiJson.foreign_travel,       x => x.trip_purpose);
+    add(aiJson.materials_supplies,   x => x.category_name);
+    add(aiJson.consultants,          x => x.consultant_name);
+    add(aiJson.subawards,            x => x.institution_name);
+    add(aiJson.construction_costs,   x => x.category_name);
+    add(aiJson.stipends,             () => 'Participant Stipend');
+    add(aiJson.participant_travel,   () => 'Participant Travel');
+    add(aiJson.subsistence,          () => 'Participant Subsistence');
+    add(aiJson.participant_other,    () => 'Participant Other Support');
+    add(aiJson.publications,         x => x.publication_title_or_type);
+    add(aiJson.computer_services,    x => x.service_description);
+
+    return out;
+  }
+
   function validateForm({ profileId, file, summaryFile, summaryText, summaryMode, apiKey }) {
     if (!apiKey && !Api.isVandalizerHosted())    return 'No API key saved. Go to the Settings tab and save your Gemini API key.';
     if (!profileId) return 'Please select an Institutional Profile.';
@@ -378,6 +401,20 @@ const Generator = (() => {
           { label: 'Narrative Response',  content: JSON.stringify(narrated, null, 2) },
           ...(diff.mismatches.length ? [{ label: 'Self-Healed Fields', content: JSON.stringify(diff.mismatches, null, 2) }] : [])
         ]);
+      }
+
+      if ((aiJson.other_direct_lines || []).length) {
+        const captured = collectCapturedItems(aiJson);
+        if (captured.length) {
+          const dedupeStep = addStep('Checking Other category for duplicates');
+          const audited     = await Api.auditOtherDuplicates(aiJson.other_direct_lines, captured, form.apiKey);
+          const beforeCount = aiJson.other_direct_lines.length;
+          aiJson.other_direct_lines = aiJson.other_direct_lines.filter((x, i) => !audited[i].is_duplicate);
+          const removedCount = beforeCount - aiJson.other_direct_lines.length;
+          dedupeStep.done(removedCount ? `${removedCount} duplicate item(s) removed` : 'no duplicates found', [
+            { label: 'Audit Result', content: JSON.stringify(audited, null, 2) }
+          ]);
+        }
       }
 
       if (form.templateMode) {
