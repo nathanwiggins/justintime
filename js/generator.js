@@ -231,6 +231,34 @@ const Generator = (() => {
     return target;
   }
 
+  function computeEscalationNote(yearlyBreakdown, subject) {
+    const sorted = [...(yearlyBreakdown || [])].sort((a, b) => a.year - b.year);
+    if (sorted.length < 2) return '';
+
+    const deltas = [];
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = sorted[i - 1].cost;
+      const curr = sorted[i].cost;
+      if (!prev) return '';
+      deltas.push(Math.round(((curr - prev) / prev) * 1000) / 10);
+    }
+
+    const rate = deltas[0];
+    if (rate <= 0 || !deltas.every(d => d === rate)) return '';
+
+    const pct = Number.isInteger(rate) ? `${rate}%` : `${rate.toFixed(1)}%`;
+    return `${subject} reflects a ${pct} annual increase.`;
+  }
+
+  function applyComputedEscalationNotes(extracted) {
+    (extracted.senior_personnel || []).forEach(x => {
+      x.escalation_note = computeEscalationNote(x.yearly_breakdown, 'Salary');
+    });
+    (extracted.other_personnel || []).forEach(x => {
+      x.escalation_note = computeEscalationNote(x.yearly_breakdown, 'Rate');
+    });
+  }
+
   function validateForm({ profileId, file, summaryFile, summaryText, summaryMode, apiKey }) {
     if (!apiKey && !Api.isVandalizerHosted())    return 'No API key saved. Go to the Settings tab and save your Gemini API key.';
     if (!profileId) return 'Please select an Institutional Profile.';
@@ -316,6 +344,7 @@ const Generator = (() => {
           additionalContext,
           temperature:    0.1
         });
+        applyComputedEscalationNotes(extracted);
         const trustedSkeleton = omitNarrativeFields(extracted);
 
         let narrated, narrativePrompt, diff, correction = null;
