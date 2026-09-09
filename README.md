@@ -1,6 +1,6 @@
 # Just-In-Time
 
-A lightweight, client-side NSF budget justification generator and verifier for research administrators. No backend, no build step — hosted on GitHub Pages.
+A lightweight, client-side budget justification generator and verifier for research administrators. No backend, no build step — hosted on GitHub Pages.
 
 ## Features
 
@@ -14,6 +14,7 @@ A lightweight, client-side NSF budget justification generator and verifier for r
 
 ### Generator
 - Upload a budget spreadsheet and project summary to get a formatted `.docx` justification back.
+- Choose a Grant Template Type — National Science Foundation or General grants.gov, each with its own section layout.
 - Institutional Profiles store your fringe/F&A boilerplate so the AI weaves institution-specific language into the narrative.
 - Template Mode produces a structured draft with placeholder text instead of full AI-written narrative.
 
@@ -58,7 +59,8 @@ justintime/
 │   ├── document.js         # docx output + download trigger
 │   └── try-it-tutorial.js  # Guided "Try it out!" sample-document walkthrough
 ├── templates/
-│   └── nsf.txt             # Reference: NSF section layout and field definitions
+│   ├── nsf.txt             # Reference: NSF section layout and field definitions
+│   └── general.txt         # Reference: General grants.gov section layout and field definitions
 └── examples/                # Sample justification + spreadsheet used by "Try it out!"
 ```
 

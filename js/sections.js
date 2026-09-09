@@ -109,6 +109,115 @@ const Sections = (() => {
       }
     ],
 
+    'general': [
+      {
+        key:    'personnel',
+        label:  'A. Personnel',
+        fields: ['senior_personnel', 'other_personnel'],
+        prompt: 'Populate two personnel arrays: senior_personnel and other_personnel.\n\nFor senior_personnel: List each named senior/key personnel. Include their role, annual effort in months, and cumulative salary across all budget years. Do not assume titles or credentials (Dr., PhD) unless explicitly stated in the budget. Write a concise narrative for each person describing their specific contribution to the project. effort_months_per_year must be the effort PER YEAR, NOT the total across all years. Never multiply or sum months across years. For escalation_note: if the spreadsheet shows year-over-year salary changes for this person, write a single brief sentence describing only what the spreadsheet states (e.g., "Salary reflects a 3% annual increase." or "Salary reflects a $2,500 annual increase."). Do not invent, assume, or reference any policy not explicitly present in the spreadsheet. If costs are flat across all years, return an empty string.\n\nFor other_personnel: List all non-senior personnel grouped by role category. This section covers unnamed role groups such as Postdoctoral Scholars, Graduate Students, Undergraduate Students, and Other Professionals. For each group: Analyze the spreadsheet to determine if the role is paid hourly or annually. Set rate_type strictly to "hourly" or "annual". Extract the corresponding wage or stipend into rate_amount. Set effort_description to explicitly clarify the per-person effort. For annual roles use formats like "X Calendar months each per year". For hourly roles use formats like "X hours each per year". Never output a flat "12 months" or "500 hours" without the "each" clarifier when there are multiple individuals. Write a concise narrative for each group describing their role in the project. For escalation_note: if the spreadsheet shows year-over-year rate changes for this group, write a single brief sentence describing only what the spreadsheet states (e.g., "Stipends reflect a 3% annual increase." or "Wages reflect a $1.00/hour annual increase."). Do not invent, assume, or reference any policy not explicitly present in the spreadsheet. If rates are flat across all years, return an empty string.',
+        schema: {
+          type: 'object',
+          properties: {
+            senior_personnel: Schemas['general'].properties.senior_personnel,
+            other_personnel:  Schemas['general'].properties.other_personnel
+          },
+          required: ['senior_personnel', 'other_personnel']
+        }
+      },
+      {
+        key:    'fringe_benefits',
+        label:  'B. Fringe Benefits',
+        fields: ['fringe_benefits'],
+        prompt: 'Generate the fringe benefits justification using the institutional fringe rate context provided. Use the provided institutional fringe rate context to build the rate_groups array. Create separate objects for personnel groups based on the rates described in the context. For each group, calculate and provide a clear yearly_breakdown showing the exact dollar amount of fringe benefits requested per year, culminating in a category_total. The yearly costs must be derived from the personnel salaries in the spreadsheet multiplied by the applicable rates from the institutional context. Write a concise narrative_description that details the institutional rates being applied, ensuring the text explicitly references the specific percentages, detailed breakdowns, and fringe amounts provided in the context. Also set total_cost to the cumulative sum of all category_total values across all rate groups.',
+        schema: {
+          type: 'object',
+          properties: { fringe_benefits: Schemas['general'].properties.fringe_benefits },
+          required: ['fringe_benefits']
+        }
+      },
+      {
+        key:    'travel',
+        label:  'C. Travel',
+        fields: ['domestic_travel', 'foreign_travel'],
+        prompt: 'Separate all travel into two categories — domestic_travel (within the United States only) and foreign_travel (all international destinations). For each trip provide: trip purpose, destination, number of travelers, conference or event name, total cost summed cumulatively across all budget years, a yearly_breakdown array showing the cost for each year this trip occurs (if a trip only occurs in certain years, only include those years), and a narrative justification that describes the purpose of the trip and the breakdown of associated costs (e.g., airfare, lodging, per diem). Every narrative_justification should begin with a phrase like "Funds are requested". If no domestic travel is budgeted return an empty array for domestic_travel. If no foreign travel is budgeted return an empty array for foreign_travel.',
+        schema: {
+          type: 'object',
+          properties: {
+            domestic_travel: Schemas['general'].properties.domestic_travel,
+            foreign_travel:  Schemas['general'].properties.foreign_travel
+          },
+          required: ['domestic_travel', 'foreign_travel']
+        }
+      },
+      {
+        key:    'equipment',
+        label:  'D. Equipment',
+        fields: ['equipment'],
+        prompt: 'List each category of equipment as a SEPARATE array entry. Do NOT group, combine, or aggregate multiple categories of equipment into a single array entry under any circumstances. Each entry must contain the specific item name for that single piece of equipment, its total cost summed cumulatively across all budget years, and an individual narrative justification explaining why that specific piece is essential for the proposed research and how the cost was derived (if applicable). If no equipment is budgeted, return an empty array.',
+        schema: {
+          type: 'object',
+          properties: { equipment: Schemas['general'].properties.equipment },
+          required: ['equipment']
+        }
+      },
+      {
+        key:    'supplies',
+        label:  'E. Supplies',
+        fields: ['materials_supplies'],
+        prompt: 'Populate materials_supplies with each category of consumable supplies as a separate array entry, summing each cost cumulatively across all budget years. For each entry include a yearly_breakdown showing the cost for each year, and a detailed, multi-sentence justification explaining what the supplies are and why they are needed for the project. Return an empty array if no supplies are budgeted.',
+        schema: {
+          type: 'object',
+          properties: { materials_supplies: Schemas['general'].properties.materials_supplies },
+          required: ['materials_supplies']
+        }
+      },
+      {
+        key:    'contractual',
+        label:  'F. Contractual',
+        fields: ['consultants', 'subawards'],
+        prompt: 'Populate two arrays: consultants and subawards, summing each cost cumulatively across all budget years and including a yearly_breakdown showing the cost for each year.\n\nFor consultants: NSF COMPLIANCE REQUIRED — for each consultant you MUST explicitly state their full name, specific area of expertise, daily rate ($/day), and exact number of days; the narrative must include the formula "X days × $Y/day = $Z" and a detailed explanation of why this expertise is essential to the project.\n\nFor subawards: list each subaward institution with institution name, sub-PI name, and detailed scope of work.\n\nReturn an empty array for either category with no budgeted items.',
+        schema: {
+          type: 'object',
+          properties: {
+            consultants: Schemas['general'].properties.consultants,
+            subawards:   Schemas['general'].properties.subawards
+          },
+          required: ['consultants', 'subawards']
+        }
+      },
+      {
+        key:    'other',
+        label:  'H. Other',
+        fields: ['stipends', 'participant_travel', 'subsistence', 'participant_other', 'participant_support_has_data', 'publications', 'computer_services', 'other_direct_lines'],
+        prompt: 'Populate the sub-categories below that have budgeted items, summing each cost cumulatively across all budget years. For each item include a yearly_breakdown showing the cost for each year, and write detailed multi-sentence justifications.\n\nParticipant Support: The purpose of participant support costs is to provide direct financial assistance to external individuals or trainees participating in training, conferences, workshops, or educational programs funded by the grant. Populate each of these pre-defined sub-categories if they exist: stipends, participant travel, subsistence, and other participant costs. For each item include num_participants (the headcount of participants receiving this support) in addition to cost, yearly_breakdown, and justification. If there are no participant support costs, return empty arrays for all four sub-categories.\n\npublications: journal page charges or open-access fees.\n\ncomputer_services: purchased computing or IT services.\n\nother_direct_lines: any remaining direct cost items not covered above.\n\nReturn an empty array for any sub-category with no budgeted items.',
+        schema: {
+          type: 'object',
+          properties: {
+            stipends:                     Schemas['general'].properties.stipends,
+            participant_travel:           Schemas['general'].properties.participant_travel,
+            subsistence:                  Schemas['general'].properties.subsistence,
+            participant_other:            Schemas['general'].properties.participant_other,
+            participant_support_has_data: Schemas['general'].properties.participant_support_has_data,
+            publications:                 Schemas['general'].properties.publications,
+            computer_services:            Schemas['general'].properties.computer_services,
+            other_direct_lines:           Schemas['general'].properties.other_direct_lines
+          },
+          required: ['stipends', 'participant_travel', 'subsistence', 'participant_other', 'participant_support_has_data', 'publications', 'computer_services', 'other_direct_lines']
+        }
+      },
+      {
+        key:    'indirect_costs',
+        label:  'I. Indirect Costs',
+        fields: ['indirect_costs'],
+        prompt: 'Generate a simple justification of indirect costs using the institutional F&A rate context provided. Write a brief narrative_description (1-2 sentences) summarizing the indirect rate being applied, derived only from the Institutional Context — do not invent rate information. Extract total_cost as the total cumulative indirect/F&A cost across all budget years. Provide a yearly_breakdown showing the indirect cost for each budget year.',
+        schema: {
+          type: 'object',
+          properties: { indirect_costs: Schemas['general'].properties.indirect_costs },
+          required: ['indirect_costs']
+        }
+      }
+    ],
+
   };
 
   function forTemplate(templateType) {
