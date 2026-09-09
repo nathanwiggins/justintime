@@ -186,6 +186,17 @@ const Sections = (() => {
         }
       },
       {
+        key:    'construction',
+        label:  'G. Construction',
+        fields: ['construction_costs'],
+        prompt: 'Determine whether the budget includes any construction, renovation, or facility-related costs — as distinct from ordinary equipment or supplies. Typical categories (per the federal SF-424C Budget Information for Construction Programs form) include: site work, demolition and removal, land/structures/rights-of-way, architectural and engineering fees, project inspection fees, construction or major renovation, and contingencies for construction. List each such cost category as a SEPARATE array entry, summing each cost cumulatively across all budget years. For each entry include a yearly_breakdown showing the cost for each year, and a detailed, multi-sentence justification explaining the work and why it is necessary for the project. Return an empty array if no construction-related costs are budgeted.',
+        schema: {
+          type: 'object',
+          properties: { construction_costs: Schemas['general'].properties.construction_costs },
+          required: ['construction_costs']
+        }
+      },
+      {
         key:    'other',
         label:  'H. Other',
         fields: ['stipends', 'participant_travel', 'subsistence', 'participant_other', 'participant_support_has_data', 'publications', 'computer_services', 'other_direct_lines'],

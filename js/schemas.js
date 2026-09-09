@@ -522,6 +522,19 @@ const Schemas = {
           required: ['category_name', 'cost', 'yearly_breakdown', 'narrative_justification']
         }
       },
+      construction_costs: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            category_name:          { type: 'string' },
+            cost:                   { type: 'number' },
+            yearly_breakdown: { type: 'array', items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] } },
+            narrative_justification:{ type: 'string' }
+          },
+          required: ['category_name', 'cost', 'yearly_breakdown', 'narrative_justification']
+        }
+      },
       publications: {
         type: 'array',
         items: {

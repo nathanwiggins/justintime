@@ -472,7 +472,6 @@ const Document = (() => {
 
     rows.push(sectionHeader(`A. Personnel ($${fmt(personnelTotal)})`));
 
-    rows.push(subHeader(`A.1 Senior Personnel ($${fmt(seniorTotal)})`));
     seniorPersonnel.forEach(x => {
       const displayName = x.name === x.role ? 'TBD' : x.name;
       const yearlyStr   = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
@@ -492,20 +491,7 @@ const Document = (() => {
         rows.push(lineItem(boldLabel, narrative));
       }
     });
-    if (seniorPersonnel.length > 1) rows.push(rollupSentence('Senior Personnel', seniorTotal, yearMapOf(seniorPersonnel)));
 
-    const overLimit = seniorPersonnel.filter(x => (x.effort_months_per_year || 0) > 2);
-    if (overLimit.length > 0) {
-      const roles    = overLimit.map(x => x.role);
-      const rolesStr = roles.length === 1
-        ? roles[0]
-        : roles.slice(0, -1).join(', ') + ' and ' + roles[roles.length - 1];
-      rows.push(plain(
-        `Senior personnel are aware of NSF policy limiting NSF support for senior personnel to two months in any year. Since the ${rolesStr} will be fully engaged in efforts that holistically relate to this project throughout the year, we seek approval for ${overLimit.length === 1 ? 'this position' : 'these positions'} beyond the NSF two-month limitation.`
-      ));
-    }
-
-    rows.push(subHeader(`A.2 Other Personnel ($${fmt(otherTotal)})`));
     otherPersonnel.forEach(x => {
       const count             = x.number_of_individuals || 0;
       const countStr          = `${count} ${count === 1 ? 'individual' : 'individuals'}`;
@@ -529,7 +515,9 @@ const Document = (() => {
         rows.push(lineItem(boldLabel, narrative));
       }
     });
-    if (otherPersonnel.length > 1) rows.push(rollupSentence('Other Personnel', otherTotal, yearMapOf(otherPersonnel)));
+    if (seniorPersonnel.length + otherPersonnel.length > 1) {
+      rows.push(rollupSentence('Personnel', personnelTotal, yearMapOf([...seniorPersonnel, ...otherPersonnel])));
+    }
 
     const fb = p.fringe_benefits || {};
     rows.push(sectionHeader(`B. Fringe Benefits ($${fmt(fb.total_cost)})`));
@@ -551,21 +539,7 @@ const Document = (() => {
 
     rows.push(sectionHeader(`C. Travel ($${fmt(travelTotal)})`));
 
-    function maxProjectYear(payload) {
-      let max = 0;
-      function scan(node) {
-        if (Array.isArray(node)) { node.forEach(scan); }
-        else if (node && typeof node === 'object') {
-          if ('year' in node && typeof node.year === 'number') max = Math.max(max, node.year);
-          else Object.values(node).forEach(scan);
-        }
-      }
-      scan(payload);
-      return max;
-    }
-
     if (domestic.length) {
-      rows.push(subHeader(`C.1 Domestic Travel ($${fmt(domesticTotal)})`));
       domestic.forEach(x => {
         const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
         rows.push(lineItem(
@@ -576,7 +550,6 @@ const Document = (() => {
     }
 
     if (foreign.length) {
-      rows.push(subHeader(`C.2 Foreign Travel ($${fmt(foreignTotal)})`));
       foreign.forEach(x => {
         const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
         rows.push(lineItem(
@@ -587,26 +560,7 @@ const Document = (() => {
       rows.push(plain('All requested international air travel will be booked in strict accordance with the Fly America Act (49 U.S.C. § 40118), utilizing U.S. flag air carriers or compliant Open Skies agreement partner airlines wherever applicable.'));
     }
 
-    if (domestic.length && foreign.length) {
-      const allYearMap  = yearMapOf([...domestic, ...foreign]);
-      const years       = Object.keys(allYearMap).sort();
-      const combinedStr = years.map(yr => `$${fmt(allYearMap[yr])} in Year ${yr}`).join(', ');
-      const projectYrs    = p.num_project_years || maxProjectYear(p);
-      const performanceStr = projectYrs ? `for the ${projectYrs}-year period of performance` : 'during the period of performance';
-      const { Paragraph, TextRun } = _docx;
-      rows.push(new Paragraph({
-        children: [
-          new TextRun({ text: 'The total travel request is ' }),
-          new TextRun({ text: `$${fmt(travelTotal)}`, bold: true }),
-          new TextRun({ text: ` ${performanceStr}${combinedStr ? ` (${combinedStr})` : ''}.` })
-        ],
-        spacing: { after: 100 }
-      }));
-    } else if (domestic.length) {
-      rows.push(rollupSentence('Domestic Travel', domesticTotal, yearMapOf(domestic)));
-    } else if (foreign.length) {
-      rows.push(rollupSentence('Foreign Travel', foreignTotal, yearMapOf(foreign)));
-    }
+    rows.push(rollupSentence('Travel', travelTotal, yearMapOf([...domestic, ...foreign])));
 
     const equipment      = p.equipment || [];
     const equipmentTotal = equipment.reduce((sum, x) => sum + (x.cost || 0), 0);
@@ -647,7 +601,6 @@ const Document = (() => {
     rows.push(sectionHeader(`F. Contractual ($${fmt(contractualTotal)})`));
 
     if (consultants.length) {
-      rows.push(subHeader(`F.1 Consultant Services ($${fmt(consultantsTotal)})`));
       consultants.forEach(x => {
         const yearlyStr = (x.yearly_breakdown || []).filter(y => (y.cost || 0) > 0).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
         rows.push(lineItem(
@@ -658,7 +611,6 @@ const Document = (() => {
     }
 
     if (subawards.length) {
-      rows.push(subHeader(`F.2 Subawards ($${fmt(subawardsTotal)})`));
       subawards.forEach(x => {
         const yearlyStr = (x.yearly_breakdown || []).filter(y => (y.cost || 0) > 0).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
         rows.push(lineItem(
@@ -668,9 +620,15 @@ const Document = (() => {
       });
     }
 
-    if (consultants.length && subawards.length) rows.push(rollupSentence('Contractual', contractualTotal, yearMapOf([...consultants, ...subawards])));
+    if (consultants.length + subawards.length > 1) rows.push(rollupSentence('Contracts', contractualTotal, yearMapOf([...consultants, ...subawards])));
 
-    rows.push(sectionHeader('G. Construction'));
+    const construction      = p.construction_costs || [];
+    const constructionTotal = construction.reduce((sum, x) => sum + (x.cost || 0), 0);
+    rows.push(sectionHeader(`G. Construction ($${fmt(constructionTotal)})`));
+    construction.forEach(x => rows.push(lineItem(
+      `${x.category_name} ($${fmt(x.cost)}):`, x.narrative_justification
+    )));
+    if (construction.length > 1) rows.push(rollupSentence('Construction', constructionTotal, yearMapOf(construction)));
 
     const psCategories = [
       { label: 'Stipends',     items: p.stipends           || [] },
@@ -706,10 +664,9 @@ const Document = (() => {
 
     rows.push(sectionHeader(`H. Other ($${fmt(hTotal)})`));
 
-    rows.push(subHeader(`H.1 Participant Support Costs ($${fmt(psTotal)})`));
+    const activeCategories = psCategories.filter(c => c.items.length > 0);
+    rows.push(subHeader(`Participant Support Costs ($${fmt(psTotal)})`));
     if (p.participant_support_has_data) {
-      const activeCategories = psCategories.filter(c => c.items.length > 0);
-
       activeCategories.forEach(({ label, items }) => {
         items.forEach(x => {
           const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
@@ -719,14 +676,9 @@ const Document = (() => {
           ));
         });
       });
-
-      if (activeCategories.length > 1) rows.push(rollupSentence('Participant Support', psTotal, yearMapOf(psCategories.flatMap(c => c.items))));
     }
 
     hSubsections.forEach(section => {
-      const sectionTotal = section.items.reduce((s, x) => s + (x.cost || 0), 0);
-      rows.push(subHeader(`${section.label} ${section.name} ($${fmt(sectionTotal)})`));
-
       section.items.forEach(x => {
         const yearlyStr   = (x.yearly_breakdown || []).filter(y => (y.cost || 0) > 0).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
         const { bold, text } = section.renderItem(x);
@@ -734,14 +686,17 @@ const Document = (() => {
       });
     });
 
-    if (hSubsections.length > 1) rows.push(rollupSentence('Other', hOtherTotal, yearMapOf(hSubsections.flatMap(s => s.items))));
+    const hItemCount = activeCategories.flatMap(c => c.items).length + hSubsections.flatMap(s => s.items).length;
+    if (hItemCount > 1) {
+      rows.push(rollupSentence('Other', hTotal, yearMapOf([...activeCategories.flatMap(c => c.items), ...hSubsections.flatMap(s => s.items)])));
+    }
 
     const ic = p.indirect_costs || {};
     const icYearlyStr = (ic.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
     rows.push(sectionHeader(`I. Indirect Costs (Facilities and Administrative Costs) ($${fmt(ic.total_cost)})`));
     if (ic.narrative_description) rows.push(plain(`${ic.narrative_description}${icYearlyStr ? ` (${icYearlyStr})` : ''}`));
 
-    const grandTotal = personnelTotal + (fb.total_cost || 0) + travelTotal + equipmentTotal + suppliesTotal + contractualTotal + hTotal + (ic.total_cost || 0);
+    const grandTotal = personnelTotal + (fb.total_cost || 0) + travelTotal + equipmentTotal + suppliesTotal + contractualTotal + constructionTotal + hTotal + (ic.total_cost || 0);
     rows.push(sectionHeader(`J. Total Costs ($${fmt(grandTotal)})`));
     rows.push(plain(`The total budget request across all categories (A–I) is $${fmt(grandTotal)}.`));
 

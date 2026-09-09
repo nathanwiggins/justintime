@@ -4,18 +4,22 @@ General grants.gov Budget Justification
 COMPLIANCE NOTES
 - Section layout: A. Personnel, B. Fringe Benefits, C. Travel, D. Equipment,
   E. Supplies, F. Contractual, G. Construction, H. Other, I. Indirect Costs, J. Total Costs
-- Personnel (A) combines Senior Personnel (A.1) and Other Personnel (A.2)
-- Travel (C) splits into Domestic (C.1) and Foreign (C.2)
-- Contractual (F) combines Consultant Services (F.1) and Subawards (F.2)
-- Construction (G) has no defined fields or generation logic yet
+- Personnel (A) combines Senior Personnel and Other Personnel under one header,
+  with a single combined "total request for Personnel" summary line
+- Travel (C) lists Domestic and Foreign travel under one header, no sub-headers
+- Contractual (F) lists Consultant Services and Subawards under one header, no
+  sub-headers, with a single combined "total request for Contracts" summary line
+- Construction (G) categories follow the federal SF-424C Budget Information for
+  Construction Programs form (site work, demolition/removal, land/structures/
+  rights-of-way, architectural/engineering fees, project inspection fees,
+  construction/major renovation, contingencies) — modeled as a lightweight
+  array of cost items, not the full 17-field SF-424C form
 - Other (H) combines Participant Support Costs (H.1), Publication Costs /
   Documentation / Dissemination (H.2), Computer Services (H.3), and Other (H.4)
 - Total Costs (J) is a computed grand total across sections A-I, not AI-generated
 ================================================================
 
 A. Personnel
-
-A.1 Senior Personnel
 {#senior_personnel}
 {name}, {role} (Effort: {effort_months} {effort_type} months). Funds are requested based on an Institutional Base Salary (IBS) of ${base_salary}. {narrative_description}
 
@@ -26,7 +30,6 @@ Yearly Requested Salary Breakdown:
 Total Requested Salary: ${total_salary}
 {/senior_personnel}
 
-A.2 Other Personnel
 {#other_personnel}
 {role} ({number_of_individuals} individual(s), Effort: {effort_description}).
 Base rate: {formatted_rate_text}. {narrative_description}
@@ -37,6 +40,8 @@ Yearly Cost Breakdown:
 {/yearly_breakdown}
 Total Requested: ${total_cost}
 {/other_personnel}
+
+The total request for Personnel is [combined senior + other total].
 
 B. Fringe Benefits
 {fringe_benefits.narrative_description}
@@ -53,13 +58,10 @@ Requested Fringe Benefits Breakdown:
 Total Requested Fringe Benefits: ${fringe_benefits.total_cost}
 
 C. Travel
-
-C.1 Domestic Travel
 {#domestic_travel}
 {trip_purpose} (${cost}): Funds are requested for travel to {destination} for {num_people} person(s) to attend {event_name}. {narrative_justification}
 {/domestic_travel}
 
-C.2 Foreign Travel
 {#foreign_travel}
 {trip_purpose} (${cost}): Funds are requested for travel to {destination} for {num_people} person(s) to attend {event_name}. {narrative_justification}
 {/foreign_travel}
@@ -78,19 +80,20 @@ E. Supplies
 {/materials_supplies}
 
 F. Contractual
-
-F.1 Consultant Services
 {#consultants}
 {consultant_name} (${cost}): Will provide expertise on {expertise_area}. Rate is ${rate}/day for {days} days. {narrative_justification}
 {/consultants}
 
-F.2 Subawards
 {#subawards}
 {institution_name} (${cost}): A separate budget and justification are attached for the subaward to {institution_name} under the direction of {sub_pi}. {narrative_justification}
 {/subawards}
 
+The total request for Contracts is [combined consultants + subawards total].
+
 G. Construction
-(No fields or generation logic defined yet.)
+{#construction_costs}
+{category_name} (${cost}): {narrative_justification}
+{/construction_costs}
 
 H. Other
 
