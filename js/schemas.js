@@ -93,9 +93,21 @@ const Schemas = {
                 required: ['year', 'cost']
               }
             },
+            cost_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  component_name: { type: 'string', enum: ['Airfare', 'Mileage', 'Lodging', 'Per Diem', 'Registration', 'Other'] },
+                  formula:        { type: 'string' },
+                  amount:         { type: 'number' }
+                },
+                required: ['component_name', 'formula', 'amount']
+              }
+            },
             narrative_justification:{ type: 'string' }
           },
-          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'narrative_justification']
+          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'cost_breakdown', 'narrative_justification']
         }
       },
       foreign_travel: {
@@ -119,9 +131,21 @@ const Schemas = {
                 required: ['year', 'cost']
               }
             },
+            cost_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  component_name: { type: 'string', enum: ['Airfare', 'Mileage', 'Lodging', 'Per Diem', 'Registration', 'Other'] },
+                  formula:        { type: 'string' },
+                  amount:         { type: 'number' }
+                },
+                required: ['component_name', 'formula', 'amount']
+              }
+            },
             narrative_justification:{ type: 'string' }
           },
-          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'narrative_justification']
+          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'cost_breakdown', 'narrative_justification']
         }
       },
       stipends: {
@@ -413,9 +437,21 @@ const Schemas = {
                 required: ['year', 'cost']
               }
             },
+            cost_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  component_name: { type: 'string', enum: ['Airfare', 'Mileage', 'Lodging', 'Per Diem', 'Registration', 'Other'] },
+                  formula:        { type: 'string' },
+                  amount:         { type: 'number' }
+                },
+                required: ['component_name', 'formula', 'amount']
+              }
+            },
             narrative_justification:{ type: 'string' }
           },
-          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'narrative_justification']
+          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'cost_breakdown', 'narrative_justification']
         }
       },
       foreign_travel: {
@@ -439,9 +475,21 @@ const Schemas = {
                 required: ['year', 'cost']
               }
             },
+            cost_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  component_name: { type: 'string', enum: ['Airfare', 'Mileage', 'Lodging', 'Per Diem', 'Registration', 'Other'] },
+                  formula:        { type: 'string' },
+                  amount:         { type: 'number' }
+                },
+                required: ['component_name', 'formula', 'amount']
+              }
+            },
             narrative_justification:{ type: 'string' }
           },
-          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'narrative_justification']
+          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'cost_breakdown', 'narrative_justification']
         }
       },
       stipends: {

@@ -72,6 +72,25 @@ const Document = (() => {
     });
   }
 
+  function costBreakdownRows(destination, items) {
+    if (!items || !items.length) return [];
+    const { Paragraph, TextRun } = _docx;
+    const rows = [subHeader(destination)];
+
+    items.forEach(c => rows.push(plain(`$${fmt(c.amount)} - ${c.component_name} (${c.formula})`)));
+
+    const subtotal = items.reduce((s, c) => s + (c.amount || 0), 0);
+    rows.push(new Paragraph({
+      children: [
+        new TextRun({ text: 'Estimated total travel expenses: ' }),
+        new TextRun({ text: `$${fmt(subtotal)}`, bold: true })
+      ],
+      spacing: { after: 100 }
+    }));
+
+    return rows;
+  }
+
   function buildNsf(p) {
     const rows = [...titleBlock(p.profile_name)];
 
@@ -278,6 +297,7 @@ const Document = (() => {
           `${x.trip_purpose} ($${fmt(x.cost)}):`,
           `${x.narrative_justification}${yearlyStr ? ` (${yearlyStr})` : ''}`
         ));
+        rows.push(...costBreakdownRows(x.destination, x.cost_breakdown));
       });
       rows.push(travelSummaryRow('Domestic Travel', domesticTotal, travelYearMap(domestic)));
     }
@@ -289,6 +309,7 @@ const Document = (() => {
           `${x.trip_purpose} ($${fmt(x.cost)}):`,
           `${x.narrative_justification}${yearlyStr ? ` (${yearlyStr})` : ''}`
         ));
+        rows.push(...costBreakdownRows(x.destination, x.cost_breakdown));
       });
       rows.push(plain('All requested international air travel will be booked in strict accordance with the Fly America Act (49 U.S.C. § 40118), utilizing U.S. flag air carriers or compliant Open Skies agreement partner airlines wherever applicable.'));
       rows.push(travelSummaryRow('International Travel', foreignTotal, travelYearMap(foreign)));
@@ -546,6 +567,7 @@ const Document = (() => {
           `${x.trip_purpose} ($${fmt(x.cost)}):`,
           `${x.narrative_justification}${yearlyStr ? ` (${yearlyStr})` : ''}`
         ));
+        rows.push(...costBreakdownRows(x.destination, x.cost_breakdown));
       });
     }
 
@@ -556,6 +578,7 @@ const Document = (() => {
           `${x.trip_purpose} ($${fmt(x.cost)}):`,
           `${x.narrative_justification}${yearlyStr ? ` (${yearlyStr})` : ''}`
         ));
+        rows.push(...costBreakdownRows(x.destination, x.cost_breakdown));
       });
       rows.push(plain('All requested international air travel will be booked in strict accordance with the Fly America Act (49 U.S.C. § 40118), utilizing U.S. flag air carriers or compliant Open Skies agreement partner airlines wherever applicable.'));
     }

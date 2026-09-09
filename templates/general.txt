@@ -60,11 +60,29 @@ Total Requested Fringe Benefits: ${fringe_benefits.total_cost}
 C. Travel
 {#domestic_travel}
 {trip_purpose} (${cost}): Funds are requested for travel to {destination} for {num_people} person(s) to attend {event_name}. {narrative_justification}
+{destination}
+{#cost_breakdown}
+${amount} - {component_name} ({formula})
+{/cost_breakdown}
+Estimated total travel expenses: [sum of cost_breakdown amounts]
 {/domestic_travel}
 
 {#foreign_travel}
 {trip_purpose} (${cost}): Funds are requested for travel to {destination} for {num_people} person(s) to attend {event_name}. {narrative_justification}
+{destination}
+{#cost_breakdown}
+${amount} - {component_name} ({formula})
+{/cost_breakdown}
+Estimated total travel expenses: [sum of cost_breakdown amounts]
 {/foreign_travel}
+
+Each trip variant is its own independent entry (no nesting/grouping of multiple
+trip variants). cost_breakdown is only rendered when the trip has itemized
+components (component_name is one of: Airfare, Mileage, Lodging, Per Diem,
+Registration, Other); otherwise only the narrative line prints.
+
+The total request for Travel is [combined domestic + foreign total], shown
+unconditionally.
 
 D. Equipment
 {#equipment}
