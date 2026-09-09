@@ -16,6 +16,7 @@ A lightweight, client-side budget justification generator and verifier for resea
 - Upload a budget spreadsheet and project summary to get a formatted `.docx` justification back.
 - Choose a Grant Template Type — National Science Foundation or General grants.gov, each with its own section layout.
 - Institutional Profiles store your fringe/F&A boilerplate so the AI weaves institution-specific language into the narrative.
+- Each section is generated in two passes — verified data extraction, then narrative writing — with the numbers automatically reconciled so the writing pass can't quietly change a figure.
 - Template Mode produces a structured draft with placeholder text instead of full AI-written narrative.
 
 ### Shared

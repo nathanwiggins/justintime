@@ -2,6 +2,12 @@ const Generator = (() => {
   let currentTemplate = 'nsf';
   let summaryMode     = 'file';
 
+  const NARRATIVE_FIELDS = new Set([
+    'narrative_description',
+    'narrative_justification',
+    'justification'
+  ]);
+
   function syncProfileDropdown() {
     const select    = document.getElementById('profile-select');
     const profiles  = Settings.getProfiles();
@@ -149,12 +155,6 @@ const Generator = (() => {
   }
 
   function stripNarratives(obj) {
-    const NARRATIVE_FIELDS = new Set([
-      'narrative_description',
-      'narrative_justification',
-      'justification'
-    ]);
-
     function walk(node) {
       if (Array.isArray(node)) {
         node.forEach(walk);
@@ -173,6 +173,62 @@ const Generator = (() => {
 
     walk(obj);
     return obj;
+  }
+
+  function omitNarrativeFields(node) {
+    if (Array.isArray(node)) return node.map(omitNarrativeFields);
+    if (node && typeof node === 'object') {
+      const out = {};
+      Object.keys(node).forEach(key => {
+        if (NARRATIVE_FIELDS.has(key)) return;
+        out[key] = omitNarrativeFields(node[key]);
+      });
+      return out;
+    }
+    return node;
+  }
+
+  function diffSkeletons(trusted, candidate, path = '') {
+    if (Array.isArray(trusted)) {
+      if (!Array.isArray(candidate) || candidate.length !== trusted.length) {
+        return { structural: true, reason: `${path || 'root'}: expected ${trusted.length} item(s), got ${Array.isArray(candidate) ? candidate.length : typeof candidate}` };
+      }
+      const mismatches = [];
+      for (let i = 0; i < trusted.length; i++) {
+        const sub = diffSkeletons(trusted[i], candidate[i], `${path}[${i}]`);
+        if (sub.structural) return sub;
+        mismatches.push(...sub.mismatches);
+      }
+      return { structural: false, mismatches };
+    }
+
+    if (trusted && typeof trusted === 'object') {
+      if (!candidate || typeof candidate !== 'object') {
+        return { structural: true, reason: `${path || 'root'}: expected an object, got ${typeof candidate}` };
+      }
+      const mismatches = [];
+      for (const key of Object.keys(trusted)) {
+        const sub = diffSkeletons(trusted[key], candidate[key], path ? `${path}.${key}` : key);
+        if (sub.structural) return sub;
+        mismatches.push(...sub.mismatches);
+      }
+      return { structural: false, mismatches };
+    }
+
+    return { structural: false, mismatches: trusted === candidate ? [] : [{ path, trusted, candidate }] };
+  }
+
+  function applyHeals(target, mismatches) {
+    mismatches.forEach(({ path, trusted }) => {
+      const parts = path.match(/[^.[\]]+/g) || [];
+      let node = target;
+      for (let i = 0; i < parts.length - 1; i++) {
+        node = node[/^\d+$/.test(parts[i]) ? Number(parts[i]) : parts[i]];
+      }
+      const lastKey = parts[parts.length - 1];
+      node[/^\d+$/.test(lastKey) ? Number(lastKey) : lastKey] = trusted;
+    });
+    return target;
   }
 
   function validateForm({ profileId, file, summaryFile, summaryText, summaryMode, apiKey }) {
@@ -243,23 +299,55 @@ const Generator = (() => {
       const sections = Sections.forTemplate(form.templateType);
       const aiJson   = {};
 
+      const MAX_NARRATIVE_ATTEMPTS = 2;
+
       for (const section of sections) {
         const additionalContext = section.key === 'fringe_benefits' ? profile.fringeBoilerplate
           : section.key === 'indirect_costs'   ? profile.faBoilerplate
           : null;
         const sectionStep = addStep(`Generating: ${section.label}`);
-        const { result, prompt } = await Api.generateSection({
+
+        const { result: extracted, prompt: extractPrompt } = await Api.generateSection({
           csvText,
           projectSummary,
           templateType:   form.templateType,
           apiKey:         form.apiKey,
           section,
-          additionalContext
+          additionalContext,
+          temperature:    0.1
         });
-        Object.assign(aiJson, result);
+        const trustedSkeleton = omitNarrativeFields(extracted);
+
+        let narrated, narrativePrompt, diff, correction = null;
+        for (let attempt = 1; attempt <= MAX_NARRATIVE_ATTEMPTS; attempt++) {
+          ({ result: narrated, prompt: narrativePrompt } = await Api.refineNarrative({
+            csvText,
+            projectSummary,
+            templateType: form.templateType,
+            apiKey:       form.apiKey,
+            section,
+            additionalContext,
+            verifiedData: trustedSkeleton,
+            correction
+          }));
+          diff = diffSkeletons(trustedSkeleton, omitNarrativeFields(narrated));
+          if (!diff.structural) break;
+          correction = diff.reason;
+          if (attempt === MAX_NARRATIVE_ATTEMPTS) {
+            sectionStep.error(`narrative pass dropped data (${diff.reason})`);
+            throw new Error(`"${section.label}" failed to generate: the narrative pass altered the verified data (${diff.reason}).`);
+          }
+        }
+
+        if (diff.mismatches.length) applyHeals(narrated, diff.mismatches);
+        Object.assign(aiJson, narrated);
+
         sectionStep.done('done', [
-          { label: 'Prompt Sent',        content: prompt },
-          { label: 'Section Response',   content: JSON.stringify(result, null, 2) }
+          { label: 'Extraction Prompt',   content: extractPrompt },
+          { label: 'Extracted Data',      content: JSON.stringify(extracted, null, 2) },
+          { label: 'Narrative Prompt',    content: narrativePrompt },
+          { label: 'Narrative Response',  content: JSON.stringify(narrated, null, 2) },
+          ...(diff.mismatches.length ? [{ label: 'Self-Healed Fields', content: JSON.stringify(diff.mismatches, null, 2) }] : [])
         ]);
       }
 

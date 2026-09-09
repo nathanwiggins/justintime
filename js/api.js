@@ -124,9 +124,45 @@ ${section.prompt}`;
     });
   }
 
-  async function generateSection({ csvText, projectSummary, templateType, apiKey, section, additionalContext }) {
+  async function generateSection({ csvText, projectSummary, templateType, apiKey, section, additionalContext, temperature = null }) {
     const prompt  = buildSectionPrompt(csvText, projectSummary, templateType, section, additionalContext);
-    const result  = await callApi(apiKey, prompt, section.schema);
+    const result  = await callApi(apiKey, prompt, section.schema, null, temperature);
+    return { result, prompt };
+  }
+
+  function buildNarrativePrompt(csvText, projectSummary, templateType, section, additionalContext, verifiedData, correction) {
+    let prompt = `You are an expert grants administrator writing a formal budget justification narrative.
+
+You are refining ONLY the narrative field(s) (e.g. "narrative_description", "narrative_justification", "justification" — whichever are present) within the "${section.label}" section of a ${templateType.toUpperCase()} budget justification. Every other field in the verified section data below has already been checked against the budget spreadsheet and MUST be returned completely unchanged — same values, same array order, same number of items in every array.
+
+Global requirements:
+${globalRules()}
+
+Section-specific instructions (context on what the narrative should cover):
+${section.prompt}`;
+
+    if (additionalContext) {
+      prompt += `\n\nInstitutional Context (incorporate the specific rates, policies, and language from this information directly into your narrative):\n${additionalContext}`;
+    }
+
+    prompt += `\n\nVerified section data — return this exact structure, with every non-narrative field unchanged, and with each narrative field rewritten as a well-written, compelling, professional justification:\n${JSON.stringify(verifiedData, null, 2)}
+
+Project Summary:
+${projectSummary}
+
+Budget Spreadsheet Data:
+${csvText}`;
+
+    if (correction) {
+      prompt += `\n\nIMPORTANT: Your previous response did not preserve the exact structure of the verified section data above (${correction}). Return the SAME arrays with the SAME number of items in the SAME order — only the narrative field(s) may change.`;
+    }
+
+    return prompt;
+  }
+
+  async function refineNarrative({ csvText, projectSummary, templateType, apiKey, section, additionalContext, verifiedData, correction }) {
+    const prompt = buildNarrativePrompt(csvText, projectSummary, templateType, section, additionalContext, verifiedData, correction);
+    const result = await callApi(apiKey, prompt, section.schema);
     return { result, prompt };
   }
 
@@ -385,7 +421,7 @@ Instructions:
   }
 
   return {
-    generateSection, extractValues, extractValuesBatch, matchValues, matchValuesBatch,
+    generateSection, refineNarrative, extractValues, extractValuesBatch, matchValues, matchValuesBatch,
     auditNotFound, auditMismatches, auditSummary, classifyReply, test, isVandalizerHosted,
     setRetryHandler: cb => { retryHandler = cb; }
   };
