@@ -259,6 +259,77 @@ const Generator = (() => {
     });
   }
 
+  const YEARLY_TOTAL_FIELDS = {
+    senior_personnel:  'total_salary',
+    other_personnel:   'total_cost',
+    equipment:         'cost',
+    domestic_travel:   'cost',
+    foreign_travel:    'cost',
+    materials_supplies:'cost',
+    construction_costs:'cost',
+    consultants:       'cost',
+    subawards:         'cost',
+    other_direct_lines:'cost',
+    stipends:          'cost',
+    participant_travel:'cost',
+    subsistence:       'cost',
+    participant_other: 'cost',
+    publications:      'cost',
+    computer_services: 'cost'
+  };
+
+  function sumYears(yearlyBreakdown) {
+    return (yearlyBreakdown || []).reduce((sum, y) => sum + (y.cost || 0), 0);
+  }
+
+  function itemLabel(item, fallback) {
+    return item.item_name || item.name || item.role || item.trip_purpose || item.category_name ||
+      item.consultant_name || item.institution_name || item.publication_title_or_type ||
+      item.service_description || fallback;
+  }
+
+  function reconcileYearlyTotals(extracted) {
+    const flagged = [];
+
+    Object.keys(YEARLY_TOTAL_FIELDS).forEach(key => {
+      const totalField = YEARLY_TOTAL_FIELDS[key];
+      (extracted[key] || []).forEach(item => {
+        if (item.yearly_breakdown && item.yearly_breakdown.length) {
+          item[totalField] = sumYears(item.yearly_breakdown);
+        } else {
+          flagged.push(`${key}: ${itemLabel(item, '(unnamed item)')}`);
+        }
+      });
+    });
+
+    if (extracted.fringe_benefits) {
+      const fb = extracted.fringe_benefits;
+      (fb.rate_groups || []).forEach(g => {
+        if (g.yearly_breakdown && g.yearly_breakdown.length) {
+          g.category_total = sumYears(g.yearly_breakdown);
+        } else {
+          flagged.push(`fringe_benefits.rate_groups: ${g.personnel_category || '(unnamed group)'}`);
+        }
+      });
+      if (fb.rate_groups && fb.rate_groups.length) {
+        fb.total_cost = fb.rate_groups.reduce((sum, g) => sum + (g.category_total || 0), 0);
+      } else {
+        flagged.push('fringe_benefits.total_cost');
+      }
+    }
+
+    if (extracted.indirect_costs) {
+      const ic = extracted.indirect_costs;
+      if (ic.yearly_breakdown && ic.yearly_breakdown.length) {
+        ic.total_cost = sumYears(ic.yearly_breakdown);
+      } else {
+        flagged.push('indirect_costs');
+      }
+    }
+
+    return flagged;
+  }
+
   function collectCapturedItems(aiJson) {
     const out = [];
     const add = (arr, labelFn) => (arr || []).forEach(x => {
@@ -368,6 +439,7 @@ const Generator = (() => {
           temperature:    0.1
         });
         applyComputedEscalationNotes(extracted);
+        const flaggedTotals = reconcileYearlyTotals(extracted);
         const trustedSkeleton = omitNarrativeFields(extracted);
 
         let narrated, narrativePrompt, diff, correction = null;
@@ -399,7 +471,8 @@ const Generator = (() => {
           { label: 'Extracted Data',      content: JSON.stringify(extracted, null, 2) },
           { label: 'Narrative Prompt',    content: narrativePrompt },
           { label: 'Narrative Response',  content: JSON.stringify(narrated, null, 2) },
-          ...(diff.mismatches.length ? [{ label: 'Self-Healed Fields', content: JSON.stringify(diff.mismatches, null, 2) }] : [])
+          ...(diff.mismatches.length ? [{ label: 'Self-Healed Fields', content: JSON.stringify(diff.mismatches, null, 2) }] : []),
+          ...(flaggedTotals.length ? [{ label: 'Not Cross-Checked (no yearly breakdown)', content: JSON.stringify(flaggedTotals, null, 2) }] : [])
         ]);
       }
 
