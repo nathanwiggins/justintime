@@ -25,7 +25,7 @@ A lightweight, client-side budget justification generator and verifier for resea
 
 ### Shared
 - Drag-and-drop uploads, an animated scan → label → match → audit → summarize progress sequence (full technical log available via "Expand Analysis Details"), and a "How It Works" walkthrough for first-time users.
-- The Generator tab sits right-justified in the nav bar, set apart from Verifier and Settings.
+- The Generator tab is the leftmost tab in the nav bar.
 - API keys are stored only in your browser's `localStorage` — a warning reminds you to check your key's data-sharing terms before use.
 
 ## Tech Stack
