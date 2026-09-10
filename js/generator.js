@@ -439,11 +439,10 @@ const Generator = (() => {
           : null;
         const sectionStep = addStep(`Generating: ${section.label}`);
 
-        const { hint, items: suggestedItems } = await Api.generateSectionHint({
-          csvText,
-          apiKey: form.apiKey,
-          section
-        });
+        const skipHint = section.key === 'fringe_benefits' || section.key === 'indirect_costs';
+        const { hint, items: suggestedItems } = skipHint
+          ? { hint: '', items: [] }
+          : await Api.generateSectionHint({ csvText, apiKey: form.apiKey, section });
 
         const { result: extracted, prompt: extractPrompt } = await Api.generateSection({
           csvText,
@@ -484,8 +483,10 @@ const Generator = (() => {
         Object.assign(aiJson, narrated);
 
         sectionStep.done('done', [
-          { label: 'Suggested Items',     content: JSON.stringify(suggestedItems, null, 2) },
-          { label: 'Distilled Hint',      content: hint },
+          ...(skipHint ? [] : [
+            { label: 'Suggested Items', content: JSON.stringify(suggestedItems, null, 2) },
+            { label: 'Distilled Hint',  content: hint }
+          ]),
           { label: 'Extraction Prompt',   content: extractPrompt },
           { label: 'Extracted Data',      content: JSON.stringify(extracted, null, 2) },
           { label: 'Narrative Prompt',    content: narrativePrompt },
