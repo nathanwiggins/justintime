@@ -6,6 +6,8 @@ COMPLIANCE NOTES
   E. Supplies, F. Contractual, G. Construction, H. Other, I. Indirect Costs, J. Total Costs
 - Personnel (A) combines Senior Personnel and Other Personnel under one header,
   with a single combined "total request for Personnel" summary line
+- Fringe Benefits (B) is a single combined figure — not broken down by rate
+  group/personnel category the way NSF's Fringe Benefits section is
 - Travel (C) lists Domestic and Foreign travel under one header, no sub-headers
 - Contractual (F) lists Consultant Services and Subawards under one header, no
   sub-headers, with a single combined "total request for Contracts" summary line
@@ -45,15 +47,9 @@ The total request for Personnel is [combined senior + other total].
 
 B. Fringe Benefits
 {fringe_benefits.narrative_description}
-
-Requested Fringe Benefits Breakdown:
-{#fringe_benefits.rate_groups}
-* {personnel_category} (Rate: {applied_rate_description})
-{#yearly_breakdown}
+{#fringe_benefits.yearly_breakdown}
   - Year {year}: ${cost}
-{/yearly_breakdown}
-  Category Total: ${category_total}
-{/fringe_benefits.rate_groups}
+{/fringe_benefits.yearly_breakdown}
 
 Total Requested Fringe Benefits: ${fringe_benefits.total_cost}
 

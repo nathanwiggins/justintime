@@ -545,16 +545,9 @@ const Document = (() => {
     }
 
     const fb = p.fringe_benefits || {};
+    const fbYearlyStr = (fb.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
     rows.push(sectionHeader(`B. Fringe Benefits ($${fmt(fb.total_cost)})`));
-    if (fb.narrative_description) rows.push(plain(fb.narrative_description));
-    (fb.rate_groups || []).forEach(g => {
-      const yearlyStr = (g.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');
-      rows.push(lineItem(
-        `${g.personnel_category} (Rate: ${g.applied_rate_description}).`,
-        `Category Total: $${fmt(g.category_total)}${yearlyStr ? ` (${yearlyStr})` : ''}.`
-      ));
-    });
-    if ((fb.rate_groups || []).length > 1) rows.push(rollupSentence('Fringe Benefits', fb.total_cost, yearMapOf(fb.rate_groups || [])));
+    if (fb.narrative_description) rows.push(plain(`${fb.narrative_description}${fbYearlyStr ? ` (${fbYearlyStr})` : ''}`));
 
     const domestic      = p.domestic_travel || [];
     const foreign       = p.foreign_travel  || [];
@@ -731,7 +724,7 @@ const Document = (() => {
 
     const yearItems = [
       ...seniorPersonnel, ...otherPersonnel,
-      ...(fb.rate_groups || []),
+      fb,
       ...domestic, ...foreign,
       ...equipment,
       ...supplies,

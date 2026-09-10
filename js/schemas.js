@@ -679,31 +679,12 @@ const Schemas = {
         properties: {
           total_cost:            { type: 'number' },
           narrative_description: { type: 'string' },
-          rate_groups: {
+          yearly_breakdown: {
             type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                personnel_category:       { type: 'string' },
-                applied_rate_description: { type: 'string' },
-                yearly_breakdown: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      year: { type: 'number' },
-                      cost: { type: 'number' }
-                    },
-                    required: ['year', 'cost']
-                  }
-                },
-                category_total: { type: 'number' }
-              },
-              required: ['personnel_category', 'applied_rate_description', 'yearly_breakdown', 'category_total']
-            }
+            items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] }
           }
         },
-        required: ['total_cost', 'narrative_description', 'rate_groups']
+        required: ['total_cost', 'narrative_description', 'yearly_breakdown']
       },
       indirect_costs: {
         type: 'object',

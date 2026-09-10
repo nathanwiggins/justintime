@@ -304,17 +304,27 @@ const Generator = (() => {
 
     if (extracted.fringe_benefits) {
       const fb = extracted.fringe_benefits;
-      (fb.rate_groups || []).forEach(g => {
-        if (g.yearly_breakdown && g.yearly_breakdown.length) {
-          g.category_total = sumYears(g.yearly_breakdown);
+      if (fb.rate_groups) {
+        // NSF: broken down by rate group, each with its own yearly_breakdown
+        (fb.rate_groups || []).forEach(g => {
+          if (g.yearly_breakdown && g.yearly_breakdown.length) {
+            g.category_total = sumYears(g.yearly_breakdown);
+          } else {
+            flagged.push(`fringe_benefits.rate_groups: ${g.personnel_category || '(unnamed group)'}`);
+          }
+        });
+        if (fb.rate_groups.length) {
+          fb.total_cost = fb.rate_groups.reduce((sum, g) => sum + (g.category_total || 0), 0);
         } else {
-          flagged.push(`fringe_benefits.rate_groups: ${g.personnel_category || '(unnamed group)'}`);
+          flagged.push('fringe_benefits.total_cost');
         }
-      });
-      if (fb.rate_groups && fb.rate_groups.length) {
-        fb.total_cost = fb.rate_groups.reduce((sum, g) => sum + (g.category_total || 0), 0);
-      } else {
-        flagged.push('fringe_benefits.total_cost');
+      } else if (fb.yearly_breakdown) {
+        // General: one combined figure, yearly_breakdown directly on fringe_benefits
+        if (fb.yearly_breakdown.length) {
+          fb.total_cost = sumYears(fb.yearly_breakdown);
+        } else {
+          flagged.push('fringe_benefits.total_cost');
+        }
       }
     }
 
