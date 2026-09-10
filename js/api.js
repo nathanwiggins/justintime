@@ -14,7 +14,8 @@ const Api = (() => {
     return `- All dollar amounts must match the budget spreadsheet exactly
 - Write professional, informative narrative justifications for each line item
 - Prioritize JUSTIFYING and making a compelling case to the sponsor WHY each budget request is really necessary
-- If a budget category has no line items, return an empty array for that field`;
+- If a budget category has no line items, return an empty array for that field
+- Every "year" value in a yearly_breakdown must be a relative project year (1, 2, 3, ... counting from the start of the award period) — never a calendar year, even if the budget spans specific calendar years`;
   }
 
 
