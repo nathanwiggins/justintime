@@ -40,7 +40,7 @@ ${section.prompt}${hint ? `\n${hint}` : ''}`;
   }
 
   function buildItemListPrompt(csvText, section) {
-    return `You are helping write a budget justification. Based on budget spreadsheet and section rules below, please generate a list of items (labels only, no numbers or dollar values) that we would want to include in the "${section.label}" section of the justification.
+    return `You are helping write a budget justification. Based on budget spreadsheet and section rules below, please generate a list of items (LABELS ONLY! NO NUMBERS, NO DOLLAR VALUES, NO MONTHS! We will get to numeric details later.) that we would want to include in the "${section.label}" section of the justification.
 
 Section-specific instructions:
 ${section.prompt}
