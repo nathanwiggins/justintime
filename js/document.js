@@ -580,7 +580,9 @@ const Document = (() => {
       rows.push(plain('All requested international air travel will be booked in strict accordance with the Fly America Act (49 U.S.C. § 40118), utilizing U.S. flag air carriers or compliant Open Skies agreement partner airlines wherever applicable.'));
     }
 
-    rows.push(rollupSentence('Travel', travelTotal, yearMapOf([...domestic, ...foreign])));
+    if (domestic.length + foreign.length > 1) {
+      rows.push(rollupSentence('Travel', travelTotal, yearMapOf([...domestic, ...foreign])));
+    }
 
     const equipment      = p.equipment || [];
     const equipmentTotal = equipment.reduce((sum, x) => sum + (x.cost || 0), 0);
@@ -689,8 +691,8 @@ const Document = (() => {
     rows.push(sectionHeader(`H. Other ($${fmt(hTotal)})`));
 
     const activeCategories = psCategories.filter(c => c.items.length > 0);
-    rows.push(subHeader(`Participant Support Costs ($${fmt(psTotal)})`));
-    if (p.participant_support_has_data) {
+    if (p.participant_support_has_data && activeCategories.length > 0) {
+      rows.push(subHeader(`Participant Support Costs ($${fmt(psTotal)})`));
       activeCategories.forEach(({ label, items }) => {
         items.forEach(x => {
           const yearlyStr = (x.yearly_breakdown || []).map(y => `$${fmt(y.cost)} in Year ${y.year}`).join(', ');

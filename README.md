@@ -21,6 +21,7 @@ A lightweight, client-side budget justification generator and verifier for resea
 - Travel line items break down into itemized cost components (Airfare, Mileage, Lodging, Per Diem, Registration, Other) with a computed subtotal, when the budget spreadsheet itemizes them.
 - Items in the generic "Other" category are automatically checked against every other budget category and dropped if they appear to be the same expense counted twice.
 - Template Mode produces a structured draft with placeholder text instead of full AI-written narrative.
+- Categories and sub-sections with no budgeted items skip their "total request" sentence and headers instead of showing a $0 placeholder.
 
 ### Shared
 - Drag-and-drop uploads, an animated scan → label → match → audit → summarize progress sequence (full technical log available via "Expand Analysis Details"), and a "How It Works" walkthrough for first-time users.
