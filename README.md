@@ -16,6 +16,7 @@ A lightweight, client-side budget justification generator and verifier for resea
 - Upload a budget spreadsheet and project summary to get a formatted `.docx` justification back.
 - Choose a Grant Template Type — National Science Foundation or General grants.gov, each with its own section layout.
 - Institutional Profiles store your fringe/F&A boilerplate so the AI weaves institution-specific language into the narrative.
+- Before extracting each section, the AI drafts a quick naive pass over the budget and narrative and distills it into example pointers that steer the real extraction toward what's actually relevant — visible in each section's "Details" log.
 - Each section is generated in two passes — verified data extraction, then narrative writing — with the numbers automatically reconciled so the writing pass can't quietly change a figure.
 - Every line item's total is recalculated from its own year-by-year breakdown rather than trusted as extracted, so a multi-year item (e.g. a recurring trip) can't be undercounted — unless no yearly breakdown was returned for it, in which case the extracted total is kept as-is and flagged rather than zeroed out.
 - Travel line items break down into itemized cost components (Airfare, Mileage, Lodging, Per Diem, Registration, Other) with a computed subtotal, when the budget spreadsheet itemizes them.

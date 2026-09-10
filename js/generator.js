@@ -439,6 +439,15 @@ const Generator = (() => {
           : null;
         const sectionStep = addStep(`Generating: ${section.label}`);
 
+        const { hint, naiveDraft } = await Api.generateSectionHint({
+          csvText,
+          projectSummary,
+          templateType: form.templateType,
+          apiKey:       form.apiKey,
+          section,
+          additionalContext
+        });
+
         const { result: extracted, prompt: extractPrompt } = await Api.generateSection({
           csvText,
           projectSummary,
@@ -446,7 +455,8 @@ const Generator = (() => {
           apiKey:         form.apiKey,
           section,
           additionalContext,
-          temperature:    0.1
+          temperature:    0.1,
+          hint
         });
         applyComputedEscalationNotes(extracted);
         const flaggedTotals = reconcileYearlyTotals(extracted);
@@ -477,6 +487,8 @@ const Generator = (() => {
         Object.assign(aiJson, narrated);
 
         sectionStep.done('done', [
+          { label: 'Naive Draft',         content: naiveDraft },
+          { label: 'Distilled Hint',      content: hint },
           { label: 'Extraction Prompt',   content: extractPrompt },
           { label: 'Extracted Data',      content: JSON.stringify(extracted, null, 2) },
           { label: 'Narrative Prompt',    content: narrativePrompt },

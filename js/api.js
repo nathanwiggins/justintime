@@ -19,7 +19,7 @@ const Api = (() => {
   }
 
 
-  function buildSectionPrompt(csvText, projectSummary, templateType, section, additionalContext) {
+  function buildSectionPrompt(csvText, projectSummary, templateType, section, additionalContext, hint) {
     let prompt = `You are an expert grants administrator writing a formal budget justification narrative.
 
 You are generating ONLY the "${section.label}" section of a ${templateType.toUpperCase()} budget justification.
@@ -28,7 +28,7 @@ Global requirements:
 ${globalRules()}
 
 Section-specific instructions:
-${section.prompt}`;
+${section.prompt}${hint ? `\n${hint}` : ''}`;
 
     if (additionalContext) {
       prompt += `\n\nInstitutional Context (incorporate the specific rates, policies, and language from this information directly into your response):\n${additionalContext}`;
@@ -37,6 +37,31 @@ ${section.prompt}`;
     prompt += `\n\nProject Summary:\n${projectSummary}\n\nBudget Spreadsheet Data:\n${csvText}`;
 
     return prompt;
+  }
+
+  function buildNaiveDraftPrompt(csvText, projectSummary, templateType, section, additionalContext) {
+    let prompt = `You are helping write a budget justification. Based on the project summary and budget spreadsheet below, write the "${section.label}" paragraph of the budget justification.`;
+
+    if (additionalContext) {
+      prompt += `\n\nInstitutional Context:\n${additionalContext}`;
+    }
+
+    prompt += `\n\nProject Summary:\n${projectSummary}\n\nBudget Spreadsheet Data:\n${csvText}`;
+
+    return prompt;
+  }
+
+  function buildHintDistillPrompt(naiveDraft) {
+    return `Below is a sample passage for this section. Summarize the information included in the paragraph in ONE sentence, starting with "For example, look for items like...", that lists things named in the passage to illustrate to a real budget justification writer where to direct their attention. List your input as suggestions only. Keep your output BRIEF and CONCISE.
+
+Passage:
+${naiveDraft}`;
+  }
+
+  async function generateSectionHint({ csvText, projectSummary, templateType, apiKey, section, additionalContext }) {
+    const naiveDraft = await callApi(apiKey, buildNaiveDraftPrompt(csvText, projectSummary, templateType, section, additionalContext), null, null, 0.1);
+    const hint = await callApi(apiKey, buildHintDistillPrompt(naiveDraft), null, null, 0.1);
+    return { hint, naiveDraft };
   }
 
   let refreshPromise = null;
@@ -125,8 +150,8 @@ ${section.prompt}`;
     });
   }
 
-  async function generateSection({ csvText, projectSummary, templateType, apiKey, section, additionalContext, temperature = null }) {
-    const prompt  = buildSectionPrompt(csvText, projectSummary, templateType, section, additionalContext);
+  async function generateSection({ csvText, projectSummary, templateType, apiKey, section, additionalContext, temperature = null, hint = null }) {
+    const prompt  = buildSectionPrompt(csvText, projectSummary, templateType, section, additionalContext, hint);
     const result  = await callApi(apiKey, prompt, section.schema, null, temperature);
     return { result, prompt };
   }
@@ -451,7 +476,7 @@ Instructions:
   }
 
   return {
-    generateSection, refineNarrative, auditOtherDuplicates, extractValues, extractValuesBatch, matchValues, matchValuesBatch,
+    generateSection, generateSectionHint, refineNarrative, auditOtherDuplicates, extractValues, extractValuesBatch, matchValues, matchValuesBatch,
     auditNotFound, auditMismatches, auditSummary, classifyReply, test, isVandalizerHosted,
     setRetryHandler: cb => { retryHandler = cb; }
   };
