@@ -39,29 +39,20 @@ ${section.prompt}${hint ? `\n${hint}` : ''}`;
     return prompt;
   }
 
-  function buildNaiveDraftPrompt(csvText, projectSummary, templateType, section, additionalContext) {
-    let prompt = `You are helping write a budget justification. Based on the project summary and budget spreadsheet below, write the "${section.label}" paragraph of the budget justification.`;
+  function buildItemListPrompt(csvText, section) {
+    return `You are helping write a budget justification. Based on budget spreadsheet and section rules below, please generate a list of items (labels only, no numbers or dollar values) that we would want to include in the "${section.label}" section of the justification.
 
-    if (additionalContext) {
-      prompt += `\n\nInstitutional Context:\n${additionalContext}`;
-    }
+Section-specific instructions:
+${section.prompt}
 
-    prompt += `\n\nProject Summary:\n${projectSummary}\n\nBudget Spreadsheet Data:\n${csvText}`;
-
-    return prompt;
+Budget Spreadsheet Data:
+${csvText}`;
   }
 
-  function buildHintDistillPrompt(naiveDraft) {
-    return `Below is a sample passage for this section. Summarize the information included in the paragraph in ONE sentence, starting with "For example, look for items like...", that lists things named in the passage to illustrate to a real budget justification writer where to direct their attention. List your input as suggestions only. Keep your output BRIEF and CONCISE.
-
-Passage:
-${naiveDraft}`;
-  }
-
-  async function generateSectionHint({ csvText, projectSummary, templateType, apiKey, section, additionalContext }) {
-    const naiveDraft = await callApi(apiKey, buildNaiveDraftPrompt(csvText, projectSummary, templateType, section, additionalContext), null, null, 0.1);
-    const hint = await callApi(apiKey, buildHintDistillPrompt(naiveDraft), null, null, 0.1);
-    return { hint, naiveDraft };
+  async function generateSectionHint({ csvText, apiKey, section }) {
+    const items = await callApi(apiKey, buildItemListPrompt(csvText, section), GeneratorAuditSchemas.itemList, null, 0.1);
+    const hint  = items.length ? `For example, look for items like ${items.join(', ')}, etc.` : '';
+    return { hint, items };
   }
 
   let refreshPromise = null;

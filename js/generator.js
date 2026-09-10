@@ -439,13 +439,10 @@ const Generator = (() => {
           : null;
         const sectionStep = addStep(`Generating: ${section.label}`);
 
-        const { hint, naiveDraft } = await Api.generateSectionHint({
+        const { hint, items: suggestedItems } = await Api.generateSectionHint({
           csvText,
-          projectSummary,
-          templateType: form.templateType,
-          apiKey:       form.apiKey,
-          section,
-          additionalContext
+          apiKey: form.apiKey,
+          section
         });
 
         const { result: extracted, prompt: extractPrompt } = await Api.generateSection({
@@ -487,7 +484,7 @@ const Generator = (() => {
         Object.assign(aiJson, narrated);
 
         sectionStep.done('done', [
-          { label: 'Naive Draft',         content: naiveDraft },
+          { label: 'Suggested Items',     content: JSON.stringify(suggestedItems, null, 2) },
           { label: 'Distilled Hint',      content: hint },
           { label: 'Extraction Prompt',   content: extractPrompt },
           { label: 'Extracted Data',      content: JSON.stringify(extracted, null, 2) },

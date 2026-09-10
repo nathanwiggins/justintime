@@ -812,6 +812,10 @@ const VerifierSchemas = {
 };
 
 const GeneratorAuditSchemas = {
+  itemList: {
+    type: 'array',
+    items: { type: 'string' }
+  },
   otherDuplicates: {
     type: 'array',
     items: {
