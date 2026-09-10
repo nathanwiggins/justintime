@@ -74,10 +74,14 @@ const Document = (() => {
 
   function costBreakdownRows(destination, items) {
     if (!items || !items.length) return [];
-    const { Paragraph, TextRun } = _docx;
+    const { Paragraph, TextRun, BorderStyle } = _docx;
     const rows = [subHeader(destination)];
 
-    items.forEach(c => rows.push(plain(`$${fmt(c.amount)} - ${c.component_name} (${c.formula})`)));
+    items.forEach(c => rows.push(new Paragraph({
+      children: [new TextRun({ text: `$${fmt(c.amount)} - ${c.component_name} (${c.formula})` })],
+      indent:   { left: 720 },
+      spacing:  { after: 100 }
+    })));
 
     const subtotal = items.reduce((s, c) => s + (c.amount || 0), 0);
     rows.push(new Paragraph({
@@ -85,7 +89,9 @@ const Document = (() => {
         new TextRun({ text: 'Estimated total travel expenses: ' }),
         new TextRun({ text: `$${fmt(subtotal)}`, bold: true })
       ],
-      spacing: { after: 100 }
+      indent:  { left: 720 },
+      spacing: { before: 60, after: 100 },
+      border:  { top: { style: BorderStyle.SINGLE, size: 6, space: 4, color: 'auto' } }
     }));
 
     return rows;
