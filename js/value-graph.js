@@ -33,85 +33,142 @@ const ValueGraph = (() => {
     return diff <= 1 || diff / Math.max(Math.abs(num), Math.abs(value), 1) <= 0.01;
   }
 
-  function findCell(sheets, amount) {
-    if (amount === undefined || amount === null) return null;
+  function itemLabel(item) {
+    return item.item_name || item.name || item.role || item.trip_purpose || item.category_name ||
+      item.consultant_name || item.institution_name || item.publication_title_or_type ||
+      item.service_description || item.personnel_category || '';
+  }
+
+  function normalizeWords(text) {
+    return String(text || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').split(' ').filter(w => w.length > 1);
+  }
+
+  function rowWords(sheet, row) {
+    return normalizeWords((sheet.aoa[row] || []).map(c => String(c ?? '')).join(' '));
+  }
+
+  function columnHasYearHeader(sheet, col, year) {
+    if (year === undefined) return false;
+    const re = new RegExp(`^(year|yr|fy|y)\\s*${year}$`, 'i');
+    return sheet.aoa.some(row => re.test(String(row[col] ?? '').trim()));
+  }
+
+  function cellKey(c) {
+    return `${c.sheet}|${c.row}|${c.col}`;
+  }
+
+  function findCandidates(sheets, amount) {
+    const matches = [];
     for (const sheet of sheets || []) {
       for (let row = 0; row < sheet.aoa.length; row++) {
         const cells = sheet.aoa[row];
         for (let col = 0; col < cells.length; col++) {
-          if (cellMatches(cells[col], amount)) {
-            return { sheet: sheet.name, row, col, lastKnownValue: amount };
-          }
+          if (cellMatches(cells[col], amount)) matches.push({ sheet: sheet.name, row, col });
         }
       }
     }
-    return null;
+    return matches;
   }
 
-  function leafNode(id, amount, sheets) {
-    const link = findCell(sheets, amount);
-    return link
-      ? { id, kind: 'linked', amount, link, formula: null, broken: false }
-      : { id, kind: 'plain', amount, link: null, formula: null, broken: false };
+  function scoreCandidate(candidate, sheetsByName, labelWords, year) {
+    const sheet = sheetsByName[candidate.sheet];
+    let score = 0;
+    const words = rowWords(sheet, candidate.row);
+    labelWords.forEach(w => { if (words.includes(w)) score++; });
+    if (columnHasYearHeader(sheet, candidate.col, year)) score += 5;
+    return score;
+  }
+
+  function resolveCell(sheets, amount, claimed, label, year) {
+    if (amount === undefined || amount === null) return null;
+
+    const candidates = findCandidates(sheets, amount).filter(c => !claimed.has(cellKey(c)));
+    if (candidates.length === 0) return null;
+    if (candidates.length === 1) { claimed.add(cellKey(candidates[0])); return candidates[0]; }
+
+    const sheetsByName = {};
+    sheets.forEach(s => { sheetsByName[s.name] = s; });
+    const labelWords = normalizeWords(label);
+
+    const scored    = candidates.map(c => ({ c, score: scoreCandidate(c, sheetsByName, labelWords, year) }));
+    const maxScore  = Math.max(...scored.map(s => s.score));
+    const topScorers = scored.filter(s => s.score === maxScore);
+
+    if (maxScore <= 0 || topScorers.length !== 1) return null;
+    claimed.add(cellKey(topScorers[0].c));
+    return topScorers[0].c;
+  }
+
+  function leafNode(id, amount, sheets, claimed, label, year) {
+    const cell = resolveCell(sheets, amount, claimed, label, year);
+    if (!cell) return { id, kind: 'plain', amount, link: null, formula: null, broken: false };
+    return {
+      id, kind: 'linked', amount,
+      link: { sheet: cell.sheet, row: cell.row, col: cell.col, lastKnownValue: amount },
+      formula: null, broken: false
+    };
   }
 
   function sumNode(id, amount, termIds) {
     return { id, kind: 'calculated', amount, link: null, formula: { termIds }, broken: false };
   }
 
-  function classifyYearly(item, basePath, nodes, sheets) {
+  function classifyYearly(item, basePath, nodes, sheets, claimed) {
+    const label = itemLabel(item);
     return (item.yearly_breakdown || []).map((y, i) => {
       const id = `${basePath}.yearly_breakdown[${i}].cost`;
-      nodes[id] = leafNode(id, y.cost || 0, sheets);
+      nodes[id] = leafNode(id, y.cost || 0, sheets, claimed, label, y.year);
       return id;
     });
   }
 
-  function classifyTotalField(item, basePath, totalField, nodes, sheets) {
+  function classifyTotalField(item, basePath, totalField, nodes, sheets, claimed) {
     const totalId = `${basePath}.${totalField}`;
     if (item.yearly_breakdown && item.yearly_breakdown.length) {
-      const termIds = classifyYearly(item, basePath, nodes, sheets);
+      const termIds = classifyYearly(item, basePath, nodes, sheets, claimed);
       nodes[totalId] = sumNode(totalId, item[totalField] || 0, termIds);
     } else {
-      nodes[totalId] = leafNode(totalId, item[totalField] || 0, sheets);
+      nodes[totalId] = leafNode(totalId, item[totalField] || 0, sheets, claimed, itemLabel(item));
     }
     return totalId;
   }
 
-  function classifyArrayCategory(payload, key, totalField, nodes, sheets) {
+  function classifyArrayCategory(payload, key, totalField, nodes, sheets, claimed) {
     const items = payload[key] || [];
     return items.map((item, i) => {
       const basePath = `${key}[${i}]`;
+      const label = itemLabel(item);
 
       if (item.cost_breakdown && item.cost_breakdown.length) {
         item.cost_breakdown.forEach((c, ci) => {
           const id = `${basePath}.cost_breakdown[${ci}].amount`;
-          nodes[id] = leafNode(id, c.amount || 0, sheets);
+          const componentLabel = `${label} ${c.component_name || ''}`.trim();
+          nodes[id] = leafNode(id, c.amount || 0, sheets, claimed, componentLabel);
         });
       }
 
-      return classifyTotalField(item, basePath, totalField, nodes, sheets);
+      return classifyTotalField(item, basePath, totalField, nodes, sheets, claimed);
     });
   }
 
-  function classifyFringe(payload, nodes, sheets) {
+  function classifyFringe(payload, nodes, sheets, claimed) {
     const fb = payload.fringe_benefits;
     if (!fb) return;
 
     if (fb.rate_groups && fb.rate_groups.length) {
       const groupIds = fb.rate_groups.map((g, i) =>
-        classifyTotalField(g, `fringe_benefits.rate_groups[${i}]`, 'category_total', nodes, sheets)
+        classifyTotalField(g, `fringe_benefits.rate_groups[${i}]`, 'category_total', nodes, sheets, claimed)
       );
       nodes['fringe_benefits.total_cost'] = sumNode('fringe_benefits.total_cost', fb.total_cost || 0, groupIds);
     } else {
-      classifyTotalField(fb, 'fringe_benefits', 'total_cost', nodes, sheets);
+      classifyTotalField(fb, 'fringe_benefits', 'total_cost', nodes, sheets, claimed);
     }
   }
 
-  function classifyIndirect(payload, nodes, sheets) {
+  function classifyIndirect(payload, nodes, sheets, claimed) {
     const ic = payload.indirect_costs;
     if (!ic) return;
-    classifyTotalField(ic, 'indirect_costs', 'total_cost', nodes, sheets);
+    classifyTotalField(ic, 'indirect_costs', 'total_cost', nodes, sheets, claimed);
   }
 
   function sumOf(nodes, ids) {
@@ -121,13 +178,14 @@ const ValueGraph = (() => {
   function build(payload, templateType, sheets) {
     const nodes = {};
     const categoryIds = {};
+    const claimed = new Set();
 
     Object.keys(ARRAY_CATEGORIES).forEach(key => {
-      categoryIds[key] = classifyArrayCategory(payload, key, ARRAY_CATEGORIES[key], nodes, sheets);
+      categoryIds[key] = classifyArrayCategory(payload, key, ARRAY_CATEGORIES[key], nodes, sheets, claimed);
     });
 
-    classifyFringe(payload, nodes, sheets);
-    classifyIndirect(payload, nodes, sheets);
+    classifyFringe(payload, nodes, sheets, claimed);
+    classifyIndirect(payload, nodes, sheets, claimed);
 
     const personnelIds = [...categoryIds.senior_personnel, ...categoryIds.other_personnel];
     nodes['totals.personnel'] = sumNode('totals.personnel', sumOf(nodes, personnelIds), personnelIds);
@@ -257,6 +315,6 @@ const ValueGraph = (() => {
 
   return {
     build, recompute, recoverBrokenLinks, writeBack,
-    linkTo, unlink, setFormula, cellMatches, findCell
+    linkTo, unlink, setFormula, cellMatches
   };
 })();
