@@ -4,6 +4,11 @@ A lightweight, client-side budget justification generator and verifier for resea
 
 ## Features
 
+### Projects
+- Every generation and verification happens inside a Project — create one on first load, and switch between projects anytime from the header.
+- A project remembers its spreadsheet, template type, profile, Total Budget figure, and in-progress draft, so you can leave and come back later.
+- Projects are stored entirely in your browser (IndexedDB) — nothing is uploaded to a server.
+
 ### Verifier
 - Upload a budget justification (`.docx`) and its spreadsheet (`.csv`/`.xls`/`.xlsx`) to catch mismatches before you submit.
 - AI labels every dollar value, matches it against the spreadsheet, and groups discrepancies by root cause.
@@ -11,9 +16,11 @@ A lightweight, client-side budget justification generator and verifier for resea
 - The justification and spreadsheet are shown side-by-side with the chat, with flagged values highlighted and auto-tracked as you go.
 - Ends with a plain-language summary and a downloadable marked-up copy of the justification with flagged values highlighted.
 - "Try it out!" at the end of the walkthrough launches a guided, sample-document run-through of the whole Verifier flow, with on-screen arrows pointing to what to click next. Exit it at any time.
+- If the active project already has a spreadsheet on file, reuse it with one click instead of uploading it again.
 
 ### Generator
-- Upload a budget spreadsheet and project summary to get a formatted `.docx` justification back.
+- A 3-phase flow: Generate a first draft, Validate it against your spreadsheet's Total Budget, then Edit it in an interactive canvas before exporting.
+- Upload a budget spreadsheet and project summary, and enter the Total Budget figure from your spreadsheet, to get a formatted `.docx` justification back.
 - Choose a Grant Template Type — National Science Foundation or General grants.gov, each with its own section layout.
 - Institutional Profiles store your fringe/F&A boilerplate so the AI weaves institution-specific language into the narrative.
 - Before extracting each section, the AI first suggests which items belong in it based on the budget spreadsheet, then those suggestions steer the real extraction toward what's actually relevant — visible in each section's "Details" log. Skipped for Fringe Benefits and Indirect Costs.
@@ -21,8 +28,12 @@ A lightweight, client-side budget justification generator and verifier for resea
 - Every line item's total is recalculated from its own year-by-year breakdown rather than trusted as extracted, so a multi-year item (e.g. a recurring trip) can't be undercounted — unless no yearly breakdown was returned for it, in which case the extracted total is kept as-is and flagged rather than zeroed out.
 - Travel line items break down into itemized cost components (Airfare, Mileage, Lodging, Per Diem, Registration, Other) with a computed subtotal, when the budget spreadsheet itemizes them.
 - Items in the generic "Other" category are automatically checked against every other budget category and dropped if they appear to be the same expense counted twice.
+- Before you commit to a draft, its total is checked against your Total Budget — keep the version or generate a new one from scratch, either way.
+- Once kept, every dollar figure is either **Linked** to a spreadsheet cell or **Calculated** as a sum of other values — click any figure to relink it, edit its formula, or see where it came from.
+- Re-upload an updated spreadsheet at any point while editing — linked values update automatically, and the app tries to recover links on its own if rows were inserted or removed, flagging any it can't reconnect.
 - Template Mode produces a structured draft with placeholder text instead of full AI-written narrative.
 - Categories and sub-sections with no budgeted items skip their "total request" sentence and headers instead of showing a $0 placeholder.
+- Export to `.docx` whenever you're ready, and again as many times as you like as you keep editing.
 
 ### Shared
 - Drag-and-drop uploads, an animated scan → label → match → audit → summarize progress sequence (full technical log available via "Expand Analysis Details"), and a "How It Works" walkthrough for first-time users.
@@ -58,14 +69,17 @@ flowchart LR
     H --> E[AI extracts structured data]
     E -->|totals recomputed, not trusted from AI| T[Verified numbers]
     T --> N[AI writes narrative around the verified numbers]
-    N --> D{Did the numbers change?}
-    D -- yes --> N
-    D -- no --> A[Assembled justification .docx]
+    N --> W{Draft matches your Total Budget?}
+    W -->|either way, you choose| P[Preview: keep or start over]
+    P -->|generate new version| N
+    P -->|keep| X[Editor: every figure Linked or Calculated]
+    X --> D[Exported justification .docx]
 ```
 
-- Every figure in the final document is recomputed from the spreadsheet, never taken on faith from the AI.
+- Every figure in the draft is recomputed from the spreadsheet, never taken on faith from the AI.
 - The AI writes narrative language around numbers that are already locked in — a draft that changes a number gets rejected and rewritten.
-- This split, verified numbers from the spreadsheet paired with narrative language from AI, is what keeps the output trustworthy.
+- Before you commit to a draft, its total is checked against the Total Budget you entered — you decide whether to keep it or start over, pass or fail.
+- Once kept, every dollar figure is traceable — Linked to the spreadsheet cell it came from, or Calculated as a sum of other figures — right up until you export.
 
 ## Tech Stack
 
@@ -77,6 +91,7 @@ flowchart LR
 | Word document generation | [docx](https://github.com/dolanmiu/docx) (built programmatically) |
 | Verifier progress animation | [anime.js](https://animejs.com/) (CDN) |
 | Settings & review-chat persistence | Browser `localStorage` |
+| Project storage (spreadsheets, drafts, edit state) | Browser `IndexedDB` |
 
 ## File Structure
 
@@ -86,10 +101,16 @@ justintime/
 ├── css/
 │   └── styles.css
 ├── js/
-│   ├── app.js              # Boot, tab routing
+│   ├── app.js              # Boot, tab routing, project-aware wiring
+│   ├── project-store.js    # IndexedDB CRUD for Projects
+│   ├── project-picker.js   # Projects screen: create/rename/delete/open
 │   ├── settings.js         # Settings tab + localStorage CRUD
-│   ├── generator.js        # Generator workflow orchestration
-│   ├── parser.js           # SheetJS parsing + source-of-truth extraction
+│   ├── generator.js        # Generator workflow orchestration (Generate → Validate → Edit)
+│   ├── parser.js           # SheetJS parsing: CSV text + per-cell sheet data for linking
+│   ├── value-graph.js      # Classifies every dollar figure as Linked or Calculated; recomputes on edit
+│   ├── layout-builder.js   # Builds a renderer-agnostic outline of a draft for the editor
+│   ├── editor-canvas.js    # Phase 3 interactive editor: linking, formulas, export
+│   ├── validation-checkpoint.js # Phase 2 pass/fail checkpoint against your Total Budget
 │   ├── api.js              # Universal API adapter: Gemini direct (standalone) or Vandalizer proxy (DGX-hosted)
 │   ├── schemas.js          # Full JSON schemas per template type + VerifierSchemas
 │   ├── sections.js         # Section registry: ordered section definitions per template
@@ -139,9 +160,14 @@ Push to `main` — GitHub Pages serves `index.html` from the repository root aut
 
 ## Usage
 
+### Working with Projects
+1. On load, choose an existing project or click **+ New Project**.
+2. Opening a project reveals the Generator and Verifier tabs, scoped to that project's files and draft.
+3. Click **Switch Project** in the header at any time to return to the project list.
+
 ### Verifying a budget justification
 1. Go to the **Verifier** tab.
-2. Upload a budget justification `.docx` and its spreadsheet.
+2. Upload a budget justification `.docx` and its spreadsheet — or reuse the active project's spreadsheet with one click.
 3. Click **Verify Budget**.
 4. Work through the chat that opens for each flagged finding — confirm, dismiss, or ignore it.
 5. Review the summary and download the marked-up document.
@@ -151,6 +177,8 @@ See [How It Works](#how-it-works) for the strategy behind the findings.
 ### Generating a budget justification
 1. Go to the **Settings** tab, enter and save your Gemini API key.
 2. Create at least one Institutional Profile with your fringe/F&A boilerplate.
-3. Go to the **Generator** tab.
-4. Select a profile, upload your budget file and project summary.
-5. Click **Generate Justification** — a `.docx` downloads automatically.
+3. Go to the **Generator** tab, select a profile, upload your budget file, and enter its Total Budget.
+4. Upload your project summary and click **Generate Justification**.
+5. Review the draft against your Total Budget, then **Keep This Version** or **Generate New Version**.
+6. In the editor, link or relink figures to spreadsheet cells, build calculated values, and edit the narrative directly.
+7. Click **Export to .docx** whenever you're ready — export again anytime as you keep editing.

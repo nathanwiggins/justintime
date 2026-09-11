@@ -146,6 +146,7 @@ const Generator = (() => {
       profileId:    document.getElementById('profile-select').value,
       templateType: document.getElementById('template-select').value,
       file:         document.getElementById('budget-file-input').files[0],
+      totalBudget:  parseFloat(document.getElementById('total-budget-input').value),
       summaryFile:  document.getElementById('project-summary-input').files[0],
       summaryText:  document.getElementById('project-summary-text-input').value.trim(),
       summaryMode,
@@ -363,10 +364,12 @@ const Generator = (() => {
     return out;
   }
 
-  function validateForm({ profileId, file, summaryFile, summaryText, summaryMode, apiKey }) {
+  function validateForm({ profileId, file, totalBudget, summaryFile, summaryText, summaryMode, apiKey }) {
     if (!apiKey && !Api.isVandalizerHosted())    return 'No API key saved. Go to the Settings tab and save your Gemini API key.';
+    if (!ProjectPicker.getActive()) return 'No active project. Please open or create a project first.';
     if (!profileId) return 'Please select an Institutional Profile.';
     if (!file)      return 'Please upload a budget file (.csv, .xls, or .xlsx).';
+    if (!Number.isFinite(totalBudget) || totalBudget <= 0) return 'Please enter the total budget amount from your spreadsheet.';
     if (summaryMode === 'file' && !summaryFile) return 'Please upload a project narrative (.doc, .docx, or .pdf).';
     if (summaryMode === 'text' && !summaryText) return 'Please enter a project summary.';
     return null;
@@ -396,6 +399,98 @@ const Generator = (() => {
     };
   }
 
+  async function runGenerationSections({ form, profile, csvText, projectSummary }) {
+    const sections = Sections.forTemplate(form.templateType);
+    const aiJson   = {};
+
+    const MAX_NARRATIVE_ATTEMPTS = 2;
+
+    for (const section of sections) {
+      const additionalContext = section.key === 'fringe_benefits' ? profile.fringeBoilerplate
+        : section.key === 'indirect_costs'   ? profile.faBoilerplate
+        : null;
+      const sectionStep = addStep(`Generating: ${section.label}`);
+
+      const skipHint = section.key === 'fringe_benefits' || section.key === 'indirect_costs';
+      const { hint, items: suggestedItems } = skipHint
+        ? { hint: '', items: [] }
+        : await Api.generateSectionHint({ csvText, apiKey: form.apiKey, section });
+
+      const { result: extracted, prompt: extractPrompt } = await Api.generateSection({
+        csvText,
+        projectSummary,
+        templateType:   form.templateType,
+        apiKey:         form.apiKey,
+        section,
+        additionalContext,
+        temperature:    0.1,
+        hint
+      });
+      applyComputedEscalationNotes(extracted);
+      const flaggedTotals = reconcileYearlyTotals(extracted);
+      const trustedSkeleton = omitNarrativeFields(extracted);
+
+      let narrated, narrativePrompt, diff, correction = null;
+      for (let attempt = 1; attempt <= MAX_NARRATIVE_ATTEMPTS; attempt++) {
+        ({ result: narrated, prompt: narrativePrompt } = await Api.refineNarrative({
+          csvText,
+          projectSummary,
+          templateType: form.templateType,
+          apiKey:       form.apiKey,
+          section,
+          additionalContext,
+          verifiedData: trustedSkeleton,
+          correction
+        }));
+        diff = diffSkeletons(trustedSkeleton, omitNarrativeFields(narrated));
+        if (!diff.structural) break;
+        correction = diff.reason;
+        if (attempt === MAX_NARRATIVE_ATTEMPTS) {
+          sectionStep.error(`narrative pass dropped data (${diff.reason})`);
+          throw new Error(`"${section.label}" failed to generate: the narrative pass altered the verified data (${diff.reason}).`);
+        }
+      }
+
+      if (diff.mismatches.length) applyHeals(narrated, diff.mismatches);
+      Object.assign(aiJson, narrated);
+
+      sectionStep.done('done', [
+        ...(skipHint ? [] : [
+          { label: 'Suggested Items', content: JSON.stringify(suggestedItems, null, 2) },
+          { label: 'Distilled Hint',  content: hint }
+        ]),
+        { label: 'Extraction Prompt',   content: extractPrompt },
+        { label: 'Extracted Data',      content: JSON.stringify(extracted, null, 2) },
+        { label: 'Narrative Prompt',    content: narrativePrompt },
+        { label: 'Narrative Response',  content: JSON.stringify(narrated, null, 2) },
+        ...(diff.mismatches.length ? [{ label: 'Self-Healed Fields', content: JSON.stringify(diff.mismatches, null, 2) }] : []),
+        ...(flaggedTotals.length ? [{ label: 'Not Cross-Checked (no yearly breakdown)', content: JSON.stringify(flaggedTotals, null, 2) }] : [])
+      ]);
+    }
+
+    if ((aiJson.other_direct_lines || []).length) {
+      const captured = collectCapturedItems(aiJson);
+      if (captured.length) {
+        const dedupeStep = addStep('Checking Other category for duplicates');
+        const audited     = await Api.auditOtherDuplicates(aiJson.other_direct_lines, captured, form.apiKey);
+        const beforeCount = aiJson.other_direct_lines.length;
+        aiJson.other_direct_lines = aiJson.other_direct_lines.filter((x, i) => !audited[i].is_duplicate);
+        const removedCount = beforeCount - aiJson.other_direct_lines.length;
+        dedupeStep.done(removedCount ? `${removedCount} duplicate item(s) removed` : 'no duplicates found', [
+          { label: 'Audit Result', content: JSON.stringify(audited, null, 2) }
+        ]);
+      }
+    }
+
+    if (form.templateMode) {
+      const templateStep = addStep('Applying Template Mode');
+      stripNarratives(aiJson);
+      templateStep.done('narrative fields replaced with placeholders');
+    }
+
+    return aiJson;
+  }
+
   async function handleGenerate() {
     const form  = getFormValues();
     const error = validateForm(form);
@@ -404,10 +499,14 @@ const Generator = (() => {
     const profile = Settings.getProfileById(form.profileId);
     if (!profile) { setStatus('Selected profile not found. Please reselect.', 'error'); return; }
 
+    const project = ProjectPicker.getActive();
+    if (!project) { setStatus('No active project. Please open or create a project first.', 'error'); return; }
+
     setGenerating(true);
     setStatus('');
     clearStepLog();
     currentTemplate = form.templateType;
+    project.templateType = form.templateType;
 
     try {
       let projectSummary;
@@ -422,112 +521,39 @@ const Generator = (() => {
       }
 
       const parseStep = addStep('Parsing budget file');
-      const { csvText, sourceTruth, numYears } = await Parser.parse(form.file);
+      const { csvText, sheets, numYears } = await Parser.parse(form.file);
       parseStep.done(form.file.name, [
-        { label: 'Extracted CSV',  content: csvText },
-        { label: 'Source Truth',   content: JSON.stringify(sourceTruth, null, 2) }
+        { label: 'Extracted CSV', content: csvText }
       ]);
 
-      const sections = Sections.forTemplate(form.templateType);
-      const aiJson   = {};
+      project.numYears    = numYears;
+      project.profileId   = form.profileId;
+      project.totalBudget = form.totalBudget;
+      project.spreadsheet = { fileName: form.file.name, fileBlob: form.file, csvText, sheets, uploadedAt: Date.now() };
+      await ProjectPicker.persistActive();
 
-      const MAX_NARRATIVE_ATTEMPTS = 2;
+      let outcome = null;
+      while (outcome !== 'keep') {
+        const aiJson = await runGenerationSections({ form, profile, csvText, projectSummary });
 
-      for (const section of sections) {
-        const additionalContext = section.key === 'fringe_benefits' ? profile.fringeBoilerplate
-          : section.key === 'indirect_costs'   ? profile.faBoilerplate
-          : null;
-        const sectionStep = addStep(`Generating: ${section.label}`);
-
-        const skipHint = section.key === 'fringe_benefits' || section.key === 'indirect_costs';
-        const { hint, items: suggestedItems } = skipHint
-          ? { hint: '', items: [] }
-          : await Api.generateSectionHint({ csvText, apiKey: form.apiKey, section });
-
-        const { result: extracted, prompt: extractPrompt } = await Api.generateSection({
-          csvText,
-          projectSummary,
-          templateType:   form.templateType,
-          apiKey:         form.apiKey,
-          section,
-          additionalContext,
-          temperature:    0.1,
-          hint
-        });
-        applyComputedEscalationNotes(extracted);
-        const flaggedTotals = reconcileYearlyTotals(extracted);
-        const trustedSkeleton = omitNarrativeFields(extracted);
-
-        let narrated, narrativePrompt, diff, correction = null;
-        for (let attempt = 1; attempt <= MAX_NARRATIVE_ATTEMPTS; attempt++) {
-          ({ result: narrated, prompt: narrativePrompt } = await Api.refineNarrative({
-            csvText,
-            projectSummary,
-            templateType: form.templateType,
-            apiKey:       form.apiKey,
-            section,
-            additionalContext,
-            verifiedData: trustedSkeleton,
-            correction
-          }));
-          diff = diffSkeletons(trustedSkeleton, omitNarrativeFields(narrated));
-          if (!diff.structural) break;
-          correction = diff.reason;
-          if (attempt === MAX_NARRATIVE_ATTEMPTS) {
-            sectionStep.error(`narrative pass dropped data (${diff.reason})`);
-            throw new Error(`"${section.label}" failed to generate: the narrative pass altered the verified data (${diff.reason}).`);
-          }
-        }
-
-        if (diff.mismatches.length) applyHeals(narrated, diff.mismatches);
-        Object.assign(aiJson, narrated);
-
-        sectionStep.done('done', [
-          ...(skipHint ? [] : [
-            { label: 'Suggested Items', content: JSON.stringify(suggestedItems, null, 2) },
-            { label: 'Distilled Hint',  content: hint }
-          ]),
-          { label: 'Extraction Prompt',   content: extractPrompt },
-          { label: 'Extracted Data',      content: JSON.stringify(extracted, null, 2) },
-          { label: 'Narrative Prompt',    content: narrativePrompt },
-          { label: 'Narrative Response',  content: JSON.stringify(narrated, null, 2) },
-          ...(diff.mismatches.length ? [{ label: 'Self-Healed Fields', content: JSON.stringify(diff.mismatches, null, 2) }] : []),
-          ...(flaggedTotals.length ? [{ label: 'Not Cross-Checked (no yearly breakdown)', content: JSON.stringify(flaggedTotals, null, 2) }] : [])
+        const boilerplateStep = addStep('Assembling final payload');
+        const payload = assemblePayload(aiJson, profile, numYears);
+        boilerplateStep.done(profile.name, [
+          { label: 'Final Payload', content: JSON.stringify(payload, null, 2) }
         ]);
+
+        const validateStep = addStep('Validating against Total Budget');
+        const valueGraph = ValueGraph.build(payload, form.templateType, sheets);
+        validateStep.done(`calculated $${Math.round(valueGraph.nodes['totals.grand'].amount).toLocaleString()}`);
+
+        outcome = await ValidationCheckpoint.run({ project, payload, valueGraph, templateType: form.templateType });
+
+        if (outcome !== 'keep') clearStepLog();
       }
 
-      if ((aiJson.other_direct_lines || []).length) {
-        const captured = collectCapturedItems(aiJson);
-        if (captured.length) {
-          const dedupeStep = addStep('Checking Other category for duplicates');
-          const audited     = await Api.auditOtherDuplicates(aiJson.other_direct_lines, captured, form.apiKey);
-          const beforeCount = aiJson.other_direct_lines.length;
-          aiJson.other_direct_lines = aiJson.other_direct_lines.filter((x, i) => !audited[i].is_duplicate);
-          const removedCount = beforeCount - aiJson.other_direct_lines.length;
-          dedupeStep.done(removedCount ? `${removedCount} duplicate item(s) removed` : 'no duplicates found', [
-            { label: 'Audit Result', content: JSON.stringify(audited, null, 2) }
-          ]);
-        }
-      }
-
-      if (form.templateMode) {
-        const templateStep = addStep('Applying Template Mode');
-        stripNarratives(aiJson);
-        templateStep.done('narrative fields replaced with placeholders');
-      }
-
-      const boilerplateStep = addStep('Assembling final payload');
-      const payload = assemblePayload(aiJson, profile, numYears);
-      boilerplateStep.done(profile.name, [
-        { label: 'Final Payload', content: JSON.stringify(payload, null, 2) }
-      ]);
-
-      const docStep = addStep('Building Word document');
-      await Document.generate(form.templateType, payload);
-      docStep.done('download started');
-
-      setStatus('Document downloaded successfully.', 'success');
+      setStatus('Draft ready — continue editing below.', 'success');
       setGenerating(false);
+      EditorCanvas.open(project);
     } catch (err) {
       setGenerating(false);
       setStatus('Error: ' + err.message, 'error');

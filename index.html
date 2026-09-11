@@ -18,17 +18,33 @@
           <p class="header-subtitle">Budget Justification Tool</p>
         </div>
       </div>
+      <div id="header-active-project" class="header-active-project hidden">
+        <span id="header-active-project-name" class="header-active-project-name"></span>
+        <button type="button" id="back-to-projects-btn" class="btn-link header-projects-link">Switch Project</button>
+      </div>
       <img src="assets/rat-black.png" alt="" class="header-rat" aria-hidden="true">
     </div>
   </header>
 
-  <nav class="tab-nav">
+  <main id="project-picker" class="project-picker">
+    <div class="section-card">
+      <div class="section-header-row">
+        <h2 class="section-title">Projects</h2>
+        <button id="new-project-btn" class="btn btn-primary btn-sm">+ New Project</button>
+      </div>
+      <div id="project-list" class="project-list">
+        <p class="empty-state" id="no-projects-message">No projects yet. Click "+ New Project" to create one.</p>
+      </div>
+    </div>
+  </main>
+
+  <nav class="tab-nav hidden">
     <button class="tab-btn" data-tab="generator">Generator</button>
     <button class="tab-btn active" data-tab="verify">Verifier</button>
     <button class="tab-btn" data-tab="settings">Settings</button>
   </nav>
 
-  <main class="app-main">
+  <main class="app-main hidden">
 
     <section id="tab-settings" class="tab-panel hidden">
 
@@ -90,6 +106,7 @@
             </div>
             <span class="drop-zone-filename hidden" id="verify-budget-filename"></span>
           </div>
+          <button type="button" id="verify-use-project-spreadsheet-btn" class="btn-link hidden">Use this project's spreadsheet instead</button>
         </div>
       </div>
 
@@ -152,6 +169,10 @@
           </div>
         </div>
         <div class="form-group">
+          <label for="total-budget-input">Total Budget (from your spreadsheet)</label>
+          <input type="number" id="total-budget-input" min="0" step="0.01" placeholder="e.g., 250000">
+        </div>
+        <div class="form-group">
           <div class="summary-label-row">
             <label for="project-summary-input">Project <span id="summary-label-word" class="cycling-word">Summary</span></label>
             <button type="button" id="summary-toggle" class="btn-link">Type instead</button>
@@ -178,6 +199,7 @@
           <span class="toggle-label">Template Mode <span class="toggle-hint">— Placeholders for justifications</span></span>
         </div>
         <button id="generate-btn" class="btn btn-primary btn-lg">Generate Justification</button>
+        <button type="button" id="resume-editing-btn" class="btn btn-secondary hidden">Resume Editing Draft</button>
         <div id="loading-indicator" class="hidden">
           <div class="loading-spinner"></div>
           <p class="loading-text">Generating your justification<span class="loading-dots"></span></p>
@@ -287,6 +309,73 @@
     </div>
   </div>
 
+  <div id="validation-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="validation-modal-title">
+    <div class="modal-overlay"></div>
+    <div class="modal-content chat-modal-content">
+      <div class="modal-header">
+        <h3 id="validation-modal-title">Review Your Draft</h3>
+      </div>
+      <div class="modal-body validation-modal-body">
+        <div id="validation-preview" class="chat-preview validation-preview"></div>
+        <div class="validation-side">
+          <p id="validation-message" class="validation-message"></p>
+          <p id="validation-total-budget" class="validation-figure"></p>
+          <p id="validation-calculated-total" class="validation-figure"></p>
+          <div class="validation-actions">
+            <button type="button" id="validation-regenerate-btn" class="btn btn-secondary">Generate New Version</button>
+            <button type="button" id="validation-keep-btn" class="btn btn-primary">Keep This Version</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="editor-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="editor-modal-title">
+    <div class="modal-overlay"></div>
+    <div class="modal-content chat-modal-content">
+      <div class="modal-header">
+        <h3 id="editor-modal-title">Edit Justification</h3>
+        <div class="editor-header-actions">
+          <label class="btn btn-secondary btn-sm" for="editor-reupload-input">Re-upload Spreadsheet</label>
+          <input type="file" id="editor-reupload-input" accept=".csv,.xls,.xlsx" class="hidden">
+          <button type="button" id="editor-export-btn" class="btn btn-primary btn-sm">Export to .docx</button>
+        </div>
+        <button id="editor-close-btn" class="btn-icon" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="chat-preview">
+          <div id="editor-sheet-tabs" class="sheet-tabs hidden"></div>
+          <div id="editor-sheet-body" class="chat-preview-body"></div>
+        </div>
+        <div class="editor-canvas-pane">
+          <div id="editor-canvas-body" class="editor-canvas-body"></div>
+          <div id="editor-value-inspector" class="editor-value-inspector hidden"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="project-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="project-modal-title">New Project</h3>
+        <button id="close-project-modal" class="btn-icon" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="project-name-input">Project Name</label>
+          <input type="text" id="project-name-input" placeholder="e.g., NSF FY26 Renewal">
+          <p id="project-name-error" class="field-error hidden">Project name is required.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancel-project-modal" class="btn btn-secondary">Cancel</button>
+        <button id="save-project-btn" class="btn btn-primary">Save Project</button>
+      </div>
+    </div>
+  </div>
+
   <footer class="app-footer">
     <span id="last-updated"></span>
   </footer>
@@ -316,6 +405,12 @@
   <script src="js/step-flow.js"></script>
   <script src="js/try-it-tutorial.js"></script>
   <script src="js/how-it-works.js"></script>
+  <script src="js/value-graph.js"></script>
+  <script src="js/layout-builder.js"></script>
+  <script src="js/editor-canvas.js"></script>
+  <script src="js/validation-checkpoint.js"></script>
+  <script src="js/project-store.js"></script>
+  <script src="js/project-picker.js"></script>
   <script src="js/app.js"></script>
 
 </body>

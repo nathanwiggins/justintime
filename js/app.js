@@ -80,7 +80,7 @@ function initCyclingLabel() {
   }, 3000);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   setupEnvironment();
 
   Settings.init();
@@ -88,6 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
   VerifierChat.init();
   VerifierTab.init();
   HowItWorks.init();
+  EditorCanvas.init();
+  await ProjectPicker.init();
   loadLastUpdated();
   initCyclingLabel();
 
@@ -104,5 +106,19 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.add('active');
       document.getElementById(`tab-${target}`).classList.remove('hidden');
     });
+  });
+
+  document.addEventListener('project:opened', e => {
+    const project = e.detail.project;
+    const useBtn  = document.getElementById('verify-use-project-spreadsheet-btn');
+    const hasFile = !!(project.spreadsheet && project.spreadsheet.fileBlob);
+    useBtn.classList.toggle('hidden', !hasFile);
+    useBtn.onclick = () => {
+      const dt = new DataTransfer();
+      dt.items.add(project.spreadsheet.fileBlob);
+      const input = document.getElementById('verify-budget-input');
+      input.files = dt.files;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    };
   });
 });
