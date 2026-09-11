@@ -29,6 +29,44 @@ A lightweight, client-side budget justification generator and verifier for resea
 - The Generator tab is the leftmost tab in the nav bar.
 - API keys are stored only in your browser's `localStorage` — a warning reminds you to check your key's data-sharing terms before use.
 
+## How It Works
+
+Both tools follow the same underlying strategy: numbers come from a deterministic source (the spreadsheet, or plain text matching), and AI is only ever trusted to label, match, or write around those numbers — never to originate or silently change them.
+
+### Verifier: trust the spreadsheet, question the writing
+
+```mermaid
+flowchart LR
+    J[Justification .docx] -->|plain-text search, not AI| V[Every dollar value found]
+    V -->|AI labels each one| L[Labeled values]
+    S[Spreadsheet] --> M
+    L -->|AI matches by meaning| M[Matched against spreadsheet]
+    M -->|grouped by root cause| F[Findings]
+    F --> C[Guided chat: confirm, dismiss, or flag]
+    C --> R[Marked-up justification]
+```
+
+- Dollar values are found by searching the document's text, not by asking AI — so nothing gets invented or missed.
+- AI only labels what each value means and matches it to the spreadsheet; it never rules on right or wrong by itself.
+- Every mismatch becomes a finding you resolve yourself in the chat — nothing is silently auto-corrected.
+
+### Generator: the spreadsheet is the only source of truth
+
+```mermaid
+flowchart LR
+    B[Spreadsheet] --> H[AI suggests relevant items per section]
+    H --> E[AI extracts structured data]
+    E -->|totals recomputed, not trusted from AI| T[Verified numbers]
+    T --> N[AI writes narrative around the verified numbers]
+    N --> D{Did the numbers change?}
+    D -- yes --> N
+    D -- no --> A[Assembled justification .docx]
+```
+
+- Every figure in the final document is recomputed from the spreadsheet, never taken on faith from the AI.
+- The AI writes narrative language around numbers that are already locked in — a draft that changes a number gets rejected and rewritten.
+- This split, verified numbers from the spreadsheet paired with narrative language from AI, is what keeps the output trustworthy.
+
 ## Tech Stack
 
 | Concern | Library |
@@ -108,7 +146,7 @@ Push to `main` — GitHub Pages serves `index.html` from the repository root aut
 4. Work through the chat that opens for each flagged finding — confirm, dismiss, or ignore it.
 5. Review the summary and download the marked-up document.
 
-Behind the scenes: values are labeled, matched against the spreadsheet, audited, and grouped by root cause before the chat opens. On DGX/Vandalizer deployments, large documents are processed in batches of 25 automatically; direct Gemini API calls batch at 50+ values to avoid truncation on very large documents.
+See [How It Works](#how-it-works) for the strategy behind the findings.
 
 ### Generating a budget justification
 1. Go to the **Settings** tab, enter and save your Gemini API key.
