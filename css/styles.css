@@ -1153,6 +1153,16 @@ mark.doc-highlight.active.red    { background: #fca5a5; }
   outline-offset: 1px;
 }
 
+.editor-canvas-body.dim-others .value-chip {
+  opacity: .3;
+  transition: opacity .15s;
+}
+
+.editor-canvas-body.dim-others .value-chip.chip-term-highlight,
+.editor-canvas-body.dim-others .value-chip.chip-selected {
+  opacity: 1;
+}
+
 #editor-sheet-body td.cell-highlight {
   background: var(--color-primary);
   color: #fff;

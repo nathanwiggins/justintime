@@ -411,7 +411,7 @@ const Generator = (() => {
       const sectionStep = addStep(`Generating: ${section.label}`);
 
       const skipHint = section.key === 'fringe_benefits' || section.key === 'indirect_costs';
-      VerifyAnim.stage('extract');
+      VerifyAnim.stage('extract', section.label);
       const { hint, items: suggestedItems } = skipHint
         ? { hint: '', items: [] }
         : await Api.generateSectionHint({ csvText, apiKey: form.apiKey, section });
@@ -431,7 +431,7 @@ const Generator = (() => {
       const trustedSkeleton = omitNarrativeFields(extracted);
 
       let narrated, narrativePrompt, diff, correction = null;
-      VerifyAnim.stage('write');
+      VerifyAnim.stage('write', section.label);
       for (let attempt = 1; attempt <= MAX_NARRATIVE_ATTEMPTS; attempt++) {
         ({ result: narrated, prompt: narrativePrompt } = await Api.refineNarrative({
           csvText,

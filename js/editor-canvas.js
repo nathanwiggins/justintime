@@ -261,7 +261,9 @@ const EditorCanvas = (() => {
   }
 
   function clearHighlights() {
+    document.getElementById('editor-canvas-body').classList.remove('dim-others');
     document.querySelectorAll('#editor-canvas-body .value-chip.chip-term-highlight').forEach(el => el.classList.remove('chip-term-highlight'));
+    document.querySelectorAll('#editor-canvas-body .value-chip.chip-selected').forEach(el => el.classList.remove('chip-selected'));
     document.querySelectorAll('#editor-sheet-body td.cell-highlight').forEach(el => el.classList.remove('cell-highlight'));
   }
 
@@ -284,6 +286,12 @@ const EditorCanvas = (() => {
         td.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
       }
     } else if (node.kind === 'calculated') {
+      const canvas = document.getElementById('editor-canvas-body');
+      canvas.classList.add('dim-others');
+
+      const ownChip = document.querySelector(`#editor-canvas-body .value-chip[data-value-id="${selectedValueId}"]`);
+      if (ownChip) ownChip.classList.add('chip-selected');
+
       let first = null;
       node.formula.termIds.forEach(id => {
         const chip = document.querySelector(`#editor-canvas-body .value-chip[data-value-id="${id}"]`);

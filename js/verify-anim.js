@@ -99,7 +99,7 @@ const VerifyAnim = (() => {
       })
     },
     extract: {
-      caption: 'Extracting each section’s numbers…',
+      caption: 'Extracting the numbers for',
       build: panel => {
         panel.appendChild(iconRow(iconBox(Icons.sparkle)));
       },
@@ -113,7 +113,7 @@ const VerifyAnim = (() => {
       })
     },
     write: {
-      caption: 'Writing the narrative…',
+      caption: 'Writing the narrative for',
       build: panel => {
         const row = iconRow(iconBox(Icons.chat));
         const dots = document.createElement('div');
@@ -254,10 +254,11 @@ const VerifyAnim = (() => {
     announce(startAnnounce);
   }
 
-  function stage(key) {
+  function stage(key, detail) {
     if (!active) return;
     enqueue(() => {
       const def = stages[key];
+      const captionText = detail ? `${def.caption} ${detail}` : def.caption;
 
       if (currentPanel) {
         const prevPanel = currentPanel;
@@ -272,7 +273,7 @@ const VerifyAnim = (() => {
       def.build(panel);
       const caption = document.createElement('p');
       caption.className = 'verify-anim-caption';
-      caption.textContent = def.caption;
+      caption.textContent = captionText;
       panel.appendChild(caption);
       viewportEl.appendChild(panel);
       currentPanel = panel;
@@ -282,7 +283,7 @@ const VerifyAnim = (() => {
       countEl.classList.add('hidden');
 
       updateDots(key);
-      announce(def.caption);
+      announce(captionText);
 
       const specific = def.animate(panel);
       if (specific) idleAnims.push(specific);
