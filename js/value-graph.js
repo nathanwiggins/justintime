@@ -24,10 +24,18 @@ const ValueGraph = (() => {
     'totals.participantSupport', 'totals.miscOther', 'indirect_costs.total_cost'
   ];
 
+  function parseCellNumber(cellText) {
+    const cleaned = String(cellText ?? '').replace(/[$,]/g, '').trim();
+    if (cleaned === '') return NaN;
+    return parseFloat(cleaned);
+  }
+
+  function isNumericCell(cellText) {
+    return !Number.isNaN(parseCellNumber(cellText));
+  }
+
   function cellMatches(cellText, value) {
-    const cleaned = String(cellText).replace(/[$,]/g, '').trim();
-    if (cleaned === '') return false;
-    const num = parseFloat(cleaned);
+    const num = parseCellNumber(cellText);
     if (Number.isNaN(num)) return false;
     const diff = Math.abs(num - value);
     return diff <= 1 || diff / Math.max(Math.abs(num), Math.abs(value), 1) <= 0.01;
@@ -230,18 +238,33 @@ const ValueGraph = (() => {
       return sheet && sheet.aoa[row] ? sheet.aoa[row][col] : undefined;
     };
 
-    const linked = Object.values(valueGraph.nodes).filter(n => n.kind === 'linked');
-    const broken  = linked.filter(n => {
+    const linked  = Object.values(valueGraph.nodes).filter(n => n.kind === 'linked');
+    const present = [];
+    const missing = [];
+    linked.forEach(n => {
       const cell = cellAt(n.link.sheet, n.link.row, n.link.col);
-      return cell === undefined || !cellMatches(cell, n.link.lastKnownValue);
+      (isNumericCell(cell) ? present : missing).push(n);
     });
-    if (!broken.length) return { recovered: 0, stillBroken: 0 };
+
+    let updated = 0;
+    present.forEach(n => {
+      const value = parseCellNumber(cellAt(n.link.sheet, n.link.row, n.link.col));
+      if (value !== n.link.lastKnownValue) updated++;
+      n.amount = value;
+      n.link.lastKnownValue = value;
+      n.broken = false;
+    });
+
+    if (!missing.length) {
+      recompute(valueGraph);
+      return { updated, recovered: 0, stillBroken: 0 };
+    }
 
     let bestOffset = null;
     let bestCount  = 0;
     for (let offset = -5; offset <= 5; offset++) {
       if (offset === 0) continue;
-      const count = broken.filter(n => {
+      const count = missing.filter(n => {
         const cell = cellAt(n.link.sheet, n.link.row + offset, n.link.col);
         return cell !== undefined && cellMatches(cell, n.link.lastKnownValue);
       }).length;
@@ -249,7 +272,7 @@ const ValueGraph = (() => {
     }
 
     let recovered = 0;
-    broken.forEach(n => {
+    missing.forEach(n => {
       const cell = bestOffset !== null ? cellAt(n.link.sheet, n.link.row + bestOffset, n.link.col) : undefined;
       if (bestOffset !== null && cell !== undefined && cellMatches(cell, n.link.lastKnownValue)) {
         n.link.row = n.link.row + bestOffset;
@@ -261,7 +284,7 @@ const ValueGraph = (() => {
     });
 
     recompute(valueGraph);
-    return { recovered, stillBroken: broken.length - recovered };
+    return { updated, recovered, stillBroken: missing.length - recovered };
   }
 
   function setPath(payload, path, value) {

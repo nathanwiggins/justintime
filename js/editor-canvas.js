@@ -376,7 +376,7 @@ const EditorCanvas = (() => {
     renderSheetTabs();
     renderSheetBody();
     renderCanvas();
-    alert(`Spreadsheet updated. ${result.recovered} link(s) recovered automatically, ${result.stillBroken} link(s) need to be reconnected manually (shown in red).`);
+    alert(`Spreadsheet updated. ${result.updated} linked value(s) picked up new numbers, ${result.recovered} link(s) recovered automatically, ${result.stillBroken} link(s) need to be reconnected manually (shown in red).`);
   }
 
   async function handleExport() {
