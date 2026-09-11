@@ -1,9 +1,9 @@
 const VerifyAnim = (() => {
-  const STAGE_ORDER = ['scan', 'label', 'match', 'audit', 'summarize'];
+  const DEFAULT_STAGE_ORDER = ['scan', 'label', 'match', 'audit', 'summarize'];
   const MIN_DWELL_MS = 900;
   const ICON_BOX_PX = 64;
 
-  const STAGES = {
+  const DEFAULT_STAGES = {
     scan: {
       caption: 'Scanning your documents…',
       build: panel => {
@@ -82,6 +82,70 @@ const VerifyAnim = (() => {
     }
   };
 
+  const GENERATOR_STAGE_ORDER = ['parse', 'extract', 'write', 'validate'];
+
+  const GENERATOR_STAGES = {
+    parse: {
+      caption: 'Reading your spreadsheet and summary…',
+      build: panel => {
+        panel.appendChild(iconRow(iconBox(Icons.spreadsheet), arrowBox(), iconBox(Icons.document)));
+      },
+      animate: panel => anime({
+        targets: panel.querySelectorAll('.verify-anim-icon-box'),
+        translateY: [0, -6, 0],
+        duration: 900,
+        easing: 'easeInOutSine',
+        loop: true
+      })
+    },
+    extract: {
+      caption: 'Extracting each section’s numbers…',
+      build: panel => {
+        panel.appendChild(iconRow(iconBox(Icons.sparkle)));
+      },
+      animate: panel => anime({
+        targets: panel.querySelector('.verify-anim-icon-box'),
+        scale: [1, 1.15, 1],
+        opacity: [1, .7, 1],
+        duration: 1100,
+        easing: 'easeInOutSine',
+        loop: true
+      })
+    },
+    write: {
+      caption: 'Writing the narrative…',
+      build: panel => {
+        const row = iconRow(iconBox(Icons.chat));
+        const dots = document.createElement('div');
+        dots.className = 'verify-anim-typing';
+        dots.append(typingDot(), typingDot(), typingDot());
+        row.appendChild(dots);
+        panel.appendChild(row);
+      },
+      animate: panel => anime({
+        targets: panel.querySelectorAll('.verify-anim-typing-dot'),
+        translateY: [0, -5, 0],
+        delay: anime.stagger(120),
+        duration: 700,
+        easing: 'easeInOutSine',
+        loop: true
+      })
+    },
+    validate: {
+      caption: 'Checking the draft against your Total Budget…',
+      build: panel => {
+        panel.appendChild(iconRow(iconBox(Icons.spreadsheet), arrowBox(), iconBox(Icons.magnifier)));
+      },
+      animate: panel => anime({
+        targets: panel.querySelectorAll('.verify-anim-icon-box')[1],
+        translateY: [0, -6, 0],
+        duration: 900,
+        easing: 'easeInOutSine',
+        loop: true
+      })
+    }
+  };
+
   function iconBox(svg) {
     const box = document.createElement('div');
     box.className = 'verify-anim-icon-box';
@@ -116,15 +180,26 @@ const VerifyAnim = (() => {
   let lastTransitionAt = 0;
   let queue            = Promise.resolve();
 
+  let stages, stageOrder, expandBtnId, stepLogId, manageDetailsToggle;
+  let startAnnounce, finishCleanAnnounce, finishOtherAnnounce;
   let container, viewportEl, dotsEls, batchEl, countEl, liveEl;
 
-  function mount() {
-    container  = document.getElementById('verify-anim');
+  function mount(config = {}) {
+    stages     = config.stages     || DEFAULT_STAGES;
+    stageOrder = config.stageOrder || DEFAULT_STAGE_ORDER;
+    expandBtnId = config.expandBtnId || 'verify-expand-details-btn';
+    stepLogId   = config.stepLogId   || 'verify-step-log';
+    manageDetailsToggle = config.manageDetailsToggle !== false;
+    startAnnounce       = config.startAnnounce       || 'Analyzing your documents.';
+    finishCleanAnnounce = config.finishCleanAnnounce || 'Analysis complete — no discrepancies found.';
+    finishOtherAnnounce = config.finishOtherAnnounce || 'Analysis complete — opening findings review.';
+
+    container  = document.getElementById(config.containerId || 'verify-anim');
     viewportEl = container.querySelector('.verify-anim-viewport');
     dotsEls    = [...container.querySelectorAll('.verify-anim-dot')];
     batchEl    = container.querySelector('.verify-anim-batch');
     countEl    = container.querySelector('.verify-anim-count');
-    liveEl     = document.getElementById('verify-anim-live');
+    liveEl     = document.getElementById(config.liveId || 'verify-anim-live');
   }
 
   function sleep(ms) {
@@ -141,7 +216,7 @@ const VerifyAnim = (() => {
   }
 
   function updateDots(key) {
-    const idx = STAGE_ORDER.indexOf(key);
+    const idx = stageOrder.indexOf(key);
     dotsEls.forEach((dot, i) => {
       dot.classList.toggle('active', i === idx);
       dot.classList.toggle('done', i < idx);
@@ -174,15 +249,15 @@ const VerifyAnim = (() => {
     batchEl.classList.add('hidden');
     countEl.classList.remove('verify-anim-count-pop');
     countEl.classList.add('hidden');
-    document.getElementById('verify-expand-details-btn').classList.add('hidden');
+    if (manageDetailsToggle) document.getElementById(expandBtnId).classList.add('hidden');
     container.classList.remove('hidden', 'verify-anim-fade-out');
-    announce('Analyzing your documents.');
+    announce(startAnnounce);
   }
 
   function stage(key) {
     if (!active) return;
     enqueue(() => {
-      const def = STAGES[key];
+      const def = stages[key];
 
       if (currentPanel) {
         const prevPanel = currentPanel;
@@ -264,10 +339,8 @@ const VerifyAnim = (() => {
       container.classList.add('hidden');
       container.classList.remove('verify-anim-fade-out');
     }, 250);
-    document.getElementById('verify-expand-details-btn').classList.remove('hidden');
-    announce(mode === 'clean'
-      ? 'Analysis complete — no discrepancies found.'
-      : 'Analysis complete — opening findings review.');
+    if (manageDetailsToggle) document.getElementById(expandBtnId).classList.remove('hidden');
+    announce(mode === 'clean' ? finishCleanAnnounce : finishOtherAnnounce);
   }
 
   function fail() {
@@ -276,9 +349,17 @@ const VerifyAnim = (() => {
     killIdle();
     container.classList.add('hidden');
     container.classList.remove('verify-anim-fade-out');
-    document.getElementById('verify-step-log').classList.remove('hidden');
-    document.getElementById('verify-expand-details-btn').classList.add('hidden');
+    if (manageDetailsToggle) {
+      document.getElementById(stepLogId).classList.remove('hidden');
+      document.getElementById(expandBtnId).classList.add('hidden');
+    }
   }
 
-  return { mount, start, stage, updateBatch, complete, finish, fail };
+  return {
+    mount, start, stage, updateBatch, complete, finish, fail,
+    stageSets: {
+      verifier:  { stages: DEFAULT_STAGES,   stageOrder: DEFAULT_STAGE_ORDER },
+      generator: { stages: GENERATOR_STAGES, stageOrder: GENERATOR_STAGE_ORDER }
+    }
+  };
 })();

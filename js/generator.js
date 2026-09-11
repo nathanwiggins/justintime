@@ -40,7 +40,6 @@ const Generator = (() => {
 
   function setGenerating(active) {
     document.getElementById('generate-btn').disabled = active;
-    document.getElementById('loading-indicator').classList.toggle('hidden', !active);
   }
 
   function clearStepLog() {
@@ -412,6 +411,7 @@ const Generator = (() => {
       const sectionStep = addStep(`Generating: ${section.label}`);
 
       const skipHint = section.key === 'fringe_benefits' || section.key === 'indirect_costs';
+      VerifyAnim.stage('extract');
       const { hint, items: suggestedItems } = skipHint
         ? { hint: '', items: [] }
         : await Api.generateSectionHint({ csvText, apiKey: form.apiKey, section });
@@ -431,6 +431,7 @@ const Generator = (() => {
       const trustedSkeleton = omitNarrativeFields(extracted);
 
       let narrated, narrativePrompt, diff, correction = null;
+      VerifyAnim.stage('write');
       for (let attempt = 1; attempt <= MAX_NARRATIVE_ATTEMPTS; attempt++) {
         ({ result: narrated, prompt: narrativePrompt } = await Api.refineNarrative({
           csvText,
@@ -508,7 +509,11 @@ const Generator = (() => {
     currentTemplate = form.templateType;
     project.templateType = form.templateType;
 
+    mountGenerateAnim();
+    VerifyAnim.start();
+
     try {
+      VerifyAnim.stage('parse');
       let projectSummary;
       if (form.summaryMode === 'file') {
         const summaryStep = addStep('Parsing project summary');
@@ -543,6 +548,7 @@ const Generator = (() => {
         ]);
 
         const validateStep = addStep('Validating against Total Budget');
+        VerifyAnim.stage('validate');
         const valueGraph = ValueGraph.build(payload, form.templateType, sheets);
         validateStep.done(`calculated $${Math.round(valueGraph.nodes['totals.grand'].amount).toLocaleString()}`);
 
@@ -551,10 +557,12 @@ const Generator = (() => {
         if (outcome !== 'keep') clearStepLog();
       }
 
+      VerifyAnim.finish('clean');
       setStatus('Draft ready — continue editing below.', 'success');
       setGenerating(false);
       EditorCanvas.open(project);
     } catch (err) {
+      VerifyAnim.fail();
       setGenerating(false);
       setStatus('Error: ' + err.message, 'error');
     }
@@ -593,6 +601,19 @@ const Generator = (() => {
       dt.items.add(file);
       input.files = dt.files;
       showFile(file);
+    });
+  }
+
+  function mountGenerateAnim() {
+    VerifyAnim.mount({
+      containerId: 'generate-anim',
+      liveId:      'generate-anim-live',
+      manageDetailsToggle: false,
+      stages:      VerifyAnim.stageSets.generator.stages,
+      stageOrder:  VerifyAnim.stageSets.generator.stageOrder,
+      startAnnounce:       'Generating your justification.',
+      finishCleanAnnounce: 'Draft ready.',
+      finishOtherAnnounce: 'Draft ready.'
     });
   }
 

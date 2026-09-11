@@ -355,6 +355,7 @@ const VerifierTab = (() => {
     clearStepLog();
     VerifierChat.clear();
     document.getElementById('verify-results').classList.add('hidden');
+    VerifyAnim.mount();
     VerifyAnim.start();
 
     const loadingTextNode = document.querySelector('#verify-loading .loading-text').firstChild;

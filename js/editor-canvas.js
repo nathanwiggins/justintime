@@ -251,12 +251,48 @@ const EditorCanvas = (() => {
       pickingLinkFor = null;
       pickingFormulaFor = null;
       formulaTermIds = [];
+      clearHighlights();
       renderSheetBody();
       renderInspector();
     });
 
     panel.appendChild(actions);
     panel.appendChild(close);
+  }
+
+  function clearHighlights() {
+    document.querySelectorAll('#editor-canvas-body .value-chip.chip-term-highlight').forEach(el => el.classList.remove('chip-term-highlight'));
+    document.querySelectorAll('#editor-sheet-body td.cell-highlight').forEach(el => el.classList.remove('cell-highlight'));
+  }
+
+  function highlightSelection() {
+    clearHighlights();
+    const node = valueGraph.nodes[selectedValueId];
+    if (!node) return;
+
+    if (node.kind === 'linked' && node.link) {
+      if (node.link.sheet !== activeSheetName) {
+        activeSheetName = node.link.sheet;
+        renderSheetTabs();
+        renderSheetBody();
+      }
+      const table = document.querySelector('#editor-sheet-body table');
+      const row   = table && table.rows[node.link.row];
+      const td    = row && row.cells[node.link.col];
+      if (td) {
+        td.classList.add('cell-highlight');
+        td.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+      }
+    } else if (node.kind === 'calculated') {
+      let first = null;
+      node.formula.termIds.forEach(id => {
+        const chip = document.querySelector(`#editor-canvas-body .value-chip[data-value-id="${id}"]`);
+        if (!chip) return;
+        chip.classList.add('chip-term-highlight');
+        if (!first) first = chip;
+      });
+      if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
   }
 
   function handleChipClick(e) {
@@ -274,6 +310,7 @@ const EditorCanvas = (() => {
 
     selectedValueId = id;
     renderInspector();
+    highlightSelection();
   }
 
   function handleSheetClick(e) {

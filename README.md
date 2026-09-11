@@ -5,7 +5,7 @@ A lightweight, client-side budget justification generator and verifier for resea
 ## Features
 
 ### Projects
-- Every generation and verification happens inside a Project — create one on first load, and switch between projects anytime from the header.
+- Every generation and verification happens inside a Project — create one on first load, and switch between projects anytime from the "Switch Project" link in the tab bar.
 - A project remembers its spreadsheet, template type, profile, Total Budget figure, and in-progress draft, so you can leave and come back later.
 - Projects are stored entirely in your browser (IndexedDB) — nothing is uploaded to a server.
 
@@ -36,8 +36,8 @@ A lightweight, client-side budget justification generator and verifier for resea
 - Export to `.docx` whenever you're ready, and again as many times as you like as you keep editing.
 
 ### Shared
-- Drag-and-drop uploads, an animated scan → label → match → audit → summarize progress sequence (full technical log available via "Expand Analysis Details"), and a "How It Works" walkthrough for first-time users.
-- The Generator tab is the leftmost tab in the nav bar.
+- Drag-and-drop uploads, an animated multi-stage progress sequence for both generating and verifying (full technical log available via "Show details"/"Expand Analysis Details"), and a "How It Works" walkthrough for first-time users.
+- The Generator tab is the leftmost tab in the nav bar, and opens by default.
 - API keys are stored only in your browser's `localStorage` — a warning reminds you to check your key's data-sharing terms before use.
 
 ## How It Works
@@ -163,7 +163,7 @@ Push to `main` — GitHub Pages serves `index.html` from the repository root aut
 ### Working with Projects
 1. On load, choose an existing project or click **+ New Project**.
 2. Opening a project reveals the Generator and Verifier tabs, scoped to that project's files and draft.
-3. Click **Switch Project** in the header at any time to return to the project list.
+3. Click **Switch Project** in the tab bar at any time to return to the project list.
 
 ### Verifying a budget justification
 1. Go to the **Verifier** tab.

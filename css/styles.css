@@ -134,23 +134,15 @@ body {
 .header-active-project {
   display: flex;
   align-items: center;
-  gap: 12px;
-  color: white;
+  gap: 10px;
+  margin-left: auto;
+  padding-left: 12px;
 }
 
 .header-active-project-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-}
-
-.header-projects-link {
-  color: white;
-  opacity: .75;
-}
-
-.header-projects-link:hover {
-  color: white;
-  opacity: 1;
+  color: var(--color-text-muted);
 }
 
 .section-card {
@@ -532,7 +524,6 @@ textarea {
   gap: 12px;
 }
 
-#loading-indicator,
 #verify-loading {
   display: flex;
   flex-direction: column;
@@ -541,7 +532,6 @@ textarea {
   padding: 20px 0 8px;
 }
 
-#loading-indicator.hidden,
 #verify-loading.hidden { display: none; }
 
 .loading-spinner {
@@ -1158,6 +1148,17 @@ mark.doc-highlight.active.red    { background: #fca5a5; }
 
 .editor-canvas-body.picking .value-chip { outline: 1px dashed var(--color-primary); }
 
+.value-chip.chip-term-highlight {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+#editor-sheet-body td.cell-highlight {
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+}
+
 .editor-value-inspector {
   display: flex;
   align-items: center;
@@ -1183,7 +1184,14 @@ mark.doc-highlight.active.red    { background: #fca5a5; }
   overflow: hidden;
 }
 
-.validation-preview { flex: 1 1 55%; min-width: 0; }
+.validation-preview {
+  flex: 1 1 55%;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 24px 28px;
+  font-size: 14px;
+  line-height: 1.7;
+}
 
 .validation-side {
   flex: 1 1 45%;
