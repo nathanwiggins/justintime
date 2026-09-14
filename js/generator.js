@@ -145,7 +145,6 @@ const Generator = (() => {
       profileId:    document.getElementById('profile-select').value,
       templateType: document.getElementById('template-select').value,
       file:         document.getElementById('budget-file-input').files[0],
-      totalBudget:  parseFloat(document.getElementById('total-budget-input').value),
       summaryFile:  document.getElementById('project-summary-input').files[0],
       summaryText:  document.getElementById('project-summary-text-input').value.trim(),
       summaryMode,
@@ -305,7 +304,6 @@ const Generator = (() => {
     if (extracted.fringe_benefits) {
       const fb = extracted.fringe_benefits;
       if (fb.rate_groups) {
-        // NSF: broken down by rate group, each with its own yearly_breakdown
         (fb.rate_groups || []).forEach(g => {
           if (g.yearly_breakdown && g.yearly_breakdown.length) {
             g.category_total = sumYears(g.yearly_breakdown);
@@ -319,7 +317,6 @@ const Generator = (() => {
           flagged.push('fringe_benefits.total_cost');
         }
       } else if (fb.yearly_breakdown) {
-        // General: one combined figure, yearly_breakdown directly on fringe_benefits
         if (fb.yearly_breakdown.length) {
           fb.total_cost = sumYears(fb.yearly_breakdown);
         } else {
@@ -363,15 +360,51 @@ const Generator = (() => {
     return out;
   }
 
-  function validateForm({ profileId, file, totalBudget, summaryFile, summaryText, summaryMode, apiKey }) {
+  function validateForm({ profileId, file, summaryFile, summaryText, summaryMode, apiKey }) {
     if (!apiKey && !Api.isVandalizerHosted())    return 'No API key saved. Go to the Settings tab and save your Gemini API key.';
     if (!ProjectPicker.getActive()) return 'No active project. Please open or create a project first.';
     if (!profileId) return 'Please select an Institutional Profile.';
     if (!file)      return 'Please upload a budget file (.csv, .xls, or .xlsx).';
-    if (!Number.isFinite(totalBudget) || totalBudget <= 0) return 'Please enter the total budget amount from your spreadsheet.';
     if (summaryMode === 'file' && !summaryFile) return 'Please upload a project narrative (.doc, .docx, or .pdf).';
     if (summaryMode === 'text' && !summaryText) return 'Please enter a project summary.';
     return null;
+  }
+
+  const MAX_CHECK_FIGURE_ROUNDS = 5;
+
+  async function extractTotalBudgetWithCheck({ csvText, apiKey }) {
+    for (let round = 1; round <= MAX_CHECK_FIGURE_ROUNDS; round++) {
+      const [a, b] = await Promise.all([
+        Api.extractTotalBudget({ csvText, apiKey }),
+        Api.extractTotalBudget({ csvText, apiKey })
+      ]);
+      if (a === b && Number.isFinite(a)) return { value: a, rounds: round };
+    }
+    return null;
+  }
+
+  function promptManualTotalBudget() {
+    const group   = document.getElementById('total-budget-fallback-group');
+    const input   = document.getElementById('total-budget-input');
+    const confirm = document.getElementById('total-budget-confirm-btn');
+
+    input.value = '';
+    group.classList.remove('hidden');
+    input.focus();
+
+    return new Promise(resolve => {
+      function onConfirm() {
+        const value = parseFloat(input.value);
+        if (!Number.isFinite(value) || value <= 0) {
+          input.focus();
+          return;
+        }
+        confirm.removeEventListener('click', onConfirm);
+        group.classList.add('hidden');
+        resolve(value);
+      }
+      confirm.addEventListener('click', onConfirm);
+    });
   }
 
   async function parseSummaryFile(file) {
@@ -531,10 +564,24 @@ const Generator = (() => {
         { label: 'Extracted CSV', content: csvText }
       ]);
 
+      const checkFigureStep = addStep('Extracting Total Budget (Check Figure)');
+      const extraction = await extractTotalBudgetWithCheck({ csvText, apiKey: form.apiKey });
+      let totalBudget;
+      if (extraction) {
+        totalBudget = extraction.value;
+        checkFigureStep.done(`$${totalBudget.toLocaleString()} (agreed after ${extraction.rounds} round${extraction.rounds > 1 ? 's' : ''})`);
+      } else {
+        checkFigureStep.error(`no agreement after ${MAX_CHECK_FIGURE_ROUNDS} rounds — enter manually`);
+        totalBudget = await promptManualTotalBudget();
+      }
+
       project.numYears    = numYears;
       project.profileId   = form.profileId;
-      project.totalBudget = form.totalBudget;
+      project.totalBudget = totalBudget;
       project.spreadsheet = { fileName: form.file.name, fileBlob: form.file, csvText, sheets, uploadedAt: Date.now() };
+      project.summary     = form.summaryMode === 'file'
+        ? { mode: 'file', fileName: form.summaryFile.name, fileBlob: form.summaryFile, text: projectSummary, uploadedAt: Date.now() }
+        : { mode: 'text', text: projectSummary, uploadedAt: Date.now() };
       await ProjectPicker.persistActive();
 
       let outcome = null;

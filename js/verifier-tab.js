@@ -205,6 +205,43 @@ const VerifierTab = (() => {
     return csvText.replace(/\$(\d[\d,]*(?:\.\d+)?)/g, (_, n) => n.replace(/,/g, ''));
   }
 
+  function buildOpenInEditorBtn() {
+    const btn = document.createElement('button');
+    btn.type        = 'button';
+    btn.id          = 'verify-open-editor-btn';
+    btn.className   = 'btn btn-primary';
+    btn.textContent = 'Open in Editor';
+    btn.addEventListener('click', handleOpenInEditor);
+    return btn;
+  }
+
+  async function handleOpenInEditor() {
+    const project = ProjectPicker.getActive();
+    if (!project) { setStatus('No active project — open or create one first.', 'error'); return; }
+
+    const btn = document.getElementById('verify-open-editor-btn');
+    const originalText = btn.textContent;
+    btn.disabled    = true;
+    btn.textContent = 'Importing…';
+
+    try {
+      const parsed = await Parser.parse(budgetFile);
+      project.spreadsheet = { fileName: budgetFile.name, fileBlob: budgetFile, csvText: parsed.csvText, sheets: parsed.sheets, uploadedAt: Date.now() };
+
+      const apiKey = Settings.loadApiKey();
+      const { blocks, valueGraph } = await DocIngest.ingest({ file: justificationFile, sheets: parsed.sheets, csvText: parsed.csvText, apiKey });
+
+      project.document = { payload: null, blocks, valueGraph, phase: 'editing', lastValidation: null };
+      await ProjectPicker.persistActive();
+      EditorCanvas.open(project);
+    } catch (err) {
+      setStatus('Could not open this document in the Editor: ' + err.message, 'error');
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = originalText;
+    }
+  }
+
   function renderSummary(sections) {
     const container = document.getElementById('verify-results');
     container.innerHTML = '';
@@ -226,6 +263,12 @@ const VerifierTab = (() => {
       card.appendChild(explanation);
       cards.appendChild(card);
       container.appendChild(cards);
+
+      const btnRow = document.createElement('div');
+      btnRow.className = 'verify-download-row';
+      btnRow.appendChild(buildOpenInEditorBtn());
+      container.appendChild(btnRow);
+
       container.classList.remove('hidden');
       return;
     }
@@ -333,6 +376,7 @@ const VerifierTab = (() => {
 
     const btnRow = document.createElement('div');
     btnRow.className = 'verify-download-row';
+    btnRow.appendChild(buildOpenInEditorBtn());
     const btn = document.createElement('button');
     btn.type        = 'button';
     btn.className   = 'btn btn-secondary';

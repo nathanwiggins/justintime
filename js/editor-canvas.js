@@ -1,7 +1,7 @@
 const EditorCanvas = (() => {
   let project    = null;
   let valueGraph = null;
-  let payload    = null;
+  let blocks     = [];
   let templateType = null;
   let sheets     = [];
   let activeSheetName = null;
@@ -11,6 +11,12 @@ const EditorCanvas = (() => {
   let formulaTermIds    = [];
   let selectedValueId   = null;
 
+  const BLOCK_TAGS    = { title: 'h2', subtitle: 'p', heading: 'h3', subheading: 'h4', paragraph: 'p' };
+  const BLOCK_CLASSES = {
+    title: 'editor-title', subtitle: 'editor-subtitle',
+    heading: 'editor-heading', subheading: 'editor-subheading', paragraph: 'editor-paragraph'
+  };
+
   function fmt(num) {
     return Number(num || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
   }
@@ -18,6 +24,30 @@ const EditorCanvas = (() => {
   function humanizeId(id) {
     if (id.startsWith('totals.')) return id.replace('totals.', '').replace(/([A-Z])/g, ' $1').trim();
     return id;
+  }
+
+  function colToLetters(col) {
+    let letters = '';
+    let n = col + 1;
+    while (n > 0) {
+      const rem = (n - 1) % 26;
+      letters = String.fromCharCode(65 + rem) + letters;
+      n = Math.floor((n - 1) / 26);
+    }
+    return letters;
+  }
+
+  function cellRefA1(row, col) {
+    return `${colToLetters(col)}${row + 1}`;
+  }
+
+  function inspectorLabel(node) {
+    if (node.kind === 'linked' && node.link) return `[LINKED] ${node.link.sheet} | ${cellRefA1(node.link.row, node.link.col)}`;
+    if (node.kind === 'calculated') {
+      const n = node.formula.termIds.length;
+      return `[CALCULATED] ${n} Value${n === 1 ? '' : 's'}`;
+    }
+    return humanizeId(selectedValueId);
   }
 
   function renderPart(part, forValueGraph) {
@@ -36,83 +66,61 @@ const EditorCanvas = (() => {
     parts.forEach(part => container.appendChild(renderPart(part, forValueGraph)));
   }
 
-  function renderBlock(block, forValueGraph, isInteractive) {
-    if (block.type === 'title') {
-      const el = document.createElement('h2');
-      el.className = 'editor-title';
-      el.textContent = block.text;
-      return el;
-    }
-    if (block.type === 'subtitle') {
-      const el = document.createElement('p');
-      el.className = 'editor-subtitle';
-      el.textContent = block.text;
-      return el;
-    }
-    if (block.type === 'heading' || block.type === 'subheading') {
-      const el = document.createElement(block.type === 'heading' ? 'h3' : 'h4');
-      el.className = block.type === 'heading' ? 'editor-heading' : 'editor-subheading';
-      renderParts(el, block.parts, forValueGraph);
-      return el;
-    }
-    if (block.type === 'text') {
-      const el = document.createElement('p');
-      el.className = 'editor-paragraph';
-      if (block.narrativePath) {
-        const span = document.createElement('span');
-        span.className = 'editor-narrative';
-        span.contentEditable = isInteractive ? 'true' : 'false';
-        span.dataset.narrativePath = block.narrativePath;
-        span.textContent = block.narrativeText;
-        el.appendChild(span);
-      } else {
-        renderParts(el, block.parts, forValueGraph);
-      }
-      return el;
-    }
-    if (block.type === 'item') {
-      const el = document.createElement('p');
-      el.className = 'editor-paragraph';
-
-      const label = document.createElement('span');
-      label.className = 'editor-label';
-      renderParts(label, block.labelParts, forValueGraph);
-      el.appendChild(label);
-      el.appendChild(document.createTextNode(' '));
-
-      if (block.prefixParts) {
-        const prefix = document.createElement('span');
-        prefix.className = 'editor-prefix';
-        renderParts(prefix, block.prefixParts, forValueGraph);
-        el.appendChild(prefix);
-      }
-
-      if (block.narrativePath) {
-        const narrative = document.createElement('span');
-        narrative.className = 'editor-narrative';
-        narrative.contentEditable = isInteractive ? 'true' : 'false';
-        narrative.dataset.narrativePath = block.narrativePath;
-        narrative.textContent = block.narrativeText;
-        el.appendChild(narrative);
-      }
-
-      if (block.trailingParts && block.trailingParts.length) {
-        const trailing = document.createElement('span');
-        trailing.className = 'editor-trailing';
-        renderParts(trailing, block.trailingParts, forValueGraph);
-        el.appendChild(trailing);
-      }
-
-      return el;
-    }
-    return document.createElement('span');
+  function renderBlock(block, index, forValueGraph, isInteractive) {
+    const el = document.createElement(BLOCK_TAGS[block.kind] || 'p');
+    el.className = BLOCK_CLASSES[block.kind] || 'editor-paragraph';
+    if (index !== null) el.dataset.blockIndex = index;
+    el.contentEditable = isInteractive ? 'true' : 'false';
+    renderParts(el, block.parts, forValueGraph);
+    return el;
   }
 
   function renderCanvas() {
     const body = document.getElementById('editor-canvas-body');
     body.innerHTML = '';
-    const blocks = LayoutBuilder.build(payload, templateType, valueGraph);
-    blocks.forEach(b => body.appendChild(renderBlock(b, valueGraph, true)));
+    blocks.forEach((b, i) => body.appendChild(renderBlock(b, i, valueGraph, true)));
+    renderAuditBanner();
+  }
+
+  function unresolvedNodes() {
+    return Object.values(valueGraph.nodes).filter(n => n.kind === 'plain');
+  }
+
+  function renderAuditBanner() {
+    const existing = document.getElementById('editor-audit-banner');
+    if (existing) existing.remove();
+
+    const unresolved = unresolvedNodes();
+    if (!unresolved.length) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'editor-audit-banner';
+    banner.className = 'editor-audit-banner';
+
+    const summary = document.createElement('div');
+    summary.className = 'editor-audit-summary';
+    summary.textContent = `${unresolved.length} value${unresolved.length === 1 ? '' : 's'} couldn't be automatically matched to your spreadsheet. Click one below, then link it to a cell or mark it as calculated.`;
+    banner.appendChild(summary);
+
+    const list = document.createElement('div');
+    list.className = 'editor-audit-list';
+    unresolved.forEach(node => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'editor-audit-item';
+      item.textContent = `$${fmt(node.amount)}`;
+      item.addEventListener('click', () => {
+        selectedValueId = node.id;
+        renderInspector();
+        highlightSelection();
+        const chip = document.querySelector(`#editor-canvas-body .value-chip[data-value-id="${node.id}"]`);
+        if (chip) chip.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      });
+      list.appendChild(item);
+    });
+    banner.appendChild(list);
+
+    document.getElementById('editor-canvas-body').before(banner);
   }
 
   function renderSheetTabs() {
@@ -153,6 +161,32 @@ const EditorCanvas = (() => {
     body.classList.toggle('picking', !!pickingLinkFor);
   }
 
+  async function renderDocsBody() {
+    const body = document.getElementById('editor-docs-body');
+    const summary = project.summary;
+    if (!summary) { body.innerHTML = '<p class="doc-preview-empty">No project documentation on file for this project.</p>'; return; }
+
+    if (summary.mode === 'file' && /\.docx$/i.test(summary.fileName || '')) {
+      const html = await DocPreview.extractHtml(summary.fileBlob);
+      DocPreview.render(body, html);
+      return;
+    }
+
+    body.innerHTML = '';
+    const pre = document.createElement('pre');
+    pre.className = 'step-detail-pre';
+    pre.textContent = summary.text || '';
+    body.appendChild(pre);
+  }
+
+  function switchPreviewTab(view) {
+    document.querySelectorAll('#editor-modal .preview-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
+    document.getElementById('editor-sheet-tabs').classList.toggle('hidden', view !== 'spreadsheet' || sheets.length <= 1);
+    document.getElementById('editor-sheet-body').classList.toggle('hidden', view !== 'spreadsheet');
+    document.getElementById('editor-docs-body').classList.toggle('hidden', view !== 'docs');
+    if (view === 'docs') renderDocsBody();
+  }
+
   function renderInspector() {
     const panel = document.getElementById('editor-value-inspector');
     if (!selectedValueId || !valueGraph.nodes[selectedValueId]) {
@@ -167,7 +201,7 @@ const EditorCanvas = (() => {
 
     const title = document.createElement('div');
     title.className = 'inspector-title';
-    title.textContent = `${humanizeId(selectedValueId)} — $${fmt(node.amount)} (${node.kind}${node.broken ? ', broken link' : ''})`;
+    title.textContent = `${inspectorLabel(node)} — $${fmt(node.amount)}${node.broken ? ' (broken link)' : ''}`;
     panel.appendChild(title);
 
     const actions = document.createElement('div');
@@ -184,11 +218,11 @@ const EditorCanvas = (() => {
       done.textContent = 'Done';
       done.addEventListener('click', () => {
         ValueGraph.setFormula(valueGraph, selectedValueId, formulaTermIds);
-        ValueGraph.writeBack(payload, valueGraph);
         pickingFormulaFor = null;
         formulaTermIds = [];
         renderCanvas();
         renderInspector();
+        highlightSelection();
         persist();
       });
       actions.appendChild(done);
@@ -214,7 +248,6 @@ const EditorCanvas = (() => {
         unlink.textContent = 'Unlink';
         unlink.addEventListener('click', () => {
           ValueGraph.unlink(valueGraph, selectedValueId);
-          ValueGraph.writeBack(payload, valueGraph);
           renderCanvas();
           renderInspector();
           persist();
@@ -238,6 +271,12 @@ const EditorCanvas = (() => {
       formula.addEventListener('click', () => {
         pickingFormulaFor = selectedValueId;
         formulaTermIds = node.kind === 'calculated' ? [...node.formula.termIds] : [];
+        clearHighlights();
+        document.getElementById('editor-canvas-body').classList.add('dim-others');
+        formulaTermIds.forEach(id => {
+          const chip = document.querySelector(`#editor-canvas-body .value-chip[data-value-id="${id}"]`);
+          if (chip) chip.classList.add('chip-term-highlight');
+        });
         renderInspector();
       });
       actions.appendChild(formula);
@@ -311,7 +350,13 @@ const EditorCanvas = (() => {
     if (pickingFormulaFor) {
       if (id === pickingFormulaFor) return;
       const idx = formulaTermIds.indexOf(id);
-      if (idx === -1) formulaTermIds.push(id); else formulaTermIds.splice(idx, 1);
+      if (idx === -1) {
+        formulaTermIds.push(id);
+        chip.classList.add('chip-term-highlight');
+      } else {
+        formulaTermIds.splice(idx, 1);
+        chip.classList.remove('chip-term-highlight');
+      }
       renderInspector();
       return;
     }
@@ -333,7 +378,6 @@ const EditorCanvas = (() => {
     if (Number.isNaN(value)) return;
 
     ValueGraph.linkTo(valueGraph, pickingLinkFor, { sheet: activeSheetName, row, col, value });
-    ValueGraph.writeBack(payload, valueGraph);
     pickingLinkFor = null;
     renderCanvas();
     renderSheetBody();
@@ -341,25 +385,48 @@ const EditorCanvas = (() => {
     persist();
   }
 
-  function handleNarrativeBlur(e) {
-    const el = e.target.closest('.editor-narrative');
-    if (!el || !el.dataset.narrativePath) return;
-    setPayloadPath(el.dataset.narrativePath, el.textContent);
+  function handleDocumentClick(e) {
+    if (!selectedValueId || pickingLinkFor || pickingFormulaFor) return;
+    if (e.target.closest('.value-chip')) return;
+    if (e.target.closest('#editor-value-inspector')) return;
+    selectedValueId = null;
+    clearHighlights();
+    renderInspector();
+  }
+
+  function serializeBlockParts(el) {
+    const parts = [];
+    function walk(node) {
+      node.childNodes.forEach(child => {
+        if (child.nodeType === Node.TEXT_NODE) {
+          if (child.nodeValue) parts.push({ text: child.nodeValue });
+        } else if (child.classList && child.classList.contains('value-chip')) {
+          parts.push({ valueId: child.dataset.valueId });
+        } else {
+          walk(child);
+        }
+      });
+    }
+    walk(el);
+    return parts;
+  }
+
+  function handleBlockBlur(e) {
+    const el = e.target.closest('[data-block-index]');
+    if (!el || !document.getElementById('editor-canvas-body').contains(el)) return;
+    const index = Number(el.dataset.blockIndex);
+    if (!blocks[index]) return;
+    blocks[index] = { kind: blocks[index].kind, parts: serializeBlockParts(el) };
     persist();
   }
 
-  function setPayloadPath(path, value) {
-    const parts = path.match(/[^.[\]]+/g) || [];
-    let node = payload;
-    for (let i = 0; i < parts.length - 1; i++) {
-      node = node[/^\d+$/.test(parts[i]) ? Number(parts[i]) : parts[i]];
-    }
-    const lastKey = parts[parts.length - 1];
-    node[/^\d+$/.test(lastKey) ? Number(lastKey) : lastKey] = value;
-  }
-
   async function persist() {
-    project.document = { payload, valueGraph, phase: project.document.phase, lastValidation: project.document.lastValidation };
+    project.document = {
+      payload: project.document.payload,
+      blocks, valueGraph,
+      phase: project.document.phase,
+      lastValidation: project.document.lastValidation
+    };
     await ProjectPicker.persistActive();
   }
 
@@ -368,7 +435,6 @@ const EditorCanvas = (() => {
     if (!file) return;
     const parsed = await Parser.parse(file);
     const result = ValueGraph.recoverBrokenLinks(valueGraph, parsed.sheets);
-    ValueGraph.writeBack(payload, valueGraph);
     sheets = parsed.sheets;
     activeSheetName = sheets[0] ? sheets[0].name : null;
     project.spreadsheet = { fileName: file.name, fileBlob: file, csvText: parsed.csvText, sheets, uploadedAt: Date.now() };
@@ -380,7 +446,12 @@ const EditorCanvas = (() => {
   }
 
   async function handleExport() {
-    await Document.generate(templateType, payload);
+    const unresolved = unresolvedNodes();
+    if (unresolved.length) {
+      const proceed = confirm(`${unresolved.length} value${unresolved.length === 1 ? '' : 's'} in this document couldn't be matched to your spreadsheet or marked as calculated. Export anyway?`);
+      if (!proceed) return;
+    }
+    await Document.generate(templateType, blocks, valueGraph);
     project.document.phase = 'exported';
     await persist();
   }
@@ -391,7 +462,10 @@ const EditorCanvas = (() => {
 
   function open(activeProject) {
     project      = activeProject;
-    payload      = project.document.payload;
+    if (!project.document.blocks) {
+      project.document.blocks = LayoutBuilder.build(project.document.payload, project.templateType);
+    }
+    blocks       = project.document.blocks;
     valueGraph   = project.document.valueGraph;
     templateType = project.templateType;
     sheets       = (project.spreadsheet && project.spreadsheet.sheets) || [];
@@ -401,6 +475,7 @@ const EditorCanvas = (() => {
     pickingFormulaFor = null;
 
     document.getElementById('editor-modal').classList.remove('hidden');
+    switchPreviewTab('spreadsheet');
     renderSheetTabs();
     renderSheetBody();
     renderCanvas();
@@ -409,24 +484,29 @@ const EditorCanvas = (() => {
 
   function openReadOnly(container, previewPayload, previewValueGraph, previewTemplateType) {
     container.innerHTML = '';
-    const blocks = LayoutBuilder.build(previewPayload, previewTemplateType, previewValueGraph);
-    blocks.forEach(b => container.appendChild(renderBlock(b, previewValueGraph, false)));
+    const previewBlocks = LayoutBuilder.build(previewPayload, previewTemplateType);
+    previewBlocks.forEach((b, i) => container.appendChild(renderBlock(b, null, previewValueGraph, false)));
   }
 
   function init() {
     document.getElementById('editor-canvas-body').addEventListener('click', handleChipClick);
-    document.getElementById('editor-canvas-body').addEventListener('blur', handleNarrativeBlur, true);
+    document.getElementById('editor-canvas-body').addEventListener('blur', handleBlockBlur, true);
     document.getElementById('editor-sheet-body').addEventListener('click', handleSheetClick);
     document.getElementById('editor-close-btn').addEventListener('click', close);
     document.querySelector('#editor-modal .modal-overlay').addEventListener('click', close);
     document.getElementById('editor-export-btn').addEventListener('click', handleExport);
     document.getElementById('editor-reupload-input').addEventListener('change', handleReupload);
+    document.addEventListener('click', handleDocumentClick);
+
+    document.querySelectorAll('#editor-modal .preview-tab').forEach(btn => {
+      btn.addEventListener('click', () => switchPreviewTab(btn.dataset.view));
+    });
 
     document.addEventListener('project:opened', e => {
       const p = e.detail.project;
       const resumeBtn = document.getElementById('resume-editing-btn');
       if (!resumeBtn) return;
-      const hasDraft = p.document && p.document.payload;
+      const hasDraft = p.document && (p.document.blocks || p.document.payload);
       resumeBtn.classList.toggle('hidden', !hasDraft);
       resumeBtn.onclick = () => open(p);
     });

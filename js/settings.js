@@ -14,6 +14,7 @@ const Settings = (() => {
   `;
 
   let profiles        = [];
+  let localProfiles   = [];
   let editingId       = null;
 
   function generateId() {
@@ -39,11 +40,24 @@ const Settings = (() => {
   }
 
   function getProfiles() {
-    return profiles;
+    return [...localProfiles, ...profiles];
   }
 
   function getProfileById(id) {
-    return profiles.find(p => p.id === id) || null;
+    return localProfiles.find(p => p.id === id) || profiles.find(p => p.id === id) || null;
+  }
+
+  async function loadLocalProfiles() {
+    if (!Api.isVandalizerHosted()) return;
+    try {
+      const res = await fetch('profiles/profiles.json');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!Array.isArray(data)) return;
+      localProfiles = data.map((p, i) => ({ ...p, id: `local-${i}`, isLocalDefault: true }));
+      renderProfiles();
+      if (window.Generator) Generator.syncProfileDropdown();
+    } catch {}
   }
 
   function upsertProfile(data) {
@@ -61,6 +75,7 @@ const Settings = (() => {
   }
 
   function getDefaultProfileId() {
+    if (localProfiles.length) return localProfiles[0].id;
     return localStorage.getItem(KEY_DEFAULT) || '';
   }
 
@@ -80,7 +95,9 @@ const Settings = (() => {
 
     list.querySelectorAll('.profile-card').forEach(c => c.remove());
 
-    if (profiles.length === 0) {
+    const allProfiles = getProfiles();
+
+    if (allProfiles.length === 0) {
       emptyMsg.style.display = '';
       return;
     }
@@ -89,7 +106,7 @@ const Settings = (() => {
 
     const defaultId = getDefaultProfileId();
 
-    profiles.forEach(profile => {
+    allProfiles.forEach(profile => {
       const isDefault = profile.id === defaultId;
 
       const card = document.createElement('div');
@@ -107,10 +124,23 @@ const Settings = (() => {
         name.appendChild(badge);
       }
 
+      if (profile.isLocalDefault) {
+        const badge = document.createElement('span');
+        badge.className = 'profile-local-badge';
+        badge.textContent = 'Local Default';
+        name.appendChild(badge);
+      }
+
       const actions = document.createElement('div');
       actions.className = 'profile-card-actions';
 
-      if (!isDefault) {
+      if (profile.isLocalDefault) {
+        card.append(name, actions);
+        list.appendChild(card);
+        return;
+      }
+
+      if (!isDefault && !localProfiles.length) {
         const defaultBtn = document.createElement('button');
         defaultBtn.className = 'btn btn-secondary btn-sm';
         defaultBtn.textContent = 'Set Default';
@@ -284,6 +314,7 @@ const Settings = (() => {
   function initProfilesSection() {
     loadProfiles();
     renderProfiles();
+    loadLocalProfiles();
 
     document.getElementById('add-profile-btn').addEventListener('click', () => openModal(null));
     document.getElementById('close-modal').addEventListener('click', closeModal);

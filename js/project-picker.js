@@ -133,11 +133,17 @@ const ProjectPicker = (() => {
 
   function showPicker() {
     active = null;
+    document.getElementById('project-settings-view').classList.add('hidden');
     document.getElementById('project-picker').classList.remove('hidden');
     document.querySelector('.tab-nav').classList.add('hidden');
     document.querySelector('.app-main').classList.add('hidden');
     document.getElementById('header-active-project').classList.add('hidden');
     loadProjects();
+  }
+
+  function showSettings() {
+    document.getElementById('project-picker').classList.add('hidden');
+    document.getElementById('project-settings-view').classList.remove('hidden');
   }
 
   async function openProject(id) {
@@ -177,9 +183,11 @@ const ProjectPicker = (() => {
       if (e.key === 'Escape') closeModal();
     });
     document.getElementById('back-to-projects-btn').addEventListener('click', showPicker);
+    document.getElementById('open-settings-btn').addEventListener('click', showSettings);
+    document.getElementById('close-settings-btn').addEventListener('click', showPicker);
 
     return ProjectStore.init().then(showPicker);
   }
 
-  return { init, getActive, persistActive, showPicker };
+  return { init, getActive, persistActive, showPicker, showSettings };
 })();

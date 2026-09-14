@@ -60,6 +60,7 @@ const ProjectStore = (() => {
       profileId:    '',
       totalBudget:  null,
       spreadsheet:  null,
+      summary:      null,
       document:     null,
       verifierSession: null
     };

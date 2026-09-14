@@ -816,6 +816,13 @@ const GeneratorAuditSchemas = {
     type: 'array',
     items: { type: 'string' }
   },
+  totalBudget: {
+    type: 'object',
+    properties: {
+      total_budget: { type: 'number' }
+    },
+    required: ['total_budget']
+  },
   otherDuplicates: {
     type: 'array',
     items: {

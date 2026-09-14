@@ -195,8 +195,14 @@ const ValueGraph = (() => {
     classifyFringe(payload, nodes, sheets, claimed);
     classifyIndirect(payload, nodes, sheets, claimed);
 
+    nodes['totals.seniorPersonnel'] = sumNode('totals.seniorPersonnel', sumOf(nodes, categoryIds.senior_personnel), categoryIds.senior_personnel);
+    nodes['totals.otherPersonnel']  = sumNode('totals.otherPersonnel', sumOf(nodes, categoryIds.other_personnel), categoryIds.other_personnel);
+
     const personnelIds = [...categoryIds.senior_personnel, ...categoryIds.other_personnel];
     nodes['totals.personnel'] = sumNode('totals.personnel', sumOf(nodes, personnelIds), personnelIds);
+
+    nodes['totals.domesticTravel'] = sumNode('totals.domesticTravel', sumOf(nodes, categoryIds.domestic_travel), categoryIds.domestic_travel);
+    nodes['totals.foreignTravel']  = sumNode('totals.foreignTravel', sumOf(nodes, categoryIds.foreign_travel), categoryIds.foreign_travel);
 
     const travelIds = [...categoryIds.domestic_travel, ...categoryIds.foreign_travel];
     nodes['totals.travel'] = sumNode('totals.travel', sumOf(nodes, travelIds), travelIds);
@@ -214,6 +220,12 @@ const ValueGraph = (() => {
 
     const miscIds = [...categoryIds.publications, ...categoryIds.computer_services, ...categoryIds.other_direct_lines];
     nodes['totals.miscOther'] = sumNode('totals.miscOther', sumOf(nodes, miscIds), miscIds);
+
+    const nsfOtherDirectIds = ['totals.supplies', 'totals.contractual', 'totals.miscOther'];
+    nodes['totals.nsfOtherDirect'] = sumNode('totals.nsfOtherDirect', sumOf(nodes, nsfOtherDirectIds), nsfOtherDirectIds);
+
+    const generalOtherIds = ['totals.participantSupport', 'totals.miscOther'];
+    nodes['totals.generalOther'] = sumNode('totals.generalOther', sumOf(nodes, generalOtherIds), generalOtherIds);
 
     nodes['totals.grand'] = sumNode('totals.grand', sumOf(nodes, GRAND_TERM_IDS), GRAND_TERM_IDS);
 
@@ -287,23 +299,6 @@ const ValueGraph = (() => {
     return { updated, recovered, stillBroken: missing.length - recovered };
   }
 
-  function setPath(payload, path, value) {
-    const parts = path.match(/[^.[\]]+/g) || [];
-    let node = payload;
-    for (let i = 0; i < parts.length - 1; i++) {
-      node = node[/^\d+$/.test(parts[i]) ? Number(parts[i]) : parts[i]];
-    }
-    const lastKey = parts[parts.length - 1];
-    node[/^\d+$/.test(lastKey) ? Number(lastKey) : lastKey] = value;
-  }
-
-  function writeBack(payload, valueGraph) {
-    Object.values(valueGraph.nodes).forEach(node => {
-      if (node.id.startsWith('totals.')) return;
-      setPath(payload, node.id, node.amount);
-    });
-  }
-
   function linkTo(valueGraph, id, cellRef) {
     const node = valueGraph.nodes[id];
     if (!node) return;
@@ -337,7 +332,8 @@ const ValueGraph = (() => {
   }
 
   return {
-    build, recompute, recoverBrokenLinks, writeBack,
-    linkTo, unlink, setFormula, cellMatches
+    build, recompute, recoverBrokenLinks,
+    linkTo, unlink, setFormula, cellMatches,
+    matchAmountToCell: resolveCell
   };
 })();

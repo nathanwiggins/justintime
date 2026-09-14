@@ -16,9 +16,6 @@ const ValidationCheckpoint = (() => {
       message.textContent = passed ? PASS_MESSAGE : FAIL_MESSAGE;
       message.classList.toggle('validation-fail', !passed);
 
-      document.getElementById('validation-total-budget').textContent = `Your Total Budget: $${Number(project.totalBudget || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-      document.getElementById('validation-calculated-total').textContent = `Calculated from this draft: $${Number(calculatedTotal || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-
       EditorCanvas.openReadOnly(document.getElementById('validation-preview'), payload, valueGraph, templateType);
 
       const modal = document.getElementById('validation-modal');
@@ -39,8 +36,9 @@ const ValidationCheckpoint = (() => {
       }
 
       async function onKeep() {
+        const blocks = LayoutBuilder.build(payload, templateType);
         project.document = {
-          payload, valueGraph, phase: 'editing',
+          payload, blocks, valueGraph, phase: 'editing',
           lastValidation: { passed, totalBudget: project.totalBudget, calculatedTotal, timestamp: Date.now() }
         };
         await ProjectPicker.persistActive();

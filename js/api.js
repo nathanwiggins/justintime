@@ -49,6 +49,17 @@ Budget Spreadsheet Data:
 ${csvText}`;
   }
 
+  async function extractTotalBudget({ csvText, apiKey }) {
+    const prompt = `You are a precise budget data extraction assistant. Read the budget spreadsheet data below and identify the single overall Total Budget figure (the grand total requested across all categories and all years combined) — not a per-year, per-category, or per-line-item figure.
+
+Return only that one number as total_budget.
+
+Budget Spreadsheet Data:
+${csvText}`;
+    const result = await callApi(apiKey, prompt, GeneratorAuditSchemas.totalBudget, null, 0.3);
+    return result.total_budget;
+  }
+
   async function generateSectionHint({ csvText, apiKey, section }) {
     const items = await callApi(apiKey, buildItemListPrompt(csvText, section), GeneratorAuditSchemas.itemList, null, 0.1);
     const hint  = items.length ? `For example, look for items like ${items.join(', ')}, etc.` : '';
@@ -467,7 +478,7 @@ Instructions:
   }
 
   return {
-    generateSection, generateSectionHint, refineNarrative, auditOtherDuplicates, extractValues, extractValuesBatch, matchValues, matchValuesBatch,
+    generateSection, generateSectionHint, extractTotalBudget, refineNarrative, auditOtherDuplicates, extractValues, extractValuesBatch, matchValues, matchValuesBatch,
     auditNotFound, auditMismatches, auditSummary, classifyReply, test, isVandalizerHosted,
     setRetryHandler: cb => { retryHandler = cb; }
   };
