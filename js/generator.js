@@ -407,6 +407,44 @@ const Generator = (() => {
     });
   }
 
+  let budgetScan = null;
+
+  function resetBudgetScanUI() {
+    document.getElementById('total-budget-display').classList.add('hidden');
+    document.getElementById('total-budget-fallback-group').classList.add('hidden');
+  }
+
+  async function runBudgetScan(file, canScan) {
+    const parsed = await Parser.parse(file);
+    if (!canScan) {
+      return { csvText: parsed.csvText, sheets: parsed.sheets, numYears: parsed.numYears, totalBudget: null };
+    }
+
+    const apiKey     = Settings.loadApiKey();
+    const extraction = await extractTotalBudgetWithCheck({ csvText: parsed.csvText, apiKey });
+
+    if (extraction) {
+      const display = document.getElementById('total-budget-display');
+      display.textContent = `Total Budget: $${extraction.value.toLocaleString()}`;
+      display.classList.remove('hidden');
+      return { csvText: parsed.csvText, sheets: parsed.sheets, numYears: parsed.numYears, totalBudget: extraction.value };
+    }
+
+    document.getElementById('total-budget-fallback-group').classList.remove('hidden');
+    const totalBudget = await promptManualTotalBudget();
+    return { csvText: parsed.csvText, sheets: parsed.sheets, numYears: parsed.numYears, totalBudget };
+  }
+
+  function ensureBudgetScan(file) {
+    const canScan = !!Settings.loadApiKey() || Api.isVandalizerHosted();
+    if (budgetScan && budgetScan.file === file && (budgetScan.attemptedCheckFigure || !canScan)) {
+      return budgetScan.promise;
+    }
+    resetBudgetScanUI();
+    budgetScan = { file, attemptedCheckFigure: canScan, promise: runBudgetScan(file, canScan) };
+    return budgetScan.promise;
+  }
+
   async function parseSummaryFile(file) {
     const name = file.name.toLowerCase();
     if (name.endsWith('.doc') && !name.endsWith('.docx')) {
@@ -558,22 +596,11 @@ const Generator = (() => {
         projectSummary = form.summaryText;
       }
 
-      const parseStep = addStep('Parsing budget file');
-      const { csvText, sheets, numYears } = await Parser.parse(form.file);
-      parseStep.done(form.file.name, [
+      const budgetStep = addStep('Preparing budget spreadsheet');
+      const { csvText, sheets, numYears, totalBudget } = await ensureBudgetScan(form.file);
+      budgetStep.done(`${form.file.name} — Total Budget: $${Number(totalBudget || 0).toLocaleString()}`, [
         { label: 'Extracted CSV', content: csvText }
       ]);
-
-      const checkFigureStep = addStep('Extracting Total Budget (Check Figure)');
-      const extraction = await extractTotalBudgetWithCheck({ csvText, apiKey: form.apiKey });
-      let totalBudget;
-      if (extraction) {
-        totalBudget = extraction.value;
-        checkFigureStep.done(`$${totalBudget.toLocaleString()} (agreed after ${extraction.rounds} round${extraction.rounds > 1 ? 's' : ''})`);
-      } else {
-        checkFigureStep.error(`no agreement after ${MAX_CHECK_FIGURE_ROUNDS} rounds — enter manually`);
-        totalBudget = await promptManualTotalBudget();
-      }
 
       project.numYears    = numYears;
       project.profileId   = form.profileId;
@@ -615,7 +642,7 @@ const Generator = (() => {
     }
   }
 
-  function initDropZone(zoneId, inputId, filenameId) {
+  function initDropZone(zoneId, inputId, filenameId, onFile) {
     const zone     = document.getElementById(zoneId);
     const input    = document.getElementById(inputId);
     const filename = document.getElementById(filenameId);
@@ -624,6 +651,7 @@ const Generator = (() => {
       filename.textContent = file.name;
       filename.classList.remove('hidden');
       zone.querySelector('.drop-zone-content').classList.add('hidden');
+      if (onFile) onFile(file);
     }
 
     input.addEventListener('change', () => {
@@ -668,7 +696,9 @@ const Generator = (() => {
     syncProfileDropdown();
     document.getElementById('generate-btn').addEventListener('click', handleGenerate);
 
-    initDropZone('budget-drop-zone',  'budget-file-input',       'budget-filename');
+    initDropZone('budget-drop-zone',  'budget-file-input',       'budget-filename', file => {
+      ensureBudgetScan(file).catch(err => setStatus('Error reading budget file: ' + err.message, 'error'));
+    });
     initDropZone('summary-drop-zone', 'project-summary-input',   'summary-filename');
 
     document.getElementById('log-toggle').addEventListener('click', () => {

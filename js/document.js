@@ -69,16 +69,19 @@ const Document = (() => {
         children: blocks.map(b => blockToParagraph(b, valueGraph))
       }]
     });
-    const blob = await Packer.toBlob(doc);
+    const blob     = await Packer.toBlob(doc);
+    const fileName = OUTPUT_FILENAMES[templateType] || 'Budget_Justification.docx';
 
     const url  = URL.createObjectURL(blob);
     const link = window.document.createElement('a');
     link.href     = url;
-    link.download = OUTPUT_FILENAMES[templateType] || 'Budget_Justification.docx';
+    link.download = fileName;
     window.document.body.appendChild(link);
     link.click();
     window.document.body.removeChild(link);
     setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+    return { blob, fileName };
   }
 
   return { generate };

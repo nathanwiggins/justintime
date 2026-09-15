@@ -62,6 +62,7 @@ const ProjectStore = (() => {
       spreadsheet:  null,
       summary:      null,
       document:     null,
+      exportedJustification: null,
       verifierSession: null
     };
   }

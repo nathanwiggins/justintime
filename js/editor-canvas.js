@@ -273,6 +273,8 @@ const EditorCanvas = (() => {
         formulaTermIds = node.kind === 'calculated' ? [...node.formula.termIds] : [];
         clearHighlights();
         document.getElementById('editor-canvas-body').classList.add('dim-others');
+        const ownChip = document.querySelector(`#editor-canvas-body .value-chip[data-value-id="${selectedValueId}"]`);
+        if (ownChip) ownChip.classList.add('chip-selected');
         formulaTermIds.forEach(id => {
           const chip = document.querySelector(`#editor-canvas-body .value-chip[data-value-id="${id}"]`);
           if (chip) chip.classList.add('chip-term-highlight');
@@ -451,7 +453,8 @@ const EditorCanvas = (() => {
       const proceed = confirm(`${unresolved.length} value${unresolved.length === 1 ? '' : 's'} in this document couldn't be matched to your spreadsheet or marked as calculated. Export anyway?`);
       if (!proceed) return;
     }
-    await Document.generate(templateType, blocks, valueGraph);
+    const { blob, fileName } = await Document.generate(templateType, blocks, valueGraph);
+    project.exportedJustification = { fileName, fileBlob: new File([blob], fileName, { type: blob.type }), exportedAt: Date.now() };
     project.document.phase = 'exported';
     await persist();
   }

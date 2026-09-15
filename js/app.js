@@ -93,17 +93,43 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadLastUpdated();
   initCyclingLabel();
 
-  document.addEventListener('project:opened', e => {
-    const project = e.detail.project;
-    const useBtn  = document.getElementById('verify-use-project-spreadsheet-btn');
-    const hasFile = !!(project.spreadsheet && project.spreadsheet.fileBlob);
-    useBtn.classList.toggle('hidden', !hasFile);
+  const tabBtns   = document.querySelectorAll('.tab-btn');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+
+      tabBtns.forEach(b => b.classList.remove('active'));
+      tabPanels.forEach(p => p.classList.add('hidden'));
+
+      btn.classList.add('active');
+      document.getElementById(`tab-${target}`).classList.remove('hidden');
+    });
+  });
+
+  function wireProjectFileCarryOver(btnId, inputId, getFile) {
+    const useBtn = document.getElementById(btnId);
+    const file   = getFile();
+    useBtn.classList.toggle('hidden', !file);
     useBtn.onclick = () => {
       const dt = new DataTransfer();
-      dt.items.add(project.spreadsheet.fileBlob);
-      const input = document.getElementById('verify-budget-input');
+      dt.items.add(file);
+      const input = document.getElementById(inputId);
       input.files = dt.files;
       input.dispatchEvent(new Event('change', { bubbles: true }));
     };
+  }
+
+  document.addEventListener('project:opened', e => {
+    const project = e.detail.project;
+    wireProjectFileCarryOver(
+      'verify-use-project-spreadsheet-btn', 'verify-budget-input',
+      () => project.spreadsheet && project.spreadsheet.fileBlob
+    );
+    wireProjectFileCarryOver(
+      'verify-use-project-justification-btn', 'verify-justification-input',
+      () => project.exportedJustification && project.exportedJustification.fileBlob
+    );
   });
 });

@@ -56,7 +56,7 @@ const Settings = (() => {
       if (!Array.isArray(data)) return;
       localProfiles = data.map((p, i) => ({ ...p, id: `local-${i}`, isLocalDefault: true }));
       renderProfiles();
-      if (window.Generator) Generator.syncProfileDropdown();
+      Generator.syncProfileDropdown();
     } catch {}
   }
 
@@ -250,6 +250,11 @@ const Settings = (() => {
   }
 
   function initApiKeySection() {
+    if (Api.isVandalizerHosted()) {
+      document.getElementById('api-config-card').classList.add('hidden');
+      return;
+    }
+
     initApiKeyWarning();
 
     const input     = document.getElementById('api-key-input');

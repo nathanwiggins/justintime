@@ -41,11 +41,11 @@
     <div class="section-card">
       <div class="section-header-row">
         <h2 class="section-title">Settings</h2>
-        <button id="close-settings-btn" class="btn-link">Back to Projects</button>
+        <button id="close-settings-btn" class="btn btn-secondary btn-sm">Back to Main Menu</button>
       </div>
     </div>
 
-    <div class="section-card">
+    <div class="section-card" id="api-config-card">
       <h2 class="section-title">API Configuration</h2>
       <div id="api-key-warning-banner" class="warning-banner"></div>
       <div class="form-group">
@@ -74,15 +74,17 @@
   </main>
 
   <nav class="tab-nav hidden">
+    <button class="tab-btn active" data-tab="generator">Generator</button>
+    <button class="tab-btn" data-tab="verify">Verifier</button>
     <div id="header-active-project" class="header-active-project hidden">
       <span id="header-active-project-name" class="header-active-project-name"></span>
-      <button type="button" id="back-to-projects-btn" class="btn-link">Switch Project</button>
+      <button type="button" id="back-to-projects-btn" class="btn btn-secondary btn-sm">Back to Main Menu</button>
     </div>
   </nav>
 
   <main class="app-main hidden">
 
-    <section id="tab-justification" class="tab-panel">
+    <section id="tab-generator" class="tab-panel">
 
       <div class="section-card">
         <div class="form-group">
@@ -113,6 +115,7 @@
             <span class="drop-zone-filename hidden" id="budget-filename"></span>
           </div>
         </div>
+        <p id="total-budget-display" class="status-message success hidden"></p>
         <div class="form-group hidden" id="total-budget-fallback-group">
           <label for="total-budget-input">Total Budget — automatic extraction couldn't confirm a figure, please enter it from your spreadsheet</label>
           <div class="input-with-action">
@@ -165,10 +168,12 @@
         <p id="generate-status" class="status-message" aria-live="polite"></p>
       </div>
 
-      <div class="tab-section-divider"><span>or</span></div>
+    </section>
+
+    <section id="tab-verify" class="tab-panel hidden">
 
       <div class="section-card">
-        <p class="verify-intro">Already have a budget justification? Upload it with its corresponding budget spreadsheet — Just-In-Time will audit every dollar amount against the spreadsheet, walk you through any discrepancies, and hand the reviewed document off to the same editor above.</p>
+        <p class="verify-intro">Upload a budget justification document and its corresponding budget spreadsheet. Just-In-Time will identify every dollar amount in the justification and check whether it matches the spreadsheet, then let you continue editing it in the same interactive editor as a generated draft.</p>
 
         <div class="form-group">
           <label for="verify-justification-input">Budget Justification</label>
@@ -181,6 +186,7 @@
             </div>
             <span class="drop-zone-filename hidden" id="verify-justification-filename"></span>
           </div>
+          <button type="button" id="verify-use-project-justification-btn" class="btn-link hidden">Use this project's generated justification instead</button>
         </div>
 
         <div class="form-group">
