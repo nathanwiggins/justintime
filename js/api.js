@@ -14,11 +14,12 @@ const Api = (() => {
     return `- All dollar amounts must match the budget spreadsheet exactly
 - Write professional, informative narrative justifications for each line item
 - Prioritize JUSTIFYING and making a compelling case to the sponsor WHY each budget request is really necessary
-- If a budget category has no line items, return an empty array for that field`;
+- If a budget category has no line items, return an empty array for that field
+- Every "year" value in a yearly_breakdown must be a relative project year (1, 2, 3, ... counting from the start of the award period) — never a calendar year, even if the budget spans specific calendar years`;
   }
 
 
-  function buildSectionPrompt(csvText, projectSummary, templateType, section, additionalContext) {
+  function buildSectionPrompt(csvText, projectSummary, templateType, section, additionalContext, hint) {
     let prompt = `You are an expert grants administrator writing a formal budget justification narrative.
 
 You are generating ONLY the "${section.label}" section of a ${templateType.toUpperCase()} budget justification.
@@ -27,7 +28,7 @@ Global requirements:
 ${globalRules()}
 
 Section-specific instructions:
-${section.prompt}`;
+${section.prompt}${hint ? `\n${hint}` : ''}`;
 
     if (additionalContext) {
       prompt += `\n\nInstitutional Context (incorporate the specific rates, policies, and language from this information directly into your response):\n${additionalContext}`;
@@ -36,6 +37,33 @@ ${section.prompt}`;
     prompt += `\n\nProject Summary:\n${projectSummary}\n\nBudget Spreadsheet Data:\n${csvText}`;
 
     return prompt;
+  }
+
+  function buildItemListPrompt(csvText, section) {
+    return `You are helping write a budget justification. Based on budget spreadsheet and section rules below, please generate a list of items (LABELS ONLY! NO NUMBERS, NO DOLLAR VALUES, NO MONTHS! We will get to numeric details later.) that we would want to include in the "${section.label}" section of the justification.
+
+Section-specific instructions:
+${section.prompt}
+
+Budget Spreadsheet Data:
+${csvText}`;
+  }
+
+  async function extractTotalBudget({ csvText, apiKey }) {
+    const prompt = `You are a precise budget data extraction assistant. Read the budget spreadsheet data below and identify the single overall Total Budget figure (the grand total requested across all categories and all years combined) — not a per-year, per-category, or per-line-item figure.
+
+Return only that one number as total_budget.
+
+Budget Spreadsheet Data:
+${csvText}`;
+    const result = await callApi(apiKey, prompt, GeneratorAuditSchemas.totalBudget, null, 0.3);
+    return result.total_budget;
+  }
+
+  async function generateSectionHint({ csvText, apiKey, section }) {
+    const items = await callApi(apiKey, buildItemListPrompt(csvText, section), GeneratorAuditSchemas.itemList, null, 0.1);
+    const hint  = items.length ? `For example, look for items like ${items.join(', ')}, etc.` : '';
+    return { hint, items };
   }
 
   let refreshPromise = null;
@@ -124,10 +152,75 @@ ${section.prompt}`;
     });
   }
 
-  async function generateSection({ csvText, projectSummary, templateType, apiKey, section, additionalContext }) {
-    const prompt  = buildSectionPrompt(csvText, projectSummary, templateType, section, additionalContext);
-    const result  = await callApi(apiKey, prompt, section.schema);
+  async function generateSection({ csvText, projectSummary, templateType, apiKey, section, additionalContext, temperature = null, hint = null }) {
+    const prompt  = buildSectionPrompt(csvText, projectSummary, templateType, section, additionalContext, hint);
+    const result  = await callApi(apiKey, prompt, section.schema, null, temperature);
     return { result, prompt };
+  }
+
+  function buildNarrativePrompt(csvText, projectSummary, templateType, section, additionalContext, verifiedData, correction) {
+    let prompt = `You are an expert grants administrator writing a formal budget justification narrative.
+
+You are refining ONLY the narrative field(s) (e.g. "narrative_description", "narrative_justification", "justification" — whichever are present) within the "${section.label}" section of a ${templateType.toUpperCase()} budget justification. Every other field in the verified section data below has already been checked against the budget spreadsheet and MUST be returned completely unchanged — same values, same array order, same number of items in every array.
+
+Global requirements:
+${globalRules()}
+
+Section-specific instructions (context on what the narrative should cover):
+${section.prompt}`;
+
+    if (additionalContext) {
+      prompt += `\n\nInstitutional Context (incorporate the specific rates, policies, and language from this information directly into your narrative):\n${additionalContext}`;
+    }
+
+    prompt += `\n\nVerified section data — return this exact structure, with every non-narrative field unchanged, and with each narrative field rewritten as a well-written, compelling, professional justification:\n${JSON.stringify(verifiedData, null, 2)}
+
+Project Summary:
+${projectSummary}
+
+Budget Spreadsheet Data:
+${csvText}`;
+
+    if (correction) {
+      prompt += `\n\nIMPORTANT: Your previous response did not preserve the exact structure of the verified section data above (${correction}). Return the SAME arrays with the SAME number of items in the SAME order — only the narrative field(s) may change.`;
+    }
+
+    return prompt;
+  }
+
+  async function refineNarrative({ csvText, projectSummary, templateType, apiKey, section, additionalContext, verifiedData, correction }) {
+    const prompt = buildNarrativePrompt(csvText, projectSummary, templateType, section, additionalContext, verifiedData, correction);
+    const result = await callApi(apiKey, prompt, section.schema);
+    return { result, prompt };
+  }
+
+  function reconcileDuplicateAudit(items, audited) {
+    return items.map((item, i) => {
+      if (audited[i] && audited[i].item_name === item.item_name && audited[i].cost === item.cost) return audited[i];
+      const match = audited.find(a => a.item_name === item.item_name && a.cost === item.cost);
+      return match || { item_name: item.item_name, cost: item.cost, is_duplicate: false, duplicate_of: '' };
+    });
+  }
+
+  async function auditOtherDuplicates(otherItems, capturedItems, apiKey) {
+    const prompt = `You are a budget audit assistant checking a budget justification for accidental double-counting.
+
+Below is a list of items proposed for the generic "Other" budget category, and a separate list of items already captured under specific budget categories (Equipment, Travel, Supplies, Contractual, Construction, Participant Support, Publications, Computer Services) for this same budget.
+
+For each item in the "Other" list, determine whether it represents the SAME underlying expense as one of the already-captured items — judge by matching description/purpose and approximate cost (rounding differences still count as a match), not just an exact dollar match. If it is the same expense, set is_duplicate to true and duplicate_of to a brief description of the already-captured item it matches. If it is a genuinely distinct expense, set is_duplicate to false and duplicate_of to an empty string.
+
+Rules:
+- Return exactly ${otherItems.length} objects — one per "Other" item, in the same order
+- Copy item_name and cost exactly as given in the input — do not modify them
+
+"Other" items to check:
+${JSON.stringify(otherItems, null, 2)}
+
+Already-captured items in other categories:
+${JSON.stringify(capturedItems, null, 2)}`;
+
+    const audited = await callApi(apiKey, prompt, GeneratorAuditSchemas.otherDuplicates, null, 0.1);
+    return reconcileDuplicateAudit(otherItems, audited);
   }
 
   function reconcileLabeled(preExtracted, labeled) {
@@ -330,11 +423,12 @@ ${csvText}`;
     return callApi(apiKey, prompt, VerifierSchemas.summaryAudit);
   }
 
-  async function classifyReply(section, transcript, priorSections, justificationText, csvText, apiKey) {
+  async function classifyReply(section, transcript, priorSections, justificationText, csvText, apiKey, priorRuns) {
     const conversation = transcript.map(turn => `${turn.role === 'assistant' ? 'Assistant' : 'User'}: ${turn.text}`).join('\n');
     const priorFindings = (priorSections || []).filter(s => s.resolution).map(s =>
       `- ${s.section_label}: ${s.resolution}`
     ).join('\n');
+    const priorRunsBlock = (priorRuns || []).join('\n');
 
     const prompt = `You are a friendly budget audit assistant discussing one suspected discrepancy with a research administrator. You are verifying, together with the user, whether this is a real mismatch that needs fixing in the budget justification, or something that turns out not to be a concern (e.g. the user has context that explains it, or you misread the documents).
 
@@ -344,6 +438,7 @@ Finding:
 - Explanation: ${section.explanation}
 - Items: ${JSON.stringify(section.items, null, 2)}
 ${priorFindings ? `\nEarlier findings already resolved in this same review (the user may reference these by name or number — use this to understand what they mean):\n${priorFindings}\n` : ''}
+${priorRunsBlock ? `\nBackground only — up to 3 prior verification runs on this same project, for context if relevant. Do not let this outweigh what the current documents and conversation actually show:\n${priorRunsBlock}\n` : ''}
 Conversation so far:
 ${conversation}
 
@@ -385,7 +480,7 @@ Instructions:
   }
 
   return {
-    generateSection, extractValues, extractValuesBatch, matchValues, matchValuesBatch,
+    generateSection, generateSectionHint, extractTotalBudget, refineNarrative, auditOtherDuplicates, extractValues, extractValuesBatch, matchValues, matchValuesBatch,
     auditNotFound, auditMismatches, auditSummary, classifyReply, test, isVandalizerHosted,
     setRetryHandler: cb => { retryHandler = cb; }
   };

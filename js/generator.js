@@ -2,6 +2,12 @@ const Generator = (() => {
   let currentTemplate = 'nsf';
   let summaryMode     = 'file';
 
+  const NARRATIVE_FIELDS = new Set([
+    'narrative_description',
+    'narrative_justification',
+    'justification'
+  ]);
+
   function syncProfileDropdown() {
     const select    = document.getElementById('profile-select');
     const profiles  = Settings.getProfiles();
@@ -34,7 +40,6 @@ const Generator = (() => {
 
   function setGenerating(active) {
     document.getElementById('generate-btn').disabled = active;
-    document.getElementById('loading-indicator').classList.toggle('hidden', !active);
   }
 
   function clearStepLog() {
@@ -149,12 +154,6 @@ const Generator = (() => {
   }
 
   function stripNarratives(obj) {
-    const NARRATIVE_FIELDS = new Set([
-      'narrative_description',
-      'narrative_justification',
-      'justification'
-    ]);
-
     function walk(node) {
       if (Array.isArray(node)) {
         node.forEach(walk);
@@ -175,13 +174,284 @@ const Generator = (() => {
     return obj;
   }
 
-  function validateForm({ profileId, file, summaryFile, summaryText, summaryMode, apiKey }) {
+  function omitNarrativeFields(node) {
+    if (Array.isArray(node)) return node.map(omitNarrativeFields);
+    if (node && typeof node === 'object') {
+      const out = {};
+      Object.keys(node).forEach(key => {
+        if (NARRATIVE_FIELDS.has(key)) return;
+        out[key] = omitNarrativeFields(node[key]);
+      });
+      return out;
+    }
+    return node;
+  }
+
+  function diffSkeletons(trusted, candidate, path = '') {
+    if (Array.isArray(trusted)) {
+      if (!Array.isArray(candidate) || candidate.length !== trusted.length) {
+        return { structural: true, reason: `${path || 'root'}: expected ${trusted.length} item(s), got ${Array.isArray(candidate) ? candidate.length : typeof candidate}` };
+      }
+      const mismatches = [];
+      for (let i = 0; i < trusted.length; i++) {
+        const sub = diffSkeletons(trusted[i], candidate[i], `${path}[${i}]`);
+        if (sub.structural) return sub;
+        mismatches.push(...sub.mismatches);
+      }
+      return { structural: false, mismatches };
+    }
+
+    if (trusted && typeof trusted === 'object') {
+      if (!candidate || typeof candidate !== 'object') {
+        return { structural: true, reason: `${path || 'root'}: expected an object, got ${typeof candidate}` };
+      }
+      const mismatches = [];
+      for (const key of Object.keys(trusted)) {
+        const sub = diffSkeletons(trusted[key], candidate[key], path ? `${path}.${key}` : key);
+        if (sub.structural) return sub;
+        mismatches.push(...sub.mismatches);
+      }
+      return { structural: false, mismatches };
+    }
+
+    return { structural: false, mismatches: trusted === candidate ? [] : [{ path, trusted, candidate }] };
+  }
+
+  function applyHeals(target, mismatches) {
+    mismatches.forEach(({ path, trusted }) => {
+      const parts = path.match(/[^.[\]]+/g) || [];
+      let node = target;
+      for (let i = 0; i < parts.length - 1; i++) {
+        node = node[/^\d+$/.test(parts[i]) ? Number(parts[i]) : parts[i]];
+      }
+      const lastKey = parts[parts.length - 1];
+      node[/^\d+$/.test(lastKey) ? Number(lastKey) : lastKey] = trusted;
+    });
+    return target;
+  }
+
+  function computeEscalationNote(yearlyBreakdown, subject) {
+    const sorted = [...(yearlyBreakdown || [])].sort((a, b) => a.year - b.year);
+    if (sorted.length < 2) return '';
+
+    const deltas = [];
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = sorted[i - 1].cost;
+      const curr = sorted[i].cost;
+      if (!prev) return '';
+      deltas.push(Math.round(((curr - prev) / prev) * 1000) / 10);
+    }
+
+    const rate = deltas[0];
+    if (rate <= 0 || !deltas.every(d => d === rate)) return '';
+
+    const pct = Number.isInteger(rate) ? `${rate}%` : `${rate.toFixed(1)}%`;
+    return `${subject} reflects a ${pct} annual increase.`;
+  }
+
+  function applyComputedEscalationNotes(extracted) {
+    (extracted.senior_personnel || []).forEach(x => {
+      x.escalation_note = computeEscalationNote(x.yearly_breakdown, 'Salary');
+    });
+    (extracted.other_personnel || []).forEach(x => {
+      x.escalation_note = computeEscalationNote(x.yearly_breakdown, 'Rate');
+    });
+  }
+
+  const YEARLY_TOTAL_FIELDS = {
+    senior_personnel:  'total_salary',
+    other_personnel:   'total_cost',
+    equipment:         'cost',
+    domestic_travel:   'cost',
+    foreign_travel:    'cost',
+    materials_supplies:'cost',
+    construction_costs:'cost',
+    consultants:       'cost',
+    subawards:         'cost',
+    other_direct_lines:'cost',
+    stipends:          'cost',
+    participant_travel:'cost',
+    subsistence:       'cost',
+    participant_other: 'cost',
+    publications:      'cost',
+    computer_services: 'cost'
+  };
+
+  function sumYears(yearlyBreakdown) {
+    return (yearlyBreakdown || []).reduce((sum, y) => sum + (y.cost || 0), 0);
+  }
+
+  function itemLabel(item, fallback) {
+    return item.item_name || item.name || item.role || item.trip_purpose || item.category_name ||
+      item.consultant_name || item.institution_name || item.publication_title_or_type ||
+      item.service_description || fallback;
+  }
+
+  function reconcileYearlyTotals(extracted) {
+    const flagged = [];
+
+    Object.keys(YEARLY_TOTAL_FIELDS).forEach(key => {
+      const totalField = YEARLY_TOTAL_FIELDS[key];
+      (extracted[key] || []).forEach(item => {
+        if (item.yearly_breakdown && item.yearly_breakdown.length) {
+          item[totalField] = sumYears(item.yearly_breakdown);
+        } else {
+          flagged.push(`${key}: ${itemLabel(item, '(unnamed item)')}`);
+        }
+      });
+    });
+
+    if (extracted.fringe_benefits) {
+      const fb = extracted.fringe_benefits;
+      if (fb.rate_groups) {
+        (fb.rate_groups || []).forEach(g => {
+          if (g.yearly_breakdown && g.yearly_breakdown.length) {
+            g.category_total = sumYears(g.yearly_breakdown);
+          } else {
+            flagged.push(`fringe_benefits.rate_groups: ${g.personnel_category || '(unnamed group)'}`);
+          }
+        });
+        if (fb.rate_groups.length) {
+          fb.total_cost = fb.rate_groups.reduce((sum, g) => sum + (g.category_total || 0), 0);
+        } else {
+          flagged.push('fringe_benefits.total_cost');
+        }
+      } else if (fb.yearly_breakdown) {
+        if (fb.yearly_breakdown.length) {
+          fb.total_cost = sumYears(fb.yearly_breakdown);
+        } else {
+          flagged.push('fringe_benefits.total_cost');
+        }
+      }
+    }
+
+    if (extracted.indirect_costs) {
+      const ic = extracted.indirect_costs;
+      if (ic.yearly_breakdown && ic.yearly_breakdown.length) {
+        ic.total_cost = sumYears(ic.yearly_breakdown);
+      } else {
+        flagged.push('indirect_costs');
+      }
+    }
+
+    return flagged;
+  }
+
+  function collectCapturedItems(aiJson) {
+    const out = [];
+    const add = (arr, labelFn) => (arr || []).forEach(x => {
+      if (x.cost) out.push({ label: labelFn(x), cost: x.cost });
+    });
+
+    add(aiJson.equipment,            x => x.item_name);
+    add(aiJson.domestic_travel,      x => x.trip_purpose);
+    add(aiJson.foreign_travel,       x => x.trip_purpose);
+    add(aiJson.materials_supplies,   x => x.category_name);
+    add(aiJson.consultants,          x => x.consultant_name);
+    add(aiJson.subawards,            x => x.institution_name);
+    add(aiJson.construction_costs,   x => x.category_name);
+    add(aiJson.stipends,             () => 'Participant Stipend');
+    add(aiJson.participant_travel,   () => 'Participant Travel');
+    add(aiJson.subsistence,          () => 'Participant Subsistence');
+    add(aiJson.participant_other,    () => 'Participant Other Support');
+    add(aiJson.publications,         x => x.publication_title_or_type);
+    add(aiJson.computer_services,    x => x.service_description);
+
+    return out;
+  }
+
+  function validateForm({ profileId, templateType, file, summaryFile, summaryText, summaryMode, apiKey }) {
     if (!apiKey && !Api.isVandalizerHosted())    return 'No API key saved. Go to the Settings tab and save your Gemini API key.';
+    if (!ProjectPicker.getActive()) return 'No active project. Please open or create a project first.';
     if (!profileId) return 'Please select an Institutional Profile.';
+    if (!templateType) return 'Please select a Grant Template Type.';
     if (!file)      return 'Please upload a budget file (.csv, .xls, or .xlsx).';
     if (summaryMode === 'file' && !summaryFile) return 'Please upload a project narrative (.doc, .docx, or .pdf).';
     if (summaryMode === 'text' && !summaryText) return 'Please enter a project summary.';
     return null;
+  }
+
+  const MAX_CHECK_FIGURE_ROUNDS = 5;
+
+  async function extractTotalBudgetWithCheck({ csvText, apiKey }) {
+    for (let round = 1; round <= MAX_CHECK_FIGURE_ROUNDS; round++) {
+      const [a, b] = await Promise.all([
+        Api.extractTotalBudget({ csvText, apiKey }),
+        Api.extractTotalBudget({ csvText, apiKey })
+      ]);
+      if (a === b && Number.isFinite(a)) return { value: a, rounds: round };
+    }
+    return null;
+  }
+
+  function promptManualTotalBudget() {
+    const group   = document.getElementById('total-budget-fallback-group');
+    const input   = document.getElementById('total-budget-input');
+    const confirm = document.getElementById('total-budget-confirm-btn');
+
+    input.value = '';
+    group.classList.remove('hidden');
+    input.focus();
+
+    return new Promise(resolve => {
+      function onConfirm() {
+        const value = parseFloat(input.value);
+        if (!Number.isFinite(value) || value <= 0) {
+          input.focus();
+          return;
+        }
+        confirm.removeEventListener('click', onConfirm);
+        group.classList.add('hidden');
+        resolve(value);
+      }
+      confirm.addEventListener('click', onConfirm);
+    });
+  }
+
+  let budgetScan = null;
+
+  function resetBudgetScanUI() {
+    document.getElementById('total-budget-display').classList.add('hidden');
+    document.getElementById('total-budget-fallback-group').classList.add('hidden');
+  }
+
+  async function runBudgetScan(file, canScan) {
+    const parsed = await Parser.parse(file);
+
+    const project = ProjectPicker.getActive();
+    if (project) {
+      project.spreadsheet = { fileName: file.name, fileBlob: file, csvText: parsed.csvText, sheets: parsed.sheets, uploadedAt: Date.now() };
+      await ProjectPicker.persistActive();
+      syncVerifyInputsFromProject();
+    }
+
+    if (!canScan) {
+      return { csvText: parsed.csvText, sheets: parsed.sheets, numYears: parsed.numYears, totalBudget: null };
+    }
+
+    const apiKey     = Settings.loadApiKey();
+    const extraction = await extractTotalBudgetWithCheck({ csvText: parsed.csvText, apiKey });
+
+    if (extraction) {
+      const display = document.getElementById('total-budget-display');
+      display.textContent = `Total Budget: $${extraction.value.toLocaleString()}`;
+      display.classList.remove('hidden');
+      return { csvText: parsed.csvText, sheets: parsed.sheets, numYears: parsed.numYears, totalBudget: extraction.value };
+    }
+
+    document.getElementById('total-budget-fallback-group').classList.remove('hidden');
+    const totalBudget = await promptManualTotalBudget();
+    return { csvText: parsed.csvText, sheets: parsed.sheets, numYears: parsed.numYears, totalBudget };
+  }
+
+  function ensureBudgetScan(file) {
+    const canScan = !!Settings.loadApiKey() || Api.isVandalizerHosted();
+    if (budgetScan && budgetScan.file === file && (budgetScan.attemptedCheckFigure || !canScan)) {
+      return budgetScan.promise;
+    }
+    resetBudgetScanUI();
+    budgetScan = { file, attemptedCheckFigure: canScan, promise: runBudgetScan(file, canScan) };
+    return budgetScan.promise;
   }
 
   async function parseSummaryFile(file) {
@@ -208,6 +478,100 @@ const Generator = (() => {
     };
   }
 
+  async function runGenerationSections({ form, profile, csvText, projectSummary }) {
+    const sections = Sections.forTemplate(form.templateType);
+    const aiJson   = {};
+
+    const MAX_NARRATIVE_ATTEMPTS = 2;
+
+    for (const section of sections) {
+      const additionalContext = section.key === 'fringe_benefits' ? profile.fringeBoilerplate
+        : section.key === 'indirect_costs'   ? profile.faBoilerplate
+        : null;
+      const sectionStep = addStep(`Generating: ${section.label}`);
+
+      const skipHint = section.key === 'fringe_benefits' || section.key === 'indirect_costs';
+      VerifyAnim.stage('extract', section.label);
+      const { hint, items: suggestedItems } = skipHint
+        ? { hint: '', items: [] }
+        : await Api.generateSectionHint({ csvText, apiKey: form.apiKey, section });
+
+      const { result: extracted, prompt: extractPrompt } = await Api.generateSection({
+        csvText,
+        projectSummary,
+        templateType:   form.templateType,
+        apiKey:         form.apiKey,
+        section,
+        additionalContext,
+        temperature:    0.1,
+        hint
+      });
+      applyComputedEscalationNotes(extracted);
+      const flaggedTotals = reconcileYearlyTotals(extracted);
+      const trustedSkeleton = omitNarrativeFields(extracted);
+
+      let narrated, narrativePrompt, diff, correction = null;
+      VerifyAnim.stage('write', section.label);
+      for (let attempt = 1; attempt <= MAX_NARRATIVE_ATTEMPTS; attempt++) {
+        ({ result: narrated, prompt: narrativePrompt } = await Api.refineNarrative({
+          csvText,
+          projectSummary,
+          templateType: form.templateType,
+          apiKey:       form.apiKey,
+          section,
+          additionalContext,
+          verifiedData: trustedSkeleton,
+          correction
+        }));
+        diff = diffSkeletons(trustedSkeleton, omitNarrativeFields(narrated));
+        if (!diff.structural) break;
+        correction = diff.reason;
+        if (attempt === MAX_NARRATIVE_ATTEMPTS) {
+          sectionStep.error(`narrative pass dropped data (${diff.reason})`);
+          throw new Error(`"${section.label}" failed to generate: the narrative pass altered the verified data (${diff.reason}).`);
+        }
+      }
+
+      if (diff.mismatches.length) applyHeals(narrated, diff.mismatches);
+      Object.assign(aiJson, narrated);
+
+      sectionStep.done('done', [
+        ...(skipHint ? [] : [
+          { label: 'Suggested Items', content: JSON.stringify(suggestedItems, null, 2) },
+          { label: 'Distilled Hint',  content: hint }
+        ]),
+        { label: 'Extraction Prompt',   content: extractPrompt },
+        { label: 'Extracted Data',      content: JSON.stringify(extracted, null, 2) },
+        { label: 'Narrative Prompt',    content: narrativePrompt },
+        { label: 'Narrative Response',  content: JSON.stringify(narrated, null, 2) },
+        ...(diff.mismatches.length ? [{ label: 'Self-Healed Fields', content: JSON.stringify(diff.mismatches, null, 2) }] : []),
+        ...(flaggedTotals.length ? [{ label: 'Not Cross-Checked (no yearly breakdown)', content: JSON.stringify(flaggedTotals, null, 2) }] : [])
+      ]);
+    }
+
+    if ((aiJson.other_direct_lines || []).length) {
+      const captured = collectCapturedItems(aiJson);
+      if (captured.length) {
+        const dedupeStep = addStep('Checking Other category for duplicates');
+        const audited     = await Api.auditOtherDuplicates(aiJson.other_direct_lines, captured, form.apiKey);
+        const beforeCount = aiJson.other_direct_lines.length;
+        aiJson.other_direct_lines = aiJson.other_direct_lines.filter((x, i) => !audited[i].is_duplicate);
+        const removedCount = beforeCount - aiJson.other_direct_lines.length;
+        dedupeStep.done(removedCount ? `${removedCount} duplicate item(s) removed` : 'no duplicates found', [
+          { label: 'Audit Result', content: JSON.stringify(audited, null, 2) }
+        ]);
+      }
+    }
+
+    if (form.templateMode) {
+      const templateStep = addStep('Applying Template Mode');
+      stripNarratives(aiJson);
+      templateStep.done('narrative fields replaced with placeholders');
+    }
+
+    return aiJson;
+  }
+
   async function handleGenerate() {
     const form  = getFormValues();
     const error = validateForm(form);
@@ -216,12 +580,20 @@ const Generator = (() => {
     const profile = Settings.getProfileById(form.profileId);
     if (!profile) { setStatus('Selected profile not found. Please reselect.', 'error'); return; }
 
+    const project = ProjectPicker.getActive();
+    if (!project) { setStatus('No active project. Please open or create a project first.', 'error'); return; }
+
     setGenerating(true);
     setStatus('');
     clearStepLog();
     currentTemplate = form.templateType;
+    project.templateType = form.templateType;
+
+    mountGenerateAnim();
+    VerifyAnim.start();
 
     try {
+      VerifyAnim.stage('parse');
       let projectSummary;
       if (form.summaryMode === 'file') {
         const summaryStep = addStep('Parsing project summary');
@@ -233,61 +605,53 @@ const Generator = (() => {
         projectSummary = form.summaryText;
       }
 
-      const parseStep = addStep('Parsing budget file');
-      const { csvText, sourceTruth, numYears } = await Parser.parse(form.file);
-      parseStep.done(form.file.name, [
-        { label: 'Extracted CSV',  content: csvText },
-        { label: 'Source Truth',   content: JSON.stringify(sourceTruth, null, 2) }
+      const budgetStep = addStep('Preparing budget spreadsheet');
+      const { csvText, sheets, numYears, totalBudget } = await ensureBudgetScan(form.file);
+      budgetStep.done(`${form.file.name} — Total Budget: $${Number(totalBudget || 0).toLocaleString()}`, [
+        { label: 'Extracted CSV', content: csvText }
       ]);
 
-      const sections = Sections.forTemplate(form.templateType);
-      const aiJson   = {};
+      project.numYears    = numYears;
+      project.profileId   = form.profileId;
+      project.totalBudget = totalBudget;
+      project.summary     = form.summaryMode === 'file'
+        ? { mode: 'file', fileName: form.summaryFile.name, fileBlob: form.summaryFile, text: projectSummary, uploadedAt: Date.now() }
+        : { mode: 'text', text: projectSummary, uploadedAt: Date.now() };
+      await ProjectPicker.persistActive();
 
-      for (const section of sections) {
-        const additionalContext = section.key === 'fringe_benefits' ? profile.fringeBoilerplate
-          : section.key === 'indirect_costs'   ? profile.faBoilerplate
-          : null;
-        const sectionStep = addStep(`Generating: ${section.label}`);
-        const { result, prompt } = await Api.generateSection({
-          csvText,
-          projectSummary,
-          templateType:   form.templateType,
-          apiKey:         form.apiKey,
-          section,
-          additionalContext
-        });
-        Object.assign(aiJson, result);
-        sectionStep.done('done', [
-          { label: 'Prompt Sent',        content: prompt },
-          { label: 'Section Response',   content: JSON.stringify(result, null, 2) }
+      let outcome = null;
+      while (outcome !== 'keep') {
+        const aiJson = await runGenerationSections({ form, profile, csvText, projectSummary });
+
+        const boilerplateStep = addStep('Assembling final payload');
+        const payload = assemblePayload(aiJson, profile, numYears);
+        boilerplateStep.done(profile.name, [
+          { label: 'Final Payload', content: JSON.stringify(payload, null, 2) }
         ]);
+
+        const validateStep = addStep('Validating against Total Budget');
+        VerifyAnim.stage('validate');
+        const valueGraph = ValueGraph.build(payload, form.templateType, sheets);
+        validateStep.done(`calculated $${Math.round(valueGraph.nodes['totals.grand'].amount).toLocaleString()}`);
+
+        outcome = await ValidationCheckpoint.run({ project, payload, valueGraph, templateType: form.templateType });
+
+        if (outcome !== 'keep') clearStepLog();
       }
 
-      if (form.templateMode) {
-        const templateStep = addStep('Applying Template Mode');
-        stripNarratives(aiJson);
-        templateStep.done('narrative fields replaced with placeholders');
-      }
-
-      const boilerplateStep = addStep('Assembling final payload');
-      const payload = assemblePayload(aiJson, profile, numYears);
-      boilerplateStep.done(profile.name, [
-        { label: 'Final Payload', content: JSON.stringify(payload, null, 2) }
-      ]);
-
-      const docStep = addStep('Building Word document');
-      await Document.generate(form.templateType, payload);
-      docStep.done('download started');
-
-      setStatus('Document downloaded successfully.', 'success');
+      VerifyAnim.finish('clean');
       setGenerating(false);
+      updateGeneratorViewState();
+      document.dispatchEvent(new CustomEvent('generate:complete'));
+      EditorCanvas.open(project);
     } catch (err) {
+      VerifyAnim.fail();
       setGenerating(false);
       setStatus('Error: ' + err.message, 'error');
     }
   }
 
-  function initDropZone(zoneId, inputId, filenameId) {
+  function initDropZone(zoneId, inputId, filenameId, onFile) {
     const zone     = document.getElementById(zoneId);
     const input    = document.getElementById(inputId);
     const filename = document.getElementById(filenameId);
@@ -296,6 +660,8 @@ const Generator = (() => {
       filename.textContent = file.name;
       filename.classList.remove('hidden');
       zone.querySelector('.drop-zone-content').classList.add('hidden');
+      zone.classList.add('has-file');
+      if (onFile) onFile(file);
     }
 
     input.addEventListener('change', () => {
@@ -323,12 +689,86 @@ const Generator = (() => {
     });
   }
 
+  function mountGenerateAnim() {
+    VerifyAnim.mount({
+      containerId: 'generate-anim',
+      liveId:      'generate-anim-live',
+      manageDetailsToggle: false,
+      stages:      VerifyAnim.stageSets.generator.stages,
+      stageOrder:  VerifyAnim.stageSets.generator.stageOrder,
+      startAnnounce:       'Generating your justification.',
+      finishCleanAnnounce: 'Draft ready.',
+      finishOtherAnnounce: 'Draft ready.'
+    });
+  }
+
+  function updateGeneratorViewState() {
+    const project  = ProjectPicker.getActive();
+    const hasDraft = !!(project && project.document && project.document.blocks && project.document.blocks.length);
+
+    document.getElementById('generator-input-form').classList.toggle('hidden', hasDraft);
+    document.getElementById('generator-form-actions').classList.toggle('hidden', hasDraft);
+    document.getElementById('generator-draft-actions').classList.toggle('hidden', !hasDraft);
+    document.getElementById('generator-draft-decoration').classList.toggle('hidden', !hasDraft);
+
+    if (hasDraft) {
+      document.getElementById('resume-editing-btn').onclick = () => EditorCanvas.open(project);
+    }
+
+    updateHowItWorksVisibility();
+  }
+
+  async function handleRegenerate() {
+    const project = ProjectPicker.getActive();
+    if (!project) return;
+
+    const proceed = confirm('This will permanently discard your current draft and clear all uploaded files and selections, so you can start the whole process over. Continue?');
+    if (!proceed) return;
+
+    project.document              = null;
+    project.spreadsheet           = null;
+    project.summary               = null;
+    project.totalBudget           = null;
+    project.exportedJustification = null;
+    await ProjectPicker.persistActive();
+
+    document.getElementById('profile-select').value  = '';
+    document.getElementById('template-select').value = '';
+    document.getElementById('template-mode-toggle').checked = false;
+
+    resetDropZone('budget-drop-zone', 'budget-file-input', 'budget-filename');
+    resetDropZone('summary-drop-zone', 'project-summary-input', 'summary-filename');
+    resetDropZone('verify-budget-drop-zone', 'verify-budget-input', 'verify-budget-filename');
+    resetDropZone('verify-justification-drop-zone', 'verify-justification-input', 'verify-justification-filename');
+
+    summaryMode = 'file';
+    document.getElementById('summary-drop-zone').classList.remove('hidden');
+    document.getElementById('project-summary-text-input').value = '';
+    document.getElementById('project-summary-text-input').classList.add('hidden');
+    document.getElementById('summary-toggle').textContent = 'Type instead';
+
+    document.getElementById('total-budget-display').classList.add('hidden');
+    document.getElementById('total-budget-fallback-group').classList.add('hidden');
+    budgetScan = null;
+
+    clearStepLog();
+    setStatus('');
+    updateGeneratorViewState();
+  }
+
   function init() {
     syncProfileDropdown();
+    document.getElementById('generator-draft-decoration').innerHTML = Icons.document;
+    updateGeneratorViewState();
     document.getElementById('generate-btn').addEventListener('click', handleGenerate);
+    document.getElementById('regenerate-btn').addEventListener('click', handleRegenerate);
 
-    initDropZone('budget-drop-zone',  'budget-file-input',       'budget-filename');
+    initDropZone('budget-drop-zone',  'budget-file-input',       'budget-filename', file => {
+      ensureBudgetScan(file).catch(err => setStatus('Error reading budget file: ' + err.message, 'error'));
+    });
     initDropZone('summary-drop-zone', 'project-summary-input',   'summary-filename');
+
+    document.addEventListener('project:opened', updateGeneratorViewState);
 
     document.getElementById('log-toggle').addEventListener('click', () => {
       const log    = document.getElementById('step-log');

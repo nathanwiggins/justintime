@@ -4,6 +4,7 @@ const VerifierChat = (() => {
   let session             = null;
   let apiKeyRef           = null;
   let onCompleteCb        = null;
+  let onFreshCompleteCb   = null;
   let sending             = false;
   let previewReadyPromise = null;
   let previewView         = 'document';
@@ -326,6 +327,7 @@ const VerifierChat = (() => {
     session.completedAt = Date.now();
     persist();
     closeModal();
+    if (onFreshCompleteCb) onFreshCompleteCb(session.sections);
     if (onCompleteCb) onCompleteCb(session.sections);
   }
 
@@ -387,7 +389,7 @@ const VerifierChat = (() => {
     setSending(true);
     try {
       const priorSections = session.sections.slice(0, session.currentIndex);
-      const result = await Api.classifyReply(section, section.transcript, priorSections, session.justificationText, session.csvText, apiKeyRef);
+      const result = await Api.classifyReply(section, section.transcript, priorSections, session.justificationText, session.csvText, apiKeyRef, session.priorRuns);
       if (text.includes('?')) result.needs_followup = true;
       section.tag = result.tag;
 
@@ -410,7 +412,7 @@ const VerifierChat = (() => {
     }
   }
 
-  function renderResumeBanner(onComplete, docKey, justificationFile, budgetFile) {
+  function renderResumeBanner(onComplete, docKey, justificationFile, budgetFile, onFreshComplete, priorRuns) {
     const stored = loadStoredSession();
     const container = document.getElementById('verify-results');
     if (!stored || stored.docKey !== docKey) return;
@@ -440,9 +442,11 @@ const VerifierChat = (() => {
       if (stored.completedAt) {
         onComplete(stored.sections);
       } else {
-        session      = stored;
-        apiKeyRef    = Settings.loadApiKey();
-        onCompleteCb = onComplete;
+        session           = stored;
+        session.priorRuns = priorRuns || [];
+        apiKeyRef         = Settings.loadApiKey();
+        onCompleteCb      = onComplete;
+        onFreshCompleteCb = onFreshComplete || null;
         buildPreview(justificationFile, budgetFile, session.sections);
         openModal();
         renderCurrentSection();
@@ -475,16 +479,19 @@ const VerifierChat = (() => {
       introPending = true;
     }
 
-    apiKeyRef    = opts.apiKey;
-    onCompleteCb = opts.onComplete;
+    session.priorRuns = opts.priorRuns || [];
+
+    apiKeyRef         = opts.apiKey;
+    onCompleteCb      = opts.onComplete;
+    onFreshCompleteCb = opts.onFreshComplete || null;
 
     buildPreview(opts.justificationFile, opts.budgetFile, session.sections);
     openModal();
     renderCurrentSection();
   }
 
-  function tryResume(onComplete, docKey, justificationFile, budgetFile) {
-    renderResumeBanner(onComplete, docKey, justificationFile, budgetFile);
+  function tryResume(onComplete, docKey, justificationFile, budgetFile, onFreshComplete, priorRuns) {
+    renderResumeBanner(onComplete, docKey, justificationFile, budgetFile, onFreshComplete, priorRuns);
   }
 
   function hasStoredSession() {

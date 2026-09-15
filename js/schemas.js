@@ -67,9 +67,20 @@ const Schemas = {
           properties: {
             item_name:              { type: 'string' },
             cost:                   { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  year: { type: 'number' },
+                  cost: { type: 'number' }
+                },
+                required: ['year', 'cost']
+              }
+            },
             narrative_justification:{ type: 'string' }
           },
-          required: ['item_name', 'cost', 'narrative_justification']
+          required: ['item_name', 'cost', 'yearly_breakdown', 'narrative_justification']
         }
       },
       domestic_travel: {
@@ -93,9 +104,21 @@ const Schemas = {
                 required: ['year', 'cost']
               }
             },
+            cost_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  component_name: { type: 'string', enum: ['Airfare', 'Mileage', 'Lodging', 'Per Diem', 'Registration', 'Other'] },
+                  formula:        { type: 'string' },
+                  amount:         { type: 'number' }
+                },
+                required: ['component_name', 'formula', 'amount']
+              }
+            },
             narrative_justification:{ type: 'string' }
           },
-          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'narrative_justification']
+          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'cost_breakdown', 'narrative_justification']
         }
       },
       foreign_travel: {
@@ -119,9 +142,21 @@ const Schemas = {
                 required: ['year', 'cost']
               }
             },
+            cost_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  component_name: { type: 'string', enum: ['Airfare', 'Mileage', 'Lodging', 'Per Diem', 'Registration', 'Other'] },
+                  formula:        { type: 'string' },
+                  amount:         { type: 'number' }
+                },
+                required: ['component_name', 'formula', 'amount']
+              }
+            },
             narrative_justification:{ type: 'string' }
           },
-          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'narrative_justification']
+          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'cost_breakdown', 'narrative_justification']
         }
       },
       stipends: {
@@ -319,6 +354,355 @@ const Schemas = {
                'participant_support_has_data', 'materials_supplies', 'other_direct_lines',
 ]
   },
+
+  'general': {
+    type: 'object',
+    properties: {
+      senior_personnel: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            name:                  { type: 'string' },
+            role:                  { type: 'string' },
+            effort_months_per_year:         { type: 'number' },
+            effort_type:           { type: 'string' },
+            base_salary:           { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  year: { type: 'number' },
+                  cost: { type: 'number' }
+                },
+                required: ['year', 'cost']
+              }
+            },
+            total_salary:          { type: 'number' },
+            narrative_description: { type: 'string' },
+            escalation_note:       { type: 'string' }
+          },
+          required: ['name', 'role', 'effort_months_per_year', 'effort_type', 'base_salary', 'yearly_breakdown', 'total_salary', 'narrative_description', 'escalation_note']
+        }
+      },
+      other_personnel: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            role:                  { type: 'string' },
+            number_of_individuals: { type: 'number' },
+            rate_type:             { type: 'string' },
+            rate_amount:           { type: 'number' },
+            effort_description:    { type: 'string' },
+            yearly_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  year: { type: 'number' },
+                  cost: { type: 'number' }
+                },
+                required: ['year', 'cost']
+              }
+            },
+            total_cost:            { type: 'number' },
+            narrative_description: { type: 'string' },
+            escalation_note:       { type: 'string' }
+          },
+          required: ['role', 'number_of_individuals', 'rate_type', 'rate_amount',
+                     'effort_description', 'yearly_breakdown', 'total_cost', 'narrative_description', 'escalation_note']
+        }
+      },
+      equipment: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            item_name:              { type: 'string' },
+            cost:                   { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  year: { type: 'number' },
+                  cost: { type: 'number' }
+                },
+                required: ['year', 'cost']
+              }
+            },
+            narrative_justification:{ type: 'string' }
+          },
+          required: ['item_name', 'cost', 'yearly_breakdown', 'narrative_justification']
+        }
+      },
+      domestic_travel: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            trip_purpose:           { type: 'string' },
+            destination:            { type: 'string' },
+            num_people:             { type: 'number' },
+            event_name:             { type: 'string' },
+            cost:                   { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  year: { type: 'number' },
+                  cost: { type: 'number' }
+                },
+                required: ['year', 'cost']
+              }
+            },
+            cost_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  component_name: { type: 'string', enum: ['Airfare', 'Mileage', 'Lodging', 'Per Diem', 'Registration', 'Other'] },
+                  formula:        { type: 'string' },
+                  amount:         { type: 'number' }
+                },
+                required: ['component_name', 'formula', 'amount']
+              }
+            },
+            narrative_justification:{ type: 'string' }
+          },
+          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'cost_breakdown', 'narrative_justification']
+        }
+      },
+      foreign_travel: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            trip_purpose:           { type: 'string' },
+            destination:            { type: 'string' },
+            num_people:             { type: 'number' },
+            event_name:             { type: 'string' },
+            cost:                   { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  year: { type: 'number' },
+                  cost: { type: 'number' }
+                },
+                required: ['year', 'cost']
+              }
+            },
+            cost_breakdown: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  component_name: { type: 'string', enum: ['Airfare', 'Mileage', 'Lodging', 'Per Diem', 'Registration', 'Other'] },
+                  formula:        { type: 'string' },
+                  amount:         { type: 'number' }
+                },
+                required: ['component_name', 'formula', 'amount']
+              }
+            },
+            narrative_justification:{ type: 'string' }
+          },
+          required: ['trip_purpose', 'destination', 'num_people', 'event_name', 'cost', 'yearly_breakdown', 'cost_breakdown', 'narrative_justification']
+        }
+      },
+      stipends: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            num_participants: { type: 'number' },
+            cost:             { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] }
+            },
+            justification:    { type: 'string' }
+          },
+          required: ['num_participants', 'cost', 'yearly_breakdown', 'justification']
+        }
+      },
+      participant_travel: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            num_participants: { type: 'number' },
+            cost:             { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] }
+            },
+            justification:    { type: 'string' }
+          },
+          required: ['num_participants', 'cost', 'yearly_breakdown', 'justification']
+        }
+      },
+      subsistence: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            num_participants: { type: 'number' },
+            cost:             { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] }
+            },
+            justification:    { type: 'string' }
+          },
+          required: ['num_participants', 'cost', 'yearly_breakdown', 'justification']
+        }
+      },
+      participant_other: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            num_participants: { type: 'number' },
+            cost:             { type: 'number' },
+            yearly_breakdown: {
+              type: 'array',
+              items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] }
+            },
+            justification:    { type: 'string' }
+          },
+          required: ['num_participants', 'cost', 'yearly_breakdown', 'justification']
+        }
+      },
+      participant_support_has_data: { type: 'boolean' },
+      materials_supplies: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            category_name:          { type: 'string' },
+            cost:                   { type: 'number' },
+            yearly_breakdown: { type: 'array', items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] } },
+            narrative_justification:{ type: 'string' }
+          },
+          required: ['category_name', 'cost', 'yearly_breakdown', 'narrative_justification']
+        }
+      },
+      construction_costs: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            category_name:          { type: 'string' },
+            cost:                   { type: 'number' },
+            yearly_breakdown: { type: 'array', items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] } },
+            narrative_justification:{ type: 'string' }
+          },
+          required: ['category_name', 'cost', 'yearly_breakdown', 'narrative_justification']
+        }
+      },
+      publications: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            publication_title_or_type:{ type: 'string' },
+            cost:                     { type: 'number' },
+            yearly_breakdown: { type: 'array', items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] } },
+            narrative_justification:  { type: 'string' }
+          },
+          required: ['publication_title_or_type', 'cost', 'yearly_breakdown', 'narrative_justification']
+        }
+      },
+      consultants: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            consultant_name:        { type: 'string' },
+            cost:                   { type: 'number' },
+            expertise_area:         { type: 'string' },
+            rate:                   { type: 'number' },
+            days:                   { type: 'number' },
+            yearly_breakdown: { type: 'array', items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] } },
+            narrative_justification:{ type: 'string' }
+          },
+          required: ['consultant_name', 'cost', 'expertise_area', 'rate', 'days', 'yearly_breakdown', 'narrative_justification']
+        }
+      },
+      computer_services: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            service_description:    { type: 'string' },
+            cost:                   { type: 'number' },
+            yearly_breakdown: { type: 'array', items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] } },
+            narrative_justification:{ type: 'string' }
+          },
+          required: ['service_description', 'cost', 'yearly_breakdown', 'narrative_justification']
+        }
+      },
+      subawards: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            institution_name:       { type: 'string' },
+            cost:                   { type: 'number' },
+            sub_pi:                 { type: 'string' },
+            yearly_breakdown: { type: 'array', items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] } },
+            narrative_justification:{ type: 'string' }
+          },
+          required: ['institution_name', 'cost', 'sub_pi', 'yearly_breakdown', 'narrative_justification']
+        }
+      },
+      other_direct_lines: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            item_name:              { type: 'string' },
+            cost:                   { type: 'number' },
+            yearly_breakdown: { type: 'array', items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] } },
+            narrative_justification:{ type: 'string' }
+          },
+          required: ['item_name', 'cost', 'yearly_breakdown', 'narrative_justification']
+        }
+      },
+      fringe_benefits: {
+        type: 'object',
+        properties: {
+          total_cost:            { type: 'number' },
+          narrative_description: { type: 'string' },
+          yearly_breakdown: {
+            type: 'array',
+            items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] }
+          }
+        },
+        required: ['total_cost', 'narrative_description', 'yearly_breakdown']
+      },
+      indirect_costs: {
+        type: 'object',
+        properties: {
+          total_cost:            { type: 'number' },
+          narrative_description: { type: 'string' },
+          yearly_breakdown: {
+            type: 'array',
+            items: { type: 'object', properties: { year: { type: 'number' }, cost: { type: 'number' } }, required: ['year', 'cost'] }
+          }
+        },
+        required: ['total_cost', 'narrative_description', 'yearly_breakdown']
+      }
+    },
+    required: ['senior_personnel', 'other_personnel', 'equipment', 'domestic_travel', 'foreign_travel',
+               'participant_support_has_data', 'materials_supplies', 'other_direct_lines',
+]
+  },
 };
 
 const VerifierSchemas = {
@@ -424,5 +808,32 @@ const VerifierSchemas = {
       resolution_summary: { type: 'string' }
     },
     required: ['assistant_reply', 'tag', 'needs_followup', 'resolution_summary']
+  }
+};
+
+const GeneratorAuditSchemas = {
+  itemList: {
+    type: 'array',
+    items: { type: 'string' }
+  },
+  totalBudget: {
+    type: 'object',
+    properties: {
+      total_budget: { type: 'number' }
+    },
+    required: ['total_budget']
+  },
+  otherDuplicates: {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        item_name:    { type: 'string' },
+        cost:         { type: 'number' },
+        is_duplicate: { type: 'boolean' },
+        duplicate_of: { type: 'string' }
+      },
+      required: ['item_name', 'cost', 'is_duplicate', 'duplicate_of']
+    }
   }
 };

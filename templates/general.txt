@@ -1,0 +1,145 @@
+General grants.gov Budget Justification
+
+================================================================
+COMPLIANCE NOTES
+- Section layout: A. Personnel, B. Fringe Benefits, C. Travel, D. Equipment,
+  E. Supplies, F. Contractual, G. Construction, H. Other, I. Indirect Costs, J. Total Costs
+- Personnel (A) combines Senior Personnel and Other Personnel under one header,
+  with a single combined "total request for Personnel" summary line
+- Fringe Benefits (B) is a single combined figure — not broken down by rate
+  group/personnel category the way NSF's Fringe Benefits section is
+- Travel (C) lists Domestic and Foreign travel under one header, no sub-headers
+- Contractual (F) lists Consultant Services and Subawards under one header, no
+  sub-headers, with a single combined "total request for Contracts" summary line
+- Construction (G) categories follow the federal SF-424C Budget Information for
+  Construction Programs form (site work, demolition/removal, land/structures/
+  rights-of-way, architectural/engineering fees, project inspection fees,
+  construction/major renovation, contingencies) — modeled as a lightweight
+  array of cost items, not the full 17-field SF-424C form
+- Other (H) combines Participant Support Costs (H.1), Publication Costs /
+  Documentation / Dissemination (H.2), Computer Services (H.3), and Other (H.4)
+- Total Costs (J) is a computed grand total across sections A-I, not AI-generated
+================================================================
+
+A. Personnel
+{#senior_personnel}
+{name}, {role} (Effort: {effort_months} {effort_type} months). Funds are requested based on an Institutional Base Salary (IBS) of ${base_salary}. {narrative_description}
+
+Yearly Requested Salary Breakdown:
+{#yearly_breakdown}
+  - {year}: ${cost}
+{/yearly_breakdown}
+Total Requested Salary: ${total_salary}
+{/senior_personnel}
+
+{#other_personnel}
+{role} ({number_of_individuals} individual(s), Effort: {effort_description}).
+Base rate: {formatted_rate_text}. {narrative_description}
+
+Yearly Cost Breakdown:
+{#yearly_breakdown}
+  - Year {year}: ${cost}
+{/yearly_breakdown}
+Total Requested: ${total_cost}
+{/other_personnel}
+
+The total request for Personnel is [combined senior + other total].
+
+B. Fringe Benefits
+{fringe_benefits.narrative_description}
+{#fringe_benefits.yearly_breakdown}
+  - Year {year}: ${cost}
+{/fringe_benefits.yearly_breakdown}
+
+Total Requested Fringe Benefits: ${fringe_benefits.total_cost}
+
+C. Travel
+{#domestic_travel}
+{trip_purpose} (${cost}): Funds are requested for travel to {destination} for {num_people} person(s) to attend {event_name}. {narrative_justification}
+{destination}
+{#cost_breakdown}
+${amount} - {component_name} ({formula})
+{/cost_breakdown}
+Estimated total travel expenses: [sum of cost_breakdown amounts]
+{/domestic_travel}
+
+{#foreign_travel}
+{trip_purpose} (${cost}): Funds are requested for travel to {destination} for {num_people} person(s) to attend {event_name}. {narrative_justification}
+{destination}
+{#cost_breakdown}
+${amount} - {component_name} ({formula})
+{/cost_breakdown}
+Estimated total travel expenses: [sum of cost_breakdown amounts]
+{/foreign_travel}
+
+Each trip variant is its own independent entry (no nesting/grouping of multiple
+trip variants). cost_breakdown is only rendered when the trip has itemized
+components (component_name is one of: Airfare, Mileage, Lodging, Per Diem,
+Registration, Other); otherwise only the narrative line prints.
+
+The total request for Travel is [combined domestic + foreign total], shown
+unconditionally.
+
+D. Equipment
+{#equipment}
+{item_name} (${cost}): {narrative_justification}
+{#yearly_breakdown}
+  - {year}: ${cost}
+{/yearly_breakdown}
+{/equipment}
+{^equipment}
+No items of equipment (defined as non-expendable equipment with an acquisition cost of $5,000 or more and a useful life of more than one year) are requested for this project.
+{/equipment}
+
+E. Supplies
+{#materials_supplies}
+{category_name} (${cost}): {narrative_justification}
+{/materials_supplies}
+
+F. Contractual
+{#consultants}
+{consultant_name} (${cost}): Will provide expertise on {expertise_area}. Rate is ${rate}/day for {days} days. {narrative_justification}
+{/consultants}
+
+{#subawards}
+{institution_name} (${cost}): A separate budget and justification are attached for the subaward to {institution_name} under the direction of {sub_pi}. {narrative_justification}
+{/subawards}
+
+The total request for Contracts is [combined consultants + subawards total].
+
+G. Construction
+{#construction_costs}
+{category_name} (${cost}): {narrative_justification}
+{/construction_costs}
+
+H. Other
+
+H.1 Participant Support Costs
+Stipends: {#stipends}${cost} - {justification} {/stipends}
+Travel: {#participant_travel}${cost} - {justification} {/participant_travel}
+Subsistence: {#subsistence}${cost} - {justification} {/subsistence}
+Other: {#participant_other}${cost} - {justification} {/participant_other}
+{^participant_support_has_data}
+No participant support costs are requested for this project.
+{/participant_support_has_data}
+
+H.2 Publication Costs / Documentation / Dissemination
+{#publications}
+{publication_title_or_type} (${cost}): {narrative_justification}
+{/publications}
+
+H.3 Computer Services
+{#computer_services}
+{service_description} (${cost}): {narrative_justification}
+{/computer_services}
+
+H.4 Other
+{#other_direct_lines}
+{item_name} (${cost}): {narrative_justification}
+{/other_direct_lines}
+
+I. Indirect Costs (Facilities and Administrative Costs)
+{fa_boilerplate}
+
+J. Total Costs
+Computed grand total across sections A-I.

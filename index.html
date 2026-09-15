@@ -22,49 +22,171 @@
     </div>
   </header>
 
-  <nav class="tab-nav">
-    <button class="tab-btn active" data-tab="verify">Verifier</button>
-    <button class="tab-btn" data-tab="settings">Settings</button>
-    <button class="tab-btn tab-btn-aside" data-tab="generator">Generator</button>
+  <main id="project-picker" class="project-picker">
+    <div class="section-card">
+      <div class="section-header-row">
+        <h2 class="section-title">Projects</h2>
+        <div class="section-header-actions">
+          <button id="open-settings-btn" class="btn btn-secondary btn-sm">Settings</button>
+          <button id="new-project-btn" class="btn btn-primary btn-sm">+ New Project</button>
+        </div>
+      </div>
+      <div id="project-list" class="project-list">
+        <p class="empty-state" id="no-projects-message">No projects yet. Click "+ New Project" to create one.</p>
+      </div>
+    </div>
+  </main>
+
+  <main id="project-settings-view" class="project-picker hidden">
+    <div class="section-card">
+      <div class="section-header-row">
+        <h2 class="section-title">Settings</h2>
+        <button id="close-settings-btn" class="btn btn-secondary btn-sm">Back to Main Menu</button>
+      </div>
+    </div>
+
+    <div class="section-card" id="api-config-card">
+      <h2 class="section-title">API Configuration</h2>
+      <div id="api-key-warning-banner" class="warning-banner"></div>
+      <div class="form-group">
+        <label for="api-key-input">Gemini API Key</label>
+        <div class="input-with-action">
+          <input type="password" id="api-key-input" placeholder="Enter your Gemini API key" autocomplete="off">
+          <button id="toggle-key-visibility" class="btn btn-secondary btn-sm">Show</button>
+        </div>
+        <div class="api-key-actions">
+          <button id="save-api-key" class="btn btn-primary">Save API Key</button>
+          <button id="test-api-key" class="btn btn-secondary">Test API Key</button>
+        </div>
+        <p id="api-key-status" class="status-message" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-header-row">
+        <h2 class="section-title">Institutional Profiles</h2>
+        <button id="add-profile-btn" class="btn btn-primary btn-sm">+ New Profile</button>
+      </div>
+      <div id="profile-list" class="profile-list">
+        <p class="empty-state" id="no-profiles-message">No profiles saved yet. Click "+ New Profile" to create one.</p>
+      </div>
+    </div>
+  </main>
+
+  <nav class="tab-nav hidden">
+    <button class="tab-btn active" data-tab="generator">Generator</button>
+    <button class="tab-btn" data-tab="verify">Verifier</button>
+    <div id="header-active-project" class="header-active-project hidden">
+      <span id="header-active-project-name" class="header-active-project-name"></span>
+      <button type="button" id="back-to-projects-btn" class="btn btn-secondary btn-sm">Back to Main Menu</button>
+    </div>
   </nav>
 
-  <main class="app-main">
+  <main class="app-main hidden">
 
-    <section id="tab-settings" class="tab-panel hidden">
+    <section id="tab-generator" class="tab-panel">
 
-      <div class="section-card">
-        <h2 class="section-title">API Configuration</h2>
-        <div id="api-key-warning-banner" class="warning-banner"></div>
-        <div class="form-group">
-          <label for="api-key-input">Gemini API Key</label>
-          <div class="input-with-action">
-            <input type="password" id="api-key-input" placeholder="Enter your Gemini API key" autocomplete="off">
-            <button id="toggle-key-visibility" class="btn btn-secondary btn-sm">Show</button>
+      <div id="generator-input-form">
+        <div class="section-card">
+          <div class="form-group">
+            <label for="profile-select">Institutional Profile</label>
+            <select id="profile-select">
+              <option value="">— Select a profile —</option>
+            </select>
           </div>
-          <div class="api-key-actions">
-            <button id="save-api-key" class="btn btn-primary">Save API Key</button>
-            <button id="test-api-key" class="btn btn-secondary">Test API Key</button>
+          <div class="form-group">
+            <label for="template-select">Grant Template Type</label>
+            <select id="template-select">
+              <option value="">— Select a template type —</option>
+              <option value="nsf">National Science Foundation</option>
+              <option value="general">General - Grants.gov</option>
+            </select>
           </div>
-          <p id="api-key-status" class="status-message" aria-live="polite"></p>
+        </div>
+
+        <div class="section-card">
+          <div class="form-group">
+            <label for="budget-file-input">Budget File</label>
+            <div class="drop-zone" id="budget-drop-zone">
+              <input type="file" id="budget-file-input" accept=".csv,.xls,.xlsx">
+              <div class="drop-zone-content">
+                <span class="drop-zone-icon">⬆</span>
+                <span class="drop-zone-text">Drag & drop or <span class="drop-zone-link">browse</span></span>
+                <span class="drop-zone-hint">.csv, .xls, .xlsx</span>
+              </div>
+              <span class="drop-zone-filename hidden" id="budget-filename"></span>
+            </div>
+          </div>
+          <p id="total-budget-display" class="status-message success hidden"></p>
+          <div class="form-group hidden" id="total-budget-fallback-group">
+            <label for="total-budget-input">Total Budget — automatic extraction couldn't confirm a figure, please enter it from your spreadsheet</label>
+            <div class="input-with-action">
+              <input type="number" id="total-budget-input" min="0" step="0.01" placeholder="e.g., 250000">
+              <button type="button" id="total-budget-confirm-btn" class="btn btn-secondary btn-sm">Confirm</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="summary-label-row">
+              <label for="project-summary-input">Project <span id="summary-label-word" class="cycling-word">Summary</span></label>
+              <button type="button" id="summary-toggle" class="btn-link">Type instead</button>
+            </div>
+            <div class="drop-zone" id="summary-drop-zone">
+              <input type="file" id="project-summary-input" accept=".doc,.docx,.pdf">
+              <div class="drop-zone-content">
+                <span class="drop-zone-icon">⬆</span>
+                <span class="drop-zone-text">Drag & drop or <span class="drop-zone-link">browse</span></span>
+                <span class="drop-zone-hint">.doc, .docx, .pdf</span>
+              </div>
+              <span class="drop-zone-filename hidden" id="summary-filename"></span>
+            </div>
+            <textarea id="project-summary-text-input" class="hidden" rows="6" placeholder="Paste or type your project summary here..."></textarea>
+          </div>
         </div>
       </div>
 
-      <div class="section-card">
-        <div class="section-header-row">
-          <h2 class="section-title">Institutional Profiles</h2>
-          <button id="add-profile-btn" class="btn btn-primary btn-sm">+ New Profile</button>
+      <div class="generate-action" id="generator-form-actions">
+        <div class="mode-toggle-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="template-mode-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label">Template Mode <span class="toggle-hint">— Placeholders for justifications</span></span>
         </div>
-        <div id="profile-list" class="profile-list">
-          <p class="empty-state" id="no-profiles-message">No profiles saved yet. Click "+ New Profile" to create one.</p>
+        <button id="generate-btn" class="btn btn-primary btn-lg">Generate Justification</button>
+        <div id="generate-anim" class="verify-anim hidden" aria-hidden="true">
+          <div class="verify-anim-dots">
+            <span class="verify-anim-dot" data-stage="parse"></span>
+            <span class="verify-anim-dot" data-stage="extract"></span>
+            <span class="verify-anim-dot" data-stage="write"></span>
+            <span class="verify-anim-dot" data-stage="validate"></span>
+          </div>
+          <div class="verify-anim-viewport"></div>
+          <p class="verify-anim-batch hidden"></p>
+          <p class="verify-anim-count hidden"></p>
         </div>
+        <p id="generate-anim-live" class="visually-hidden" aria-live="polite"></p>
       </div>
+
+      <div class="generate-action hidden" id="generator-draft-actions">
+        <button type="button" id="resume-editing-btn" class="btn btn-primary btn-lg">View Generated Budget Justification</button>
+        <button type="button" id="regenerate-btn" class="btn btn-secondary">Regenerate Budget Justification From Scratch</button>
+      </div>
+
+      <button type="button" id="log-toggle" class="btn-link hidden">Show details</button>
+      <div id="step-log" class="step-log hidden" aria-live="polite"></div>
+      <p id="generate-status" class="status-message" aria-live="polite"></p>
+      <div id="generator-draft-decoration" class="generator-decoration hidden" aria-hidden="true"></div>
 
     </section>
 
-    <section id="tab-verify" class="tab-panel">
+    <section id="tab-verify" class="tab-panel hidden">
 
       <div class="section-card">
-        <p class="verify-intro">Upload a budget justification document and its corresponding budget spreadsheet. Just-In-Time will identify every dollar amount in the justification and check whether it matches the spreadsheet.</p>
+        <div class="verify-intro-row">
+          <p class="verify-intro">This project's budget spreadsheet and most recently generated justification are filled in automatically below — upload a different file for either one if you want to check something else instead. Just-In-Time will identify every dollar amount in the justification and check whether it matches the spreadsheet.</p>
+          <button type="button" id="verify-history-toggle" class="btn-link hidden">Verification History</button>
+        </div>
+        <div id="verify-history-panel" class="verify-history-panel hidden"></div>
 
         <div class="form-group">
           <label for="verify-justification-input">Budget Justification</label>
@@ -120,77 +242,9 @@
 
     </section>
 
-    <section id="tab-generator" class="tab-panel hidden">
-
-      <div class="section-card">
-        <div class="form-group">
-          <label for="profile-select">Institutional Profile</label>
-          <select id="profile-select">
-            <option value="">— Select a profile —</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="template-select">Grant Template Type</label>
-          <select id="template-select">
-            <option value="nsf">National Science Foundation</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <div class="form-group">
-          <label for="budget-file-input">Budget File</label>
-          <div class="drop-zone" id="budget-drop-zone">
-            <input type="file" id="budget-file-input" accept=".csv,.xls,.xlsx">
-            <div class="drop-zone-content">
-              <span class="drop-zone-icon">⬆</span>
-              <span class="drop-zone-text">Drag & drop or <span class="drop-zone-link">browse</span></span>
-              <span class="drop-zone-hint">.csv, .xls, .xlsx</span>
-            </div>
-            <span class="drop-zone-filename hidden" id="budget-filename"></span>
-          </div>
-        </div>
-        <div class="form-group">
-          <div class="summary-label-row">
-            <label for="project-summary-input">Project <span id="summary-label-word" class="cycling-word">Summary</span></label>
-            <button type="button" id="summary-toggle" class="btn-link">Type instead</button>
-          </div>
-          <div class="drop-zone" id="summary-drop-zone">
-            <input type="file" id="project-summary-input" accept=".doc,.docx,.pdf">
-            <div class="drop-zone-content">
-              <span class="drop-zone-icon">⬆</span>
-              <span class="drop-zone-text">Drag & drop or <span class="drop-zone-link">browse</span></span>
-              <span class="drop-zone-hint">.doc, .docx, .pdf</span>
-            </div>
-            <span class="drop-zone-filename hidden" id="summary-filename"></span>
-          </div>
-          <textarea id="project-summary-text-input" class="hidden" rows="6" placeholder="Paste or type your project summary here..."></textarea>
-        </div>
-      </div>
-
-      <div class="generate-action">
-        <div class="mode-toggle-row">
-          <label class="toggle-switch">
-            <input type="checkbox" id="template-mode-toggle">
-            <span class="toggle-slider"></span>
-          </label>
-          <span class="toggle-label">Template Mode <span class="toggle-hint">— Placeholders for justifications</span></span>
-        </div>
-        <button id="generate-btn" class="btn btn-primary btn-lg">Generate Justification</button>
-        <div id="loading-indicator" class="hidden">
-          <div class="loading-spinner"></div>
-          <p class="loading-text">Generating your justification<span class="loading-dots"></span></p>
-        </div>
-        <button type="button" id="log-toggle" class="btn-link hidden">Show details</button>
-        <div id="step-log" class="step-log hidden" aria-live="polite"></div>
-        <p id="generate-status" class="status-message" aria-live="polite"></p>
-      </div>
-
-    </section>
-
   </main>
 
-  <button id="how-it-works-btn" class="how-it-works-btn" aria-label="How Just-In-Time works" title="How it works">?</button>
+  <button id="how-it-works-btn" class="how-it-works-btn hidden" aria-label="How Just-In-Time works" title="How it works">?</button>
 
   <div id="profile-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-overlay"></div>
@@ -280,8 +334,78 @@
         <button id="how-it-works-close" class="btn-icon" aria-label="Close">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="how-it-works-intro">Just-In-Time's Verifier checks a budget justification against its budget spreadsheet before you submit it — catching typos, stale rates, and unexplained gaps automatically. Here's what happens, step by step, when you click "Verify Budget."</p>
+        <p id="how-it-works-intro" class="how-it-works-intro"></p>
         <div id="how-it-works-flow"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="validation-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="validation-modal-title">
+    <div class="modal-overlay"></div>
+    <div class="modal-content chat-modal-content">
+      <div class="modal-header">
+        <h3 id="validation-modal-title">Review Your Draft</h3>
+      </div>
+      <div class="modal-body validation-modal-body">
+        <div id="validation-preview" class="chat-preview validation-preview"></div>
+        <div class="validation-side">
+          <p id="validation-message" class="validation-message"></p>
+          <div class="validation-actions">
+            <button type="button" id="validation-regenerate-btn" class="btn btn-secondary">Generate New Version</button>
+            <button type="button" id="validation-keep-btn" class="btn btn-primary">Keep This Version</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="editor-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="editor-modal-title">
+    <div class="modal-overlay"></div>
+    <div class="modal-content chat-modal-content">
+      <div class="modal-header">
+        <h3 id="editor-modal-title">Edit Justification</h3>
+        <div class="editor-header-actions">
+          <label class="btn btn-secondary btn-sm" for="editor-reupload-input">Re-upload Spreadsheet</label>
+          <input type="file" id="editor-reupload-input" accept=".csv,.xls,.xlsx" class="hidden">
+          <button type="button" id="editor-export-btn" class="btn btn-primary btn-sm">Export to .docx</button>
+        </div>
+        <button id="editor-close-btn" class="btn-icon" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="chat-preview">
+          <div class="preview-tabs">
+            <button type="button" class="preview-tab active" data-view="spreadsheet">Spreadsheet</button>
+            <button type="button" class="preview-tab" data-view="docs">Project Docs</button>
+          </div>
+          <div id="editor-sheet-tabs" class="sheet-tabs hidden"></div>
+          <div id="editor-sheet-body" class="chat-preview-body"></div>
+          <div id="editor-docs-body" class="chat-preview-body hidden"></div>
+        </div>
+        <div class="editor-canvas-pane">
+          <div id="editor-canvas-body" class="editor-canvas-body"></div>
+          <div id="editor-value-inspector" class="editor-value-inspector hidden"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="project-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="project-modal-title">New Project</h3>
+        <button id="close-project-modal" class="btn-icon" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="project-name-input">Project Name</label>
+          <input type="text" id="project-name-input" placeholder="e.g., NSF FY26 Renewal">
+          <p id="project-name-error" class="field-error hidden">Project name is required.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancel-project-modal" class="btn btn-secondary">Cancel</button>
+        <button id="save-project-btn" class="btn btn-primary">Save Project</button>
       </div>
     </div>
   </div>
@@ -315,6 +439,12 @@
   <script src="js/step-flow.js"></script>
   <script src="js/try-it-tutorial.js"></script>
   <script src="js/how-it-works.js"></script>
+  <script src="js/value-graph.js"></script>
+  <script src="js/layout-builder.js"></script>
+  <script src="js/editor-canvas.js"></script>
+  <script src="js/validation-checkpoint.js"></script>
+  <script src="js/project-store.js"></script>
+  <script src="js/project-picker.js"></script>
   <script src="js/app.js"></script>
 
 </body>

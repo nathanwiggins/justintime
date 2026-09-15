@@ -80,14 +80,16 @@ function initCyclingLabel() {
   }, 3000);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   setupEnvironment();
 
-  Settings.init();
+  await Settings.init();
   Generator.init();
   VerifierChat.init();
   VerifierTab.init();
   HowItWorks.init();
+  EditorCanvas.init();
+  await ProjectPicker.init();
   loadLastUpdated();
   initCyclingLabel();
 
@@ -103,6 +105,78 @@ document.addEventListener('DOMContentLoaded', () => {
 
       btn.classList.add('active');
       document.getElementById(`tab-${target}`).classList.remove('hidden');
+
+      if (target === 'verify') syncVerifyInputsFromProject();
+      updateHowItWorksVisibility();
     });
   });
+
+  document.addEventListener('project:opened', () => {
+    syncVerifyInputsFromProject();
+    updateHowItWorksVisibility();
+  });
 });
+
+function updateHowItWorksVisibility() {
+  const btn = document.getElementById('how-it-works-btn');
+  const appVisible = !document.querySelector('.app-main').classList.contains('hidden');
+  const activeTab  = document.querySelector('.tab-btn.active')?.dataset.tab;
+  const project    = appVisible ? ProjectPicker.getActive() : null;
+
+  let show = false;
+  if (project) {
+    if (activeTab === 'generator') {
+      show = !(project.document && project.document.blocks && project.document.blocks.length);
+    } else if (activeTab === 'verify') {
+      show = !(project.verificationHistory && project.verificationHistory.length);
+    }
+  }
+
+  btn.classList.toggle('hidden', !show);
+}
+
+function setInputFile(inputId, file) {
+  const input = document.getElementById(inputId);
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  input.files = dt.files;
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function resetDropZone(zoneId, inputId, filenameId) {
+  const zone     = document.getElementById(zoneId);
+  const input    = document.getElementById(inputId);
+  const filename = document.getElementById(filenameId);
+
+  input.value = '';
+  filename.textContent = '';
+  filename.classList.add('hidden');
+  zone.classList.remove('has-file');
+  const content = zone.querySelector('.drop-zone-content');
+  if (content) content.classList.remove('hidden');
+}
+
+async function snapshotJustificationFile(project) {
+  if (project.document && project.document.blocks && project.document.blocks.length) {
+    const { blob, fileName } = await Document.buildBlob(project.templateType, project.document.blocks, project.document.valueGraph);
+    return new File([blob], fileName, { type: blob.type });
+  }
+  if (project.exportedJustification && project.exportedJustification.fileBlob) {
+    return project.exportedJustification.fileBlob;
+  }
+  return null;
+}
+
+async function syncVerifyInputsFromProject() {
+  const project = ProjectPicker.getActive();
+  if (!project) return;
+
+  if (project.spreadsheet && project.spreadsheet.fileBlob) {
+    setInputFile('verify-budget-input', project.spreadsheet.fileBlob);
+  }
+
+  const justificationFile = await snapshotJustificationFile(project);
+  if (justificationFile) {
+    setInputFile('verify-justification-input', justificationFile);
+  }
+}
