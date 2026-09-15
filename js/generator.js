@@ -416,6 +416,14 @@ const Generator = (() => {
 
   async function runBudgetScan(file, canScan) {
     const parsed = await Parser.parse(file);
+
+    const project = ProjectPicker.getActive();
+    if (project) {
+      project.spreadsheet = { fileName: file.name, fileBlob: file, csvText: parsed.csvText, sheets: parsed.sheets, uploadedAt: Date.now() };
+      await ProjectPicker.persistActive();
+      syncVerifyInputsFromProject();
+    }
+
     if (!canScan) {
       return { csvText: parsed.csvText, sheets: parsed.sheets, numYears: parsed.numYears, totalBudget: null };
     }
@@ -605,7 +613,6 @@ const Generator = (() => {
       project.numYears    = numYears;
       project.profileId   = form.profileId;
       project.totalBudget = totalBudget;
-      project.spreadsheet = { fileName: form.file.name, fileBlob: form.file, csvText, sheets, uploadedAt: Date.now() };
       project.summary     = form.summaryMode === 'file'
         ? { mode: 'file', fileName: form.summaryFile.name, fileBlob: form.summaryFile, text: projectSummary, uploadedAt: Date.now() }
         : { mode: 'text', text: projectSummary, uploadedAt: Date.now() };

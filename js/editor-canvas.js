@@ -458,6 +458,7 @@ const EditorCanvas = (() => {
     project.exportedJustification = { fileName, fileBlob: new File([blob], fileName, { type: blob.type }), exportedAt: Date.now() };
     project.document.phase = 'exported';
     await persist();
+    syncVerifyInputsFromProject();
   }
 
   function close() {

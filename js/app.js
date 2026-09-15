@@ -108,28 +108,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  function wireProjectFileCarryOver(btnId, inputId, getFile) {
-    const useBtn = document.getElementById(btnId);
-    const file   = getFile();
-    useBtn.classList.toggle('hidden', !file);
-    useBtn.onclick = () => {
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      const input = document.getElementById(inputId);
-      input.files = dt.files;
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-    };
-  }
-
-  document.addEventListener('project:opened', e => {
-    const project = e.detail.project;
-    wireProjectFileCarryOver(
-      'verify-use-project-spreadsheet-btn', 'verify-budget-input',
-      () => project.spreadsheet && project.spreadsheet.fileBlob
-    );
-    wireProjectFileCarryOver(
-      'verify-use-project-justification-btn', 'verify-justification-input',
-      () => project.exportedJustification && project.exportedJustification.fileBlob
-    );
-  });
+  document.addEventListener('project:opened', () => syncVerifyInputsFromProject());
 });
+
+function setInputFile(inputId, file) {
+  const input = document.getElementById(inputId);
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  input.files = dt.files;
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function syncVerifyInputsFromProject() {
+  const project = ProjectPicker.getActive();
+  if (!project) return;
+
+  if (project.spreadsheet && project.spreadsheet.fileBlob) {
+    setInputFile('verify-budget-input', project.spreadsheet.fileBlob);
+  }
+  if (project.exportedJustification && project.exportedJustification.fileBlob) {
+    setInputFile('verify-justification-input', project.exportedJustification.fileBlob);
+  }
+}

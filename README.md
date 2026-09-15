@@ -25,7 +25,7 @@ A lightweight, client-side budget justification generator and verifier for resea
 - Categories and sub-sections with no budgeted items skip their "total request" sentence and headers instead of showing a $0 placeholder.
 
 ### Verifier
-- Upload a budget justification `.docx` and its spreadsheet — or reuse the active project's spreadsheet, or a justification already generated and exported in this project, each with one click — and click **Verify Budget**.
+- The active project's budget spreadsheet and most recently exported justification are filled in automatically — upload a different file for either one if you want to check something else instead — then click **Verify Budget**.
 - AI labels every dollar value, matches it against the spreadsheet, and groups discrepancies by root cause.
 - A guided chat walks you through each finding — confirm it, explain it away, click "Ignore Issue" to skip it, or click "Flag Issue" to mark it as a confirmed issue without discussion.
 - The justification and spreadsheet are shown side-by-side with the chat, with flagged values highlighted and auto-tracked as you go.
@@ -188,7 +188,7 @@ Push to `main` — GitHub Pages serves `index.html` from the repository root aut
 6. Click **Export to .docx** whenever you're ready — export again anytime as you keep editing.
 
 ### Bringing your own justification
-1. Go to the **Verifier** tab, upload the `.docx` and its spreadsheet — or reuse this project's spreadsheet, or a justification you've already generated and exported here, with one click each — and click **Verify Budget**.
+1. Go to the **Verifier** tab — this project's spreadsheet and most recently exported justification are already filled in; upload a different file for either one if you want to check something else instead — and click **Verify Budget**.
 2. Work through the chat that opens for each flagged finding — confirm, dismiss, or ignore it.
 3. Review the summary, then either download the marked-up document or click **Open in Editor** to continue editing it the same way as a generated draft.
 
