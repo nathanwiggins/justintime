@@ -138,12 +138,14 @@ const ProjectPicker = (() => {
     document.querySelector('.tab-nav').classList.add('hidden');
     document.querySelector('.app-main').classList.add('hidden');
     document.getElementById('header-active-project').classList.add('hidden');
+    updateHowItWorksVisibility();
     loadProjects();
   }
 
   function showSettings() {
     document.getElementById('project-picker').classList.add('hidden');
     document.getElementById('project-settings-view').classList.remove('hidden');
+    updateHowItWorksVisibility();
   }
 
   async function openProject(id) {

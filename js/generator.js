@@ -642,6 +642,7 @@ const Generator = (() => {
       VerifyAnim.finish('clean');
       setGenerating(false);
       updateGeneratorViewState();
+      document.dispatchEvent(new CustomEvent('generate:complete'));
       EditorCanvas.open(project);
     } catch (err) {
       VerifyAnim.fail();
@@ -713,6 +714,8 @@ const Generator = (() => {
     if (hasDraft) {
       document.getElementById('resume-editing-btn').onclick = () => EditorCanvas.open(project);
     }
+
+    updateHowItWorksVisibility();
   }
 
   async function handleRegenerate() {

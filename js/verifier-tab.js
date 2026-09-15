@@ -38,6 +38,7 @@ const VerifierTab = (() => {
     project.verificationHistory = [entry, ...(project.verificationHistory || [])].slice(0, MAX_HISTORY_ENTRIES);
     await ProjectPicker.persistActive();
     renderHistoryPanel();
+    updateHowItWorksVisibility();
   }
 
   function formatHistoryTimestamp(ts) {
