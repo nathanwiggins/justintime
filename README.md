@@ -6,13 +6,13 @@ A lightweight, client-side budget justification generator and verifier for resea
 
 ### Projects
 - Every generation and verification happens inside a Project — create one on first load, and return to the project list anytime with **Back to Main Menu**.
-- A project remembers its spreadsheet, project documentation, template type, profile, Total Budget figure, in-progress draft, and exported justification, so you can leave and come back later.
+- A project remembers its spreadsheet, project documentation, template type, profile, Total Budget figure, in-progress draft, exported justification, and verification history, so you can leave and come back later.
 - Projects are stored entirely in your browser (IndexedDB) — nothing is uploaded to a server.
 - Settings (API key and Institutional Profiles) live on the Projects screen, via the **Settings** button — they're shared across all your projects, not scoped to one. On an on-premises (Vandalizer) deployment, the API Configuration section is hidden entirely, since AI calls route through the deployment's own proxy.
 
 ### Generator
 - A 3-phase flow: Generate a first draft, Validate it, then Edit it in an interactive canvas before exporting.
-- Upload a budget spreadsheet and project summary, choose a Grant Template Type (National Science Foundation or General grants.gov) and Institutional Profile, and click **Generate Justification**.
+- Upload a budget spreadsheet and project summary, choose a Grant Template Type (National Science Foundation or General grants.gov) and Institutional Profile, and click **Generate Justification**. Both the profile and template dropdowns start unselected — you have to actively choose one.
 - The spreadsheet's overall Total Budget figure starts scanning the moment you upload it — two independent AI readings have to agree before it's accepted, retried up to 5 times. A resolved figure appears in place as "Total Budget: $…"; if the readings never agree, you're asked to type it in yourself instead.
 - Institutional Profiles store your fringe/F&A boilerplate so the AI weaves institution-specific language into the narrative.
 - Before extracting each section, the AI first suggests which items belong in it based on the budget spreadsheet, then those suggestions steer the real extraction toward what's actually relevant — visible in each section's "Details" log. Skipped for Fringe Benefits and Indirect Costs.
@@ -21,6 +21,7 @@ A lightweight, client-side budget justification generator and verifier for resea
 - Travel line items break down into itemized cost components (Airfare, Mileage, Lodging, Per Diem, Registration, Other) with a computed subtotal, when the budget spreadsheet itemizes them.
 - Items in the generic "Other" category are automatically checked against every other budget category and dropped if they appear to be the same expense counted twice.
 - Before you commit to a draft, you're shown a preview and asked whether to keep it or generate a new one.
+- Once a draft exists, the upload form gives way to two big buttons: **View Generated Budget Justification** to reopen the editor, and **Regenerate Budget Justification From Scratch** to discard everything — the draft, every uploaded file, your profile/template selection — and start over (with a confirmation prompt first, since it can't be undone). "Show details"/the generation log stays available either way.
 - Template Mode produces a structured draft with placeholder text instead of full AI-written narrative.
 - Categories and sub-sections with no budgeted items skip their "total request" sentence and headers instead of showing a $0 placeholder.
 
@@ -29,12 +30,14 @@ A lightweight, client-side budget justification generator and verifier for resea
 - AI labels every dollar value, matches it against the spreadsheet, and groups discrepancies by root cause.
 - A guided chat walks you through each finding — confirm it, explain it away, click "Ignore Issue" to skip it, or click "Flag Issue" to mark it as a confirmed issue without discussion.
 - The justification and spreadsheet are shown side-by-side with the chat, with flagged values highlighted and auto-tracked as you go.
-- Ends with a plain-language summary, a downloadable marked-up copy with flagged values highlighted, and an **Open in Editor** button that imports the document into the same interactive editor the Generator uses — every dollar figure it can match to your spreadsheet becomes Linked automatically.
+- Ends with a plain-language summary and a downloadable marked-up copy of the justification with flagged values highlighted.
+- A "Verification History" link (only shown once you have at least one run) lists past runs for the project — files checked, when, and a clean/issue-count badge — so you can revisit an old result without re-running anything.
 - "Try it out!" launches a guided, sample-document run-through of the whole review flow, with on-screen arrows pointing to what to click next. Exit it at any time.
 
 ### The Editor
-However a draft arrives — generated or imported — every dollar figure is either **Linked** to a spreadsheet cell or **Calculated** as a sum of other values, and everything else is free text you can edit directly, section headers included.
+Every dollar figure is either **Linked** to a spreadsheet cell or **Calculated** as a sum of other values, and everything else is free text you can edit directly, section headers included.
 - Click any figure to see where it comes from — a linked figure shows its sheet name and cell reference, a calculated one shows how many values feed into it, and looks visually distinct from the values that make it up — then relink it, edit its formula, or unlink it. Click anywhere else to close the inspector.
+- Select any plain text that reads as a dollar amount and click **Set Selection as Value** in the header to turn it into a proper value you can then link or calculate.
 - While editing a calculated value's formula, clicking other figures adds or removes them from the total live, with the ones currently included highlighted and everything else dimmed.
 - A banner flags any figure that couldn't be automatically matched to your spreadsheet, with one click to jump to it and link it or mark it as calculated; exporting with unresolved figures still remaining asks you to confirm first.
 - A "Project Docs" tab next to the spreadsheet lets you view the project documentation you uploaded, alongside the spreadsheet itself.
@@ -64,8 +67,6 @@ flowchart LR
     M -->|grouped by root cause| F[Findings]
     F --> C[Guided chat: confirm, dismiss, or flag]
     C --> R[Marked-up justification]
-    C --> E[Open in Editor: values auto-linked to spreadsheet]
-    E --> D[Exported justification .docx]
 ```
 
 - Dollar values are found by searching the document's text, not by asking AI — so nothing gets invented or missed.
@@ -121,14 +122,13 @@ justintime/
 │   ├── parser.js           # SheetJS parsing: CSV text + per-cell sheet data for linking
 │   ├── value-graph.js       # Classifies every dollar figure as Linked or Calculated; recomputes on edit
 │   ├── layout-builder.js   # Builds the editable block outline of a generated draft
-│   ├── doc-ingest.js       # Converts an uploaded justification into the same block/value-graph model
 │   ├── editor-canvas.js    # Interactive editor: free-text editing, linking, formulas, audit banner, export
 │   ├── validation-checkpoint.js # Pass/fail checkpoint against the extracted Total Budget
 │   ├── api.js              # Universal API adapter: Gemini direct (standalone) or Vandalizer proxy (DGX-hosted)
 │   ├── schemas.js          # Full JSON schemas per template type + VerifierSchemas
 │   ├── sections.js         # Section registry: ordered section definitions per template
 │   ├── verifier.js         # Portable two-step verification core: Verifier.run(text, csv, key)
-│   ├── verifier-tab.js     # Verifier tab UI: file handling, orchestration, results, hand-off to Editor
+│   ├── verifier-tab.js     # Verifier tab UI: file handling, orchestration, results, verification history
 │   ├── verify-anim.js      # Animated scan/label/match/audit/summarize progress sequence
 │   ├── verifier-chat.js    # Chat-driven findings review, persists/resumes via localStorage
 │   ├── highlighter.js      # DOCX markup: injects <w:highlight> into flagged runs via JSZip
@@ -184,12 +184,14 @@ Push to `main` — GitHub Pages serves `index.html` from the repository root aut
 2. Go to the **Generator** tab, select a profile and Grant Template Type, and upload your budget file — Total Budget extraction starts right away.
 3. Upload your project summary and click **Generate Justification**.
 4. Review the draft, then **Keep This Version** or **Generate New Version**.
-5. In the editor, link or relink figures to spreadsheet cells, build calculated values, and edit any text directly — headings and labels included.
+5. In the editor, link or relink figures to spreadsheet cells, build calculated values, select plain dollar text and click **Set Selection as Value** to bring it under the same system, and edit any text directly — headings and labels included.
 6. Click **Export to .docx** whenever you're ready — export again anytime as you keep editing.
+7. Once a draft exists, the Generator tab shows **View Generated Budget Justification** (reopens the editor) and **Regenerate Budget Justification From Scratch** (confirms, then wipes the draft and every uploaded file so you can start over).
 
 ### Bringing your own justification
 1. Go to the **Verifier** tab — this project's spreadsheet and current draft (auto-snapshotted, no export needed) are already filled in; upload a different file for either one if you want to check something else instead — and click **Verify Budget**.
 2. Work through the chat that opens for each flagged finding — confirm, dismiss, or ignore it.
-3. Review the summary, then either download the marked-up document or click **Open in Editor** to continue editing it the same way as a generated draft.
+3. Review the summary, then download the marked-up document if you'd like a copy with the flagged values highlighted.
+4. Past runs stay available from the **Verification History** link near the top of the tab if you want to revisit one later.
 
 See [How It Works](#how-it-works) for the strategy behind both tabs.

@@ -121,6 +121,19 @@ function setInputFile(inputId, file) {
   input.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
+function resetDropZone(zoneId, inputId, filenameId) {
+  const zone     = document.getElementById(zoneId);
+  const input    = document.getElementById(inputId);
+  const filename = document.getElementById(filenameId);
+
+  input.value = '';
+  filename.textContent = '';
+  filename.classList.add('hidden');
+  zone.classList.remove('has-file');
+  const content = zone.querySelector('.drop-zone-content');
+  if (content) content.classList.remove('hidden');
+}
+
 async function snapshotJustificationFile(project) {
   if (project.document && project.document.blocks && project.document.blocks.length) {
     const { blob, fileName } = await Document.buildBlob(project.templateType, project.document.blocks, project.document.valueGraph);

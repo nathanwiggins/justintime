@@ -86,62 +86,65 @@
 
     <section id="tab-generator" class="tab-panel">
 
-      <div class="section-card">
-        <div class="form-group">
-          <label for="profile-select">Institutional Profile</label>
-          <select id="profile-select">
-            <option value="">— Select a profile —</option>
-          </select>
+      <div id="generator-input-form">
+        <div class="section-card">
+          <div class="form-group">
+            <label for="profile-select">Institutional Profile</label>
+            <select id="profile-select">
+              <option value="">— Select a profile —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="template-select">Grant Template Type</label>
+            <select id="template-select">
+              <option value="">— Select a template type —</option>
+              <option value="nsf">National Science Foundation</option>
+              <option value="general">General - Grants.gov</option>
+            </select>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="template-select">Grant Template Type</label>
-          <select id="template-select">
-            <option value="nsf">National Science Foundation</option>
-            <option value="general">General - Grants.gov</option>
-          </select>
+
+        <div class="section-card">
+          <div class="form-group">
+            <label for="budget-file-input">Budget File</label>
+            <div class="drop-zone" id="budget-drop-zone">
+              <input type="file" id="budget-file-input" accept=".csv,.xls,.xlsx">
+              <div class="drop-zone-content">
+                <span class="drop-zone-icon">⬆</span>
+                <span class="drop-zone-text">Drag & drop or <span class="drop-zone-link">browse</span></span>
+                <span class="drop-zone-hint">.csv, .xls, .xlsx</span>
+              </div>
+              <span class="drop-zone-filename hidden" id="budget-filename"></span>
+            </div>
+          </div>
+          <p id="total-budget-display" class="status-message success hidden"></p>
+          <div class="form-group hidden" id="total-budget-fallback-group">
+            <label for="total-budget-input">Total Budget — automatic extraction couldn't confirm a figure, please enter it from your spreadsheet</label>
+            <div class="input-with-action">
+              <input type="number" id="total-budget-input" min="0" step="0.01" placeholder="e.g., 250000">
+              <button type="button" id="total-budget-confirm-btn" class="btn btn-secondary btn-sm">Confirm</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="summary-label-row">
+              <label for="project-summary-input">Project <span id="summary-label-word" class="cycling-word">Summary</span></label>
+              <button type="button" id="summary-toggle" class="btn-link">Type instead</button>
+            </div>
+            <div class="drop-zone" id="summary-drop-zone">
+              <input type="file" id="project-summary-input" accept=".doc,.docx,.pdf">
+              <div class="drop-zone-content">
+                <span class="drop-zone-icon">⬆</span>
+                <span class="drop-zone-text">Drag & drop or <span class="drop-zone-link">browse</span></span>
+                <span class="drop-zone-hint">.doc, .docx, .pdf</span>
+              </div>
+              <span class="drop-zone-filename hidden" id="summary-filename"></span>
+            </div>
+            <textarea id="project-summary-text-input" class="hidden" rows="6" placeholder="Paste or type your project summary here..."></textarea>
+          </div>
         </div>
       </div>
 
-      <div class="section-card">
-        <div class="form-group">
-          <label for="budget-file-input">Budget File</label>
-          <div class="drop-zone" id="budget-drop-zone">
-            <input type="file" id="budget-file-input" accept=".csv,.xls,.xlsx">
-            <div class="drop-zone-content">
-              <span class="drop-zone-icon">⬆</span>
-              <span class="drop-zone-text">Drag & drop or <span class="drop-zone-link">browse</span></span>
-              <span class="drop-zone-hint">.csv, .xls, .xlsx</span>
-            </div>
-            <span class="drop-zone-filename hidden" id="budget-filename"></span>
-          </div>
-        </div>
-        <p id="total-budget-display" class="status-message success hidden"></p>
-        <div class="form-group hidden" id="total-budget-fallback-group">
-          <label for="total-budget-input">Total Budget — automatic extraction couldn't confirm a figure, please enter it from your spreadsheet</label>
-          <div class="input-with-action">
-            <input type="number" id="total-budget-input" min="0" step="0.01" placeholder="e.g., 250000">
-            <button type="button" id="total-budget-confirm-btn" class="btn btn-secondary btn-sm">Confirm</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <div class="summary-label-row">
-            <label for="project-summary-input">Project <span id="summary-label-word" class="cycling-word">Summary</span></label>
-            <button type="button" id="summary-toggle" class="btn-link">Type instead</button>
-          </div>
-          <div class="drop-zone" id="summary-drop-zone">
-            <input type="file" id="project-summary-input" accept=".doc,.docx,.pdf">
-            <div class="drop-zone-content">
-              <span class="drop-zone-icon">⬆</span>
-              <span class="drop-zone-text">Drag & drop or <span class="drop-zone-link">browse</span></span>
-              <span class="drop-zone-hint">.doc, .docx, .pdf</span>
-            </div>
-            <span class="drop-zone-filename hidden" id="summary-filename"></span>
-          </div>
-          <textarea id="project-summary-text-input" class="hidden" rows="6" placeholder="Paste or type your project summary here..."></textarea>
-        </div>
-      </div>
-
-      <div class="generate-action">
+      <div class="generate-action" id="generator-form-actions">
         <div class="mode-toggle-row">
           <label class="toggle-switch">
             <input type="checkbox" id="template-mode-toggle">
@@ -150,7 +153,6 @@
           <span class="toggle-label">Template Mode <span class="toggle-hint">— Placeholders for justifications</span></span>
         </div>
         <button id="generate-btn" class="btn btn-primary btn-lg">Generate Justification</button>
-        <button type="button" id="resume-editing-btn" class="btn btn-secondary hidden">Resume Editing Draft</button>
         <div id="generate-anim" class="verify-anim hidden" aria-hidden="true">
           <div class="verify-anim-dots">
             <span class="verify-anim-dot" data-stage="parse"></span>
@@ -163,17 +165,27 @@
           <p class="verify-anim-count hidden"></p>
         </div>
         <p id="generate-anim-live" class="visually-hidden" aria-live="polite"></p>
-        <button type="button" id="log-toggle" class="btn-link hidden">Show details</button>
-        <div id="step-log" class="step-log hidden" aria-live="polite"></div>
-        <p id="generate-status" class="status-message" aria-live="polite"></p>
       </div>
+
+      <div class="generate-action hidden" id="generator-draft-actions">
+        <button type="button" id="resume-editing-btn" class="btn btn-primary btn-lg">View Generated Budget Justification</button>
+        <button type="button" id="regenerate-btn" class="btn btn-secondary">Regenerate Budget Justification From Scratch</button>
+      </div>
+
+      <button type="button" id="log-toggle" class="btn-link hidden">Show details</button>
+      <div id="step-log" class="step-log hidden" aria-live="polite"></div>
+      <p id="generate-status" class="status-message" aria-live="polite"></p>
 
     </section>
 
     <section id="tab-verify" class="tab-panel hidden">
 
       <div class="section-card">
-        <p class="verify-intro">This project's budget spreadsheet and most recently generated justification are filled in automatically below — upload a different file for either one if you want to check something else instead. Just-In-Time will identify every dollar amount in the justification and check whether it matches the spreadsheet, then let you continue editing it in the same interactive editor as a generated draft.</p>
+        <div class="verify-intro-row">
+          <p class="verify-intro">This project's budget spreadsheet and most recently generated justification are filled in automatically below — upload a different file for either one if you want to check something else instead. Just-In-Time will identify every dollar amount in the justification and check whether it matches the spreadsheet.</p>
+          <button type="button" id="verify-history-toggle" class="btn-link hidden">Verification History</button>
+        </div>
+        <div id="verify-history-panel" class="verify-history-panel hidden"></div>
 
         <div class="form-group">
           <label for="verify-justification-input">Budget Justification</label>
@@ -352,6 +364,7 @@
       <div class="modal-header">
         <h3 id="editor-modal-title">Edit Justification</h3>
         <div class="editor-header-actions">
+          <button type="button" id="editor-set-value-btn" class="btn btn-secondary btn-sm" disabled title="Select some plain text that reads as a dollar amount, then click this to make it a Linked or Calculated value">Set Selection as Value</button>
           <label class="btn btn-secondary btn-sm" for="editor-reupload-input">Re-upload Spreadsheet</label>
           <input type="file" id="editor-reupload-input" accept=".csv,.xls,.xlsx" class="hidden">
           <button type="button" id="editor-export-btn" class="btn btn-primary btn-sm">Export to .docx</button>
@@ -427,7 +440,6 @@
   <script src="js/try-it-tutorial.js"></script>
   <script src="js/how-it-works.js"></script>
   <script src="js/value-graph.js"></script>
-  <script src="js/doc-ingest.js"></script>
   <script src="js/layout-builder.js"></script>
   <script src="js/editor-canvas.js"></script>
   <script src="js/validation-checkpoint.js"></script>

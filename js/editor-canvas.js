@@ -10,6 +10,7 @@ const EditorCanvas = (() => {
   let pickingFormulaFor = null;
   let formulaTermIds    = [];
   let selectedValueId   = null;
+  let pendingValueRange = null;
 
   const BLOCK_TAGS    = { title: 'h2', subtitle: 'p', heading: 'h3', subheading: 'h4', paragraph: 'p' };
   const BLOCK_CLASSES = {
@@ -414,13 +415,17 @@ const EditorCanvas = (() => {
     return parts;
   }
 
-  function handleBlockBlur(e) {
-    const el = e.target.closest('[data-block-index]');
-    if (!el || !document.getElementById('editor-canvas-body').contains(el)) return;
+  function persistBlockFrom(el) {
     const index = Number(el.dataset.blockIndex);
     if (!blocks[index]) return;
     blocks[index] = { kind: blocks[index].kind, parts: serializeBlockParts(el) };
     persist();
+  }
+
+  function handleBlockBlur(e) {
+    const el = e.target.closest('[data-block-index]');
+    if (!el || !document.getElementById('editor-canvas-body').contains(el)) return;
+    persistBlockFrom(el);
   }
 
   async function persist() {
@@ -431,6 +436,64 @@ const EditorCanvas = (() => {
       lastValidation: project.document.lastValidation
     };
     await ProjectPicker.persistActive();
+  }
+
+  function parseSelectedAmount(text) {
+    const cleaned = String(text || '').replace(/[$,]/g, '').trim();
+    if (!cleaned) return NaN;
+    return parseFloat(cleaned);
+  }
+
+  function updateSetValueButtonState() {
+    const btn = document.getElementById('editor-set-value-btn');
+    if (!btn) return;
+
+    const canvas = document.getElementById('editor-canvas-body');
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0 || !canvas.contains(sel.anchorNode)) {
+      pendingValueRange = null;
+      btn.disabled = true;
+      return;
+    }
+
+    const range = sel.getRangeAt(0);
+    if (!Number.isFinite(parseSelectedAmount(range.toString()))) {
+      pendingValueRange = null;
+      btn.disabled = true;
+      return;
+    }
+
+    pendingValueRange = range.cloneRange();
+    btn.disabled = false;
+  }
+
+  function handleSetValueClick() {
+    if (!pendingValueRange) return;
+    const range  = pendingValueRange;
+    const anchor = range.commonAncestorContainer;
+    const anchorEl = anchor.nodeType === Node.TEXT_NODE ? anchor.parentElement : anchor;
+    const blockEl  = anchorEl && anchorEl.closest('[data-block-index]');
+    if (!blockEl) return;
+
+    const amount = parseSelectedAmount(range.toString());
+    if (!Number.isFinite(amount)) return;
+
+    const id = `custom.${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+    valueGraph.nodes[id] = { id, kind: 'plain', amount, link: null, formula: null, broken: false };
+
+    const chip = renderPart({ valueId: id }, valueGraph);
+    range.deleteContents();
+    range.insertNode(chip);
+
+    persistBlockFrom(blockEl);
+
+    window.getSelection().removeAllRanges();
+    pendingValueRange = null;
+    document.getElementById('editor-set-value-btn').disabled = true;
+
+    selectedValueId = id;
+    renderInspector();
+    highlightSelection();
   }
 
   async function handleReupload(e) {
@@ -507,14 +570,9 @@ const EditorCanvas = (() => {
       btn.addEventListener('click', () => switchPreviewTab(btn.dataset.view));
     });
 
-    document.addEventListener('project:opened', e => {
-      const p = e.detail.project;
-      const resumeBtn = document.getElementById('resume-editing-btn');
-      if (!resumeBtn) return;
-      const hasDraft = p.document && (p.document.blocks || p.document.payload);
-      resumeBtn.classList.toggle('hidden', !hasDraft);
-      resumeBtn.onclick = () => open(p);
-    });
+    document.getElementById('editor-set-value-btn').addEventListener('mousedown', e => e.preventDefault());
+    document.getElementById('editor-set-value-btn').addEventListener('click', handleSetValueClick);
+    document.addEventListener('selectionchange', updateSetValueButtonState);
   }
 
   return { init, open, openReadOnly };

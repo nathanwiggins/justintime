@@ -17,6 +17,88 @@ const VerifierTab = (() => {
   let cachedNotFoundAuditResult = null;
   let cachedMismatchAuditResult = null;
 
+  const MAX_HISTORY_ENTRIES = 20;
+
+  function generateHistoryId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  async function recordVerificationHistory(sections) {
+    const project = ProjectPicker.getActive();
+    if (!project) return;
+
+    const entry = {
+      id: generateHistoryId(),
+      timestamp: Date.now(),
+      justificationFileName: justificationFile ? justificationFile.name : 'Unknown document',
+      budgetFileName: budgetFile ? budgetFile.name : 'Unknown spreadsheet',
+      sections
+    };
+
+    project.verificationHistory = [entry, ...(project.verificationHistory || [])].slice(0, MAX_HISTORY_ENTRIES);
+    await ProjectPicker.persistActive();
+    renderHistoryPanel();
+  }
+
+  function formatHistoryTimestamp(ts) {
+    return new Date(ts).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function historyStatusLabel(sections) {
+    if (!sections.length) return 'Clean';
+    const issues = sections.filter(s => s.tag === 'real_issue').length;
+    return `${issues} issue${issues !== 1 ? 's' : ''}`;
+  }
+
+  function renderHistoryPanel() {
+    const toggle = document.getElementById('verify-history-toggle');
+    const panel  = document.getElementById('verify-history-panel');
+    if (!toggle || !panel) return;
+
+    const project = ProjectPicker.getActive();
+    const history = (project && project.verificationHistory) || [];
+
+    toggle.textContent = `Verification History (${history.length})`;
+    toggle.classList.toggle('hidden', !history.length);
+    if (!history.length) panel.classList.add('hidden');
+
+    panel.innerHTML = '';
+    history.forEach(entry => {
+      const row = document.createElement('div');
+      row.className = 'verify-history-row';
+
+      const meta = document.createElement('div');
+      meta.className = 'verify-history-meta';
+
+      const title = document.createElement('span');
+      title.className = 'verify-history-title';
+      title.textContent = `${entry.justificationFileName} vs ${entry.budgetFileName}`;
+
+      const time = document.createElement('span');
+      time.className = 'verify-history-time';
+      time.textContent = formatHistoryTimestamp(entry.timestamp);
+
+      meta.append(title, time);
+
+      const status = document.createElement('span');
+      status.className = 'verify-history-status' + (entry.sections.length ? '' : ' clean');
+      status.textContent = historyStatusLabel(entry.sections);
+
+      const viewBtn = document.createElement('button');
+      viewBtn.type = 'button';
+      viewBtn.className = 'btn btn-secondary btn-sm';
+      viewBtn.textContent = 'View';
+      viewBtn.addEventListener('click', () => {
+        renderSummary(entry.sections, { historical: true });
+        panel.classList.add('hidden');
+        document.getElementById('verify-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+
+      row.append(meta, status, viewBtn);
+      panel.appendChild(row);
+    });
+  }
+
   function setStatus(msg, type = '') {
     const el       = document.getElementById('verify-status');
     el.textContent = msg;
@@ -205,50 +287,13 @@ const VerifierTab = (() => {
     return csvText.replace(/\$(\d[\d,]*(?:\.\d+)?)/g, (_, n) => n.replace(/,/g, ''));
   }
 
-  function buildOpenInEditorBtn() {
-    const btn = document.createElement('button');
-    btn.type        = 'button';
-    btn.id          = 'verify-open-editor-btn';
-    btn.className   = 'btn btn-primary';
-    btn.textContent = 'Open in Editor';
-    btn.addEventListener('click', handleOpenInEditor);
-    return btn;
-  }
-
-  async function handleOpenInEditor() {
-    const project = ProjectPicker.getActive();
-    if (!project) { setStatus('No active project — open or create one first.', 'error'); return; }
-
-    const btn = document.getElementById('verify-open-editor-btn');
-    const originalText = btn.textContent;
-    btn.disabled    = true;
-    btn.textContent = 'Importing…';
-
-    try {
-      const parsed = await Parser.parse(budgetFile);
-      project.spreadsheet = { fileName: budgetFile.name, fileBlob: budgetFile, csvText: parsed.csvText, sheets: parsed.sheets, uploadedAt: Date.now() };
-
-      const apiKey = Settings.loadApiKey();
-      const { blocks, valueGraph } = await DocIngest.ingest({ file: justificationFile, sheets: parsed.sheets, csvText: parsed.csvText, apiKey });
-
-      project.document = { payload: null, blocks, valueGraph, phase: 'editing', lastValidation: null };
-      await ProjectPicker.persistActive();
-      EditorCanvas.open(project);
-    } catch (err) {
-      setStatus('Could not open this document in the Editor: ' + err.message, 'error');
-    } finally {
-      btn.disabled    = false;
-      btn.textContent = originalText;
-    }
-  }
-
-  function renderSummary(sections) {
+  function renderSummary(sections, { historical = false } = {}) {
     const container = document.getElementById('verify-results');
     container.innerHTML = '';
-    document.dispatchEvent(new CustomEvent('verify:complete', { detail: { sections } }));
+    if (!historical) document.dispatchEvent(new CustomEvent('verify:complete', { detail: { sections } }));
 
     if (!sections.length) {
-      showSuccessOnStop = true;
+      if (!historical) showSuccessOnStop = true;
       const cards = document.createElement('div');
       cards.className = 'summary-cards';
       const card = document.createElement('div');
@@ -263,12 +308,6 @@ const VerifierTab = (() => {
       card.appendChild(explanation);
       cards.appendChild(card);
       container.appendChild(cards);
-
-      const btnRow = document.createElement('div');
-      btnRow.className = 'verify-download-row';
-      btnRow.appendChild(buildOpenInEditorBtn());
-      container.appendChild(btnRow);
-
       container.classList.remove('hidden');
       return;
     }
@@ -366,24 +405,25 @@ const VerifierTab = (() => {
       container.appendChild(collapsed);
     }
 
-    if (!prominentSections.length) {
+    if (!prominentSections.length && !historical) {
       showSuccessOnStop = true;
     }
 
-    const markupSections = sections.filter(s => s.type === 'not_found' || s.tag === 'real_issue');
-    const allItems      = markupSections.flatMap(s => s.items.map(item => ({ ...item, status: s.type === 'not_found' ? 'NOT_FOUND' : 'MISMATCH' })));
-    const fakeExtracted = allItems.map(item => ({ label: item.label, context: item.context || '' }));
+    if (!historical) {
+      const markupSections = sections.filter(s => s.type === 'not_found' || s.tag === 'real_issue');
+      const allItems      = markupSections.flatMap(s => s.items.map(item => ({ ...item, status: s.type === 'not_found' ? 'NOT_FOUND' : 'MISMATCH' })));
+      const fakeExtracted = allItems.map(item => ({ label: item.label, context: item.context || '' }));
 
-    const btnRow = document.createElement('div');
-    btnRow.className = 'verify-download-row';
-    btnRow.appendChild(buildOpenInEditorBtn());
-    const btn = document.createElement('button');
-    btn.type        = 'button';
-    btn.className   = 'btn btn-secondary';
-    btn.textContent = 'Download Marked Up Document';
-    btn.addEventListener('click', () => Highlighter.download(justificationFile, fakeExtracted, allItems));
-    btnRow.appendChild(btn);
-    container.appendChild(btnRow);
+      const btnRow = document.createElement('div');
+      btnRow.className = 'verify-download-row';
+      const btn = document.createElement('button');
+      btn.type        = 'button';
+      btn.className   = 'btn btn-secondary';
+      btn.textContent = 'Download Marked Up Document';
+      btn.addEventListener('click', () => Highlighter.download(justificationFile, fakeExtracted, allItems));
+      btnRow.appendChild(btn);
+      container.appendChild(btnRow);
+    }
 
     container.classList.remove('hidden');
   }
@@ -610,6 +650,7 @@ const VerifierTab = (() => {
       const summaryStep = addStep('Generating summary');
       summaryStep.done('all values accounted for');
       VerifyAnim.finish('clean');
+      recordVerificationHistory([]);
       renderSummary([]);
       return;
     }
@@ -643,6 +684,7 @@ const VerifierTab = (() => {
       justificationFile,
       budgetFile,
       apiKey,
+      onFreshComplete: sections => recordVerificationHistory(sections),
       onComplete: sections => {
         finalizeReviewStep(reviewStep, sections);
         renderSummary(sections);
@@ -689,12 +731,16 @@ const VerifierTab = (() => {
     const input    = document.getElementById(inputId);
     const filename = document.getElementById(filenameId);
 
-    input.addEventListener('change', () => {
-      const file = input.files[0];
-      if (!file) return;
-      onFile(file);
+    function showFile(file) {
       filename.textContent = file.name;
       filename.classList.remove('hidden');
+      zone.querySelector('.drop-zone-content').classList.add('hidden');
+      zone.classList.add('has-file');
+      onFile(file);
+    }
+
+    input.addEventListener('change', () => {
+      if (input.files[0]) showFile(input.files[0]);
     });
 
     zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
@@ -704,9 +750,10 @@ const VerifierTab = (() => {
       zone.classList.remove('drag-over');
       const file = e.dataTransfer.files[0];
       if (!file) return;
-      onFile(file);
-      filename.textContent = file.name;
-      filename.classList.remove('hidden');
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      showFile(file);
     });
   }
 
@@ -720,7 +767,7 @@ const VerifierTab = (() => {
         extractBudgetCsv(budgetFile)
       ]);
       const docKey = computeDocKey(justificationText + '|' + csvText);
-      VerifierChat.tryResume(renderSummary, docKey, justificationFile, budgetFile);
+      VerifierChat.tryResume(renderSummary, docKey, justificationFile, budgetFile, sections => recordVerificationHistory(sections));
     } catch {
     }
   }
@@ -744,6 +791,12 @@ const VerifierTab = (() => {
       document.getElementById('verify-step-log').classList.remove('hidden');
       document.getElementById('verify-expand-details-btn').classList.add('hidden');
     });
+
+    document.getElementById('verify-history-toggle').addEventListener('click', () => {
+      document.getElementById('verify-history-panel').classList.toggle('hidden');
+    });
+    document.addEventListener('project:opened', renderHistoryPanel);
+    renderHistoryPanel();
   }
 
   return { init };

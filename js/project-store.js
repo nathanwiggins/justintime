@@ -63,7 +63,7 @@ const ProjectStore = (() => {
       summary:      null,
       document:     null,
       exportedJustification: null,
-      verifierSession: null
+      verificationHistory: []
     };
   }
 

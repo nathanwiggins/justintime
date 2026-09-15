@@ -360,10 +360,11 @@ const Generator = (() => {
     return out;
   }
 
-  function validateForm({ profileId, file, summaryFile, summaryText, summaryMode, apiKey }) {
+  function validateForm({ profileId, templateType, file, summaryFile, summaryText, summaryMode, apiKey }) {
     if (!apiKey && !Api.isVandalizerHosted())    return 'No API key saved. Go to the Settings tab and save your Gemini API key.';
     if (!ProjectPicker.getActive()) return 'No active project. Please open or create a project first.';
     if (!profileId) return 'Please select an Institutional Profile.';
+    if (!templateType) return 'Please select a Grant Template Type.';
     if (!file)      return 'Please upload a budget file (.csv, .xls, or .xlsx).';
     if (summaryMode === 'file' && !summaryFile) return 'Please upload a project narrative (.doc, .docx, or .pdf).';
     if (summaryMode === 'text' && !summaryText) return 'Please enter a project summary.';
@@ -641,6 +642,7 @@ const Generator = (() => {
       VerifyAnim.finish('clean');
       setStatus('Draft ready — continue editing below.', 'success');
       setGenerating(false);
+      updateGeneratorViewState();
       EditorCanvas.open(project);
     } catch (err) {
       VerifyAnim.fail();
@@ -658,6 +660,7 @@ const Generator = (() => {
       filename.textContent = file.name;
       filename.classList.remove('hidden');
       zone.querySelector('.drop-zone-content').classList.add('hidden');
+      zone.classList.add('has-file');
       if (onFile) onFile(file);
     }
 
@@ -699,14 +702,69 @@ const Generator = (() => {
     });
   }
 
+  function updateGeneratorViewState() {
+    const project  = ProjectPicker.getActive();
+    const hasDraft = !!(project && project.document && project.document.blocks && project.document.blocks.length);
+
+    document.getElementById('generator-input-form').classList.toggle('hidden', hasDraft);
+    document.getElementById('generator-form-actions').classList.toggle('hidden', hasDraft);
+    document.getElementById('generator-draft-actions').classList.toggle('hidden', !hasDraft);
+
+    if (hasDraft) {
+      document.getElementById('resume-editing-btn').onclick = () => EditorCanvas.open(project);
+    }
+  }
+
+  async function handleRegenerate() {
+    const project = ProjectPicker.getActive();
+    if (!project) return;
+
+    const proceed = confirm('This will permanently discard your current draft and clear all uploaded files and selections, so you can start the whole process over. Continue?');
+    if (!proceed) return;
+
+    project.document              = null;
+    project.spreadsheet           = null;
+    project.summary               = null;
+    project.totalBudget           = null;
+    project.exportedJustification = null;
+    await ProjectPicker.persistActive();
+
+    document.getElementById('profile-select').value  = '';
+    document.getElementById('template-select').value = '';
+    document.getElementById('template-mode-toggle').checked = false;
+
+    resetDropZone('budget-drop-zone', 'budget-file-input', 'budget-filename');
+    resetDropZone('summary-drop-zone', 'project-summary-input', 'summary-filename');
+    resetDropZone('verify-budget-drop-zone', 'verify-budget-input', 'verify-budget-filename');
+    resetDropZone('verify-justification-drop-zone', 'verify-justification-input', 'verify-justification-filename');
+
+    summaryMode = 'file';
+    document.getElementById('summary-drop-zone').classList.remove('hidden');
+    document.getElementById('project-summary-text-input').value = '';
+    document.getElementById('project-summary-text-input').classList.add('hidden');
+    document.getElementById('summary-toggle').textContent = 'Type instead';
+
+    document.getElementById('total-budget-display').classList.add('hidden');
+    document.getElementById('total-budget-fallback-group').classList.add('hidden');
+    budgetScan = null;
+
+    clearStepLog();
+    setStatus('');
+    updateGeneratorViewState();
+  }
+
   function init() {
     syncProfileDropdown();
+    updateGeneratorViewState();
     document.getElementById('generate-btn').addEventListener('click', handleGenerate);
+    document.getElementById('regenerate-btn').addEventListener('click', handleRegenerate);
 
     initDropZone('budget-drop-zone',  'budget-file-input',       'budget-filename', file => {
       ensureBudgetScan(file).catch(err => setStatus('Error reading budget file: ' + err.message, 'error'));
     });
     initDropZone('summary-drop-zone', 'project-summary-input',   'summary-filename');
+
+    document.addEventListener('project:opened', updateGeneratorViewState);
 
     document.getElementById('log-toggle').addEventListener('click', () => {
       const log    = document.getElementById('step-log');
