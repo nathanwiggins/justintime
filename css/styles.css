@@ -110,6 +110,8 @@ body {
   gap: 24px;
 }
 
+.project-picker.hidden { display: none; }
+
 .header-active-project {
   display: flex;
   align-items: center;
