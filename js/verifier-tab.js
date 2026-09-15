@@ -50,6 +50,18 @@ const VerifierTab = (() => {
     return `${issues} issue${issues !== 1 ? 's' : ''}`;
   }
 
+  function summarizePriorRuns() {
+    const project = ProjectPicker.getActive();
+    const history = (project && project.verificationHistory) || [];
+
+    return history.slice(0, 3).map(entry => {
+      const date = formatHistoryTimestamp(entry.timestamp);
+      const resolved = (entry.sections || []).filter(s => s.resolution).map(s => `${s.section_label}: ${s.resolution}`);
+      const summary = resolved.length ? resolved.join('; ') : 'no issues found';
+      return `- ${date} (${entry.justificationFileName} vs ${entry.budgetFileName}): ${summary}`;
+    });
+  }
+
   function renderHistoryPanel() {
     const toggle = document.getElementById('verify-history-toggle');
     const panel  = document.getElementById('verify-history-panel');
@@ -684,6 +696,7 @@ const VerifierTab = (() => {
       justificationFile,
       budgetFile,
       apiKey,
+      priorRuns: summarizePriorRuns(),
       onFreshComplete: sections => recordVerificationHistory(sections),
       onComplete: sections => {
         finalizeReviewStep(reviewStep, sections);
@@ -767,7 +780,7 @@ const VerifierTab = (() => {
         extractBudgetCsv(budgetFile)
       ]);
       const docKey = computeDocKey(justificationText + '|' + csvText);
-      VerifierChat.tryResume(renderSummary, docKey, justificationFile, budgetFile, sections => recordVerificationHistory(sections));
+      VerifierChat.tryResume(renderSummary, docKey, justificationFile, budgetFile, sections => recordVerificationHistory(sections), summarizePriorRuns());
     } catch {
     }
   }

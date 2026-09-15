@@ -389,7 +389,7 @@ const VerifierChat = (() => {
     setSending(true);
     try {
       const priorSections = session.sections.slice(0, session.currentIndex);
-      const result = await Api.classifyReply(section, section.transcript, priorSections, session.justificationText, session.csvText, apiKeyRef);
+      const result = await Api.classifyReply(section, section.transcript, priorSections, session.justificationText, session.csvText, apiKeyRef, session.priorRuns);
       if (text.includes('?')) result.needs_followup = true;
       section.tag = result.tag;
 
@@ -412,7 +412,7 @@ const VerifierChat = (() => {
     }
   }
 
-  function renderResumeBanner(onComplete, docKey, justificationFile, budgetFile, onFreshComplete) {
+  function renderResumeBanner(onComplete, docKey, justificationFile, budgetFile, onFreshComplete, priorRuns) {
     const stored = loadStoredSession();
     const container = document.getElementById('verify-results');
     if (!stored || stored.docKey !== docKey) return;
@@ -442,9 +442,10 @@ const VerifierChat = (() => {
       if (stored.completedAt) {
         onComplete(stored.sections);
       } else {
-        session        = stored;
-        apiKeyRef      = Settings.loadApiKey();
-        onCompleteCb   = onComplete;
+        session           = stored;
+        session.priorRuns = priorRuns || [];
+        apiKeyRef         = Settings.loadApiKey();
+        onCompleteCb      = onComplete;
         onFreshCompleteCb = onFreshComplete || null;
         buildPreview(justificationFile, budgetFile, session.sections);
         openModal();
@@ -478,6 +479,8 @@ const VerifierChat = (() => {
       introPending = true;
     }
 
+    session.priorRuns = opts.priorRuns || [];
+
     apiKeyRef         = opts.apiKey;
     onCompleteCb      = opts.onComplete;
     onFreshCompleteCb = opts.onFreshComplete || null;
@@ -487,8 +490,8 @@ const VerifierChat = (() => {
     renderCurrentSection();
   }
 
-  function tryResume(onComplete, docKey, justificationFile, budgetFile, onFreshComplete) {
-    renderResumeBanner(onComplete, docKey, justificationFile, budgetFile, onFreshComplete);
+  function tryResume(onComplete, docKey, justificationFile, budgetFile, onFreshComplete, priorRuns) {
+    renderResumeBanner(onComplete, docKey, justificationFile, budgetFile, onFreshComplete, priorRuns);
   }
 
   function hasStoredSession() {

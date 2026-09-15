@@ -423,11 +423,12 @@ ${csvText}`;
     return callApi(apiKey, prompt, VerifierSchemas.summaryAudit);
   }
 
-  async function classifyReply(section, transcript, priorSections, justificationText, csvText, apiKey) {
+  async function classifyReply(section, transcript, priorSections, justificationText, csvText, apiKey, priorRuns) {
     const conversation = transcript.map(turn => `${turn.role === 'assistant' ? 'Assistant' : 'User'}: ${turn.text}`).join('\n');
     const priorFindings = (priorSections || []).filter(s => s.resolution).map(s =>
       `- ${s.section_label}: ${s.resolution}`
     ).join('\n');
+    const priorRunsBlock = (priorRuns || []).join('\n');
 
     const prompt = `You are a friendly budget audit assistant discussing one suspected discrepancy with a research administrator. You are verifying, together with the user, whether this is a real mismatch that needs fixing in the budget justification, or something that turns out not to be a concern (e.g. the user has context that explains it, or you misread the documents).
 
@@ -437,6 +438,7 @@ Finding:
 - Explanation: ${section.explanation}
 - Items: ${JSON.stringify(section.items, null, 2)}
 ${priorFindings ? `\nEarlier findings already resolved in this same review (the user may reference these by name or number — use this to understand what they mean):\n${priorFindings}\n` : ''}
+${priorRunsBlock ? `\nBackground only — up to 3 prior verification runs on this same project, for context if relevant. Do not let this outweigh what the current documents and conversation actually show:\n${priorRunsBlock}\n` : ''}
 Conversation so far:
 ${conversation}
 

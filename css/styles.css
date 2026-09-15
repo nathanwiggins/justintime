@@ -592,11 +592,11 @@ textarea {
   pointer-events: none;
   user-select: none;
   margin-top: 8px;
-  color: var(--color-text);
+  color: var(--color-primary);
 }
 
 .generator-decoration svg {
-  width: 560px;
+  width: 490px;
   max-width: 90%;
   height: auto;
 }
