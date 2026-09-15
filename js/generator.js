@@ -640,7 +640,6 @@ const Generator = (() => {
       }
 
       VerifyAnim.finish('clean');
-      setStatus('Draft ready — continue editing below.', 'success');
       setGenerating(false);
       updateGeneratorViewState();
       EditorCanvas.open(project);
@@ -709,6 +708,7 @@ const Generator = (() => {
     document.getElementById('generator-input-form').classList.toggle('hidden', hasDraft);
     document.getElementById('generator-form-actions').classList.toggle('hidden', hasDraft);
     document.getElementById('generator-draft-actions').classList.toggle('hidden', !hasDraft);
+    document.getElementById('generator-draft-decoration').classList.toggle('hidden', !hasDraft);
 
     if (hasDraft) {
       document.getElementById('resume-editing-btn').onclick = () => EditorCanvas.open(project);

@@ -579,6 +579,22 @@ textarea {
 
 .generate-action.hidden { display: none; }
 
+#generator-draft-actions {
+  align-items: center;
+  width: 100%;
+}
+
+.generator-decoration {
+  width: 100%;
+  text-align: center;
+  font-size: 140px;
+  line-height: 1;
+  opacity: .08;
+  pointer-events: none;
+  user-select: none;
+  margin-top: 8px;
+}
+
 #verify-loading {
   display: flex;
   flex-direction: column;
@@ -972,8 +988,10 @@ textarea {
 
 .modal-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 20px 24px;
   border-bottom: 1px solid var(--color-border);
 }
@@ -1154,10 +1172,19 @@ mark.doc-highlight.active.red    { background: #fca5a5; }
 
 .editor-header-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
   margin-left: auto;
   margin-right: 12px;
+}
+
+#editor-set-value-btn.active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+  font-weight: 600;
 }
 
 .editor-canvas-pane {

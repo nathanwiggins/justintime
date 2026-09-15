@@ -444,6 +444,14 @@ const EditorCanvas = (() => {
     return parseFloat(cleaned);
   }
 
+  function resetSetValueButton() {
+    const btn = document.getElementById('editor-set-value-btn');
+    pendingValueRange = null;
+    btn.disabled = true;
+    btn.classList.remove('active');
+    btn.textContent = 'Set Selection as Value';
+  }
+
   function updateSetValueButtonState() {
     const btn = document.getElementById('editor-set-value-btn');
     if (!btn) return;
@@ -451,20 +459,21 @@ const EditorCanvas = (() => {
     const canvas = document.getElementById('editor-canvas-body');
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || sel.rangeCount === 0 || !canvas.contains(sel.anchorNode)) {
-      pendingValueRange = null;
-      btn.disabled = true;
+      resetSetValueButton();
       return;
     }
 
-    const range = sel.getRangeAt(0);
-    if (!Number.isFinite(parseSelectedAmount(range.toString()))) {
-      pendingValueRange = null;
-      btn.disabled = true;
+    const range  = sel.getRangeAt(0);
+    const amount = parseSelectedAmount(range.toString());
+    if (!Number.isFinite(amount)) {
+      resetSetValueButton();
       return;
     }
 
     pendingValueRange = range.cloneRange();
     btn.disabled = false;
+    btn.classList.add('active');
+    btn.textContent = `Set "$${fmt(amount)}" as Value`;
   }
 
   function handleSetValueClick() {
@@ -488,8 +497,7 @@ const EditorCanvas = (() => {
     persistBlockFrom(blockEl);
 
     window.getSelection().removeAllRanges();
-    pendingValueRange = null;
-    document.getElementById('editor-set-value-btn').disabled = true;
+    resetSetValueButton();
 
     selectedValueId = id;
     renderInspector();
