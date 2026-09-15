@@ -219,7 +219,7 @@ const HowItWorks = (() => {
     stage.appendChild(row(
       iconBox(Icons.magnifier, 'Suggest relevant items', 0),
       arrowEl(150),
-      iconBox(Icons.sparkle, 'Extract verified data', 300),
+      iconBox(Icons.spreadsheet, 'Extract verified data', 300),
       arrowEl(450),
       iconBox(Icons.sparkle, 'Write narrative', 600)
     ));

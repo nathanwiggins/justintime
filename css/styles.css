@@ -601,6 +601,10 @@ textarea {
   height: auto;
 }
 
+body:has(.modal:not(.hidden)) .generator-decoration {
+  opacity: 0;
+}
+
 #verify-loading {
   display: flex;
   flex-direction: column;
