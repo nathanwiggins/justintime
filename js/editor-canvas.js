@@ -194,7 +194,31 @@ const EditorCanvas = (() => {
 
   function renderInspector() {
     const panel = document.getElementById('editor-value-inspector');
+
     if (!selectedValueId || !valueGraph.nodes[selectedValueId]) {
+      if (pendingValueRange) {
+        panel.classList.remove('hidden');
+        panel.innerHTML = '';
+
+        const title = document.createElement('div');
+        title.className = 'inspector-title';
+        title.textContent = `Selected: $${fmt(parseSelectedAmount(pendingValueRange.toString()))}`;
+        panel.appendChild(title);
+
+        const actions = document.createElement('div');
+        actions.className = 'inspector-actions';
+
+        const setBtn = document.createElement('button');
+        setBtn.className = 'btn btn-primary btn-sm';
+        setBtn.textContent = 'Set Selection as Value';
+        setBtn.addEventListener('mousedown', e => e.preventDefault());
+        setBtn.addEventListener('click', handleSetValueClick);
+        actions.appendChild(setBtn);
+
+        panel.appendChild(actions);
+        return;
+      }
+
       panel.classList.add('hidden');
       panel.innerHTML = '';
       return;
@@ -444,36 +468,26 @@ const EditorCanvas = (() => {
     return parseFloat(cleaned);
   }
 
-  function resetSetValueButton() {
-    const btn = document.getElementById('editor-set-value-btn');
-    pendingValueRange = null;
-    btn.disabled = true;
-    btn.classList.remove('active');
-    btn.textContent = 'Set Selection as Value';
-  }
-
-  function updateSetValueButtonState() {
-    const btn = document.getElementById('editor-set-value-btn');
-    if (!btn) return;
-
+  function updatePendingValueSelection() {
     const canvas = document.getElementById('editor-canvas-body');
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || sel.rangeCount === 0 || !canvas.contains(sel.anchorNode)) {
-      resetSetValueButton();
+      if (!pendingValueRange) return;
+      pendingValueRange = null;
+      renderInspector();
       return;
     }
 
-    const range  = sel.getRangeAt(0);
-    const amount = parseSelectedAmount(range.toString());
-    if (!Number.isFinite(amount)) {
-      resetSetValueButton();
+    const range = sel.getRangeAt(0);
+    if (!Number.isFinite(parseSelectedAmount(range.toString()))) {
+      if (!pendingValueRange) return;
+      pendingValueRange = null;
+      renderInspector();
       return;
     }
 
     pendingValueRange = range.cloneRange();
-    btn.disabled = false;
-    btn.classList.add('active');
-    btn.textContent = `Set "$${fmt(amount)}" as Value`;
+    renderInspector();
   }
 
   function handleSetValueClick() {
@@ -497,7 +511,7 @@ const EditorCanvas = (() => {
     persistBlockFrom(blockEl);
 
     window.getSelection().removeAllRanges();
-    resetSetValueButton();
+    pendingValueRange = null;
 
     selectedValueId = id;
     renderInspector();
@@ -578,9 +592,7 @@ const EditorCanvas = (() => {
       btn.addEventListener('click', () => switchPreviewTab(btn.dataset.view));
     });
 
-    document.getElementById('editor-set-value-btn').addEventListener('mousedown', e => e.preventDefault());
-    document.getElementById('editor-set-value-btn').addEventListener('click', handleSetValueClick);
-    document.addEventListener('selectionchange', updateSetValueButtonState);
+    document.addEventListener('selectionchange', updatePendingValueSelection);
   }
 
   return { init, open, openReadOnly };

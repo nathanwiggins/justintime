@@ -755,6 +755,7 @@ const Generator = (() => {
 
   function init() {
     syncProfileDropdown();
+    document.getElementById('generator-draft-decoration').innerHTML = Icons.document;
     updateGeneratorViewState();
     document.getElementById('generate-btn').addEventListener('click', handleGenerate);
     document.getElementById('regenerate-btn').addEventListener('click', handleRegenerate);
