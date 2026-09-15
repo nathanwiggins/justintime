@@ -48,7 +48,7 @@ const Document = (() => {
     });
   }
 
-  async function generate(templateType, blocks, valueGraph) {
+  async function buildBlob(templateType, blocks, valueGraph) {
     await requireDocx();
     const { Document: DocxDocument, Packer } = _docx;
 
@@ -72,6 +72,12 @@ const Document = (() => {
     const blob     = await Packer.toBlob(doc);
     const fileName = OUTPUT_FILENAMES[templateType] || 'Budget_Justification.docx';
 
+    return { blob, fileName };
+  }
+
+  async function generate(templateType, blocks, valueGraph) {
+    const { blob, fileName } = await buildBlob(templateType, blocks, valueGraph);
+
     const url  = URL.createObjectURL(blob);
     const link = window.document.createElement('a');
     link.href     = url;
@@ -84,5 +90,5 @@ const Document = (() => {
     return { blob, fileName };
   }
 
-  return { generate };
+  return { generate, buildBlob };
 })();

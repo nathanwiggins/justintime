@@ -105,6 +105,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       btn.classList.add('active');
       document.getElementById(`tab-${target}`).classList.remove('hidden');
+
+      if (target === 'verify') syncVerifyInputsFromProject();
     });
   });
 
@@ -119,14 +121,27 @@ function setInputFile(inputId, file) {
   input.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function syncVerifyInputsFromProject() {
+async function snapshotJustificationFile(project) {
+  if (project.document && project.document.blocks && project.document.blocks.length) {
+    const { blob, fileName } = await Document.buildBlob(project.templateType, project.document.blocks, project.document.valueGraph);
+    return new File([blob], fileName, { type: blob.type });
+  }
+  if (project.exportedJustification && project.exportedJustification.fileBlob) {
+    return project.exportedJustification.fileBlob;
+  }
+  return null;
+}
+
+async function syncVerifyInputsFromProject() {
   const project = ProjectPicker.getActive();
   if (!project) return;
 
   if (project.spreadsheet && project.spreadsheet.fileBlob) {
     setInputFile('verify-budget-input', project.spreadsheet.fileBlob);
   }
-  if (project.exportedJustification && project.exportedJustification.fileBlob) {
-    setInputFile('verify-justification-input', project.exportedJustification.fileBlob);
+
+  const justificationFile = await snapshotJustificationFile(project);
+  if (justificationFile) {
+    setInputFile('verify-justification-input', justificationFile);
   }
 }
