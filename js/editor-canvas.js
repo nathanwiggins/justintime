@@ -41,6 +41,10 @@ const EditorCanvas = (() => {
     return `${colToLetters(col)}${row + 1}`;
   }
 
+  function chipsFor(id) {
+    return Array.from(document.querySelectorAll(`#editor-canvas-body .value-chip[data-value-id="${id}"]`));
+  }
+
   function inspectorLabel(node) {
     if (node.kind === 'linked' && node.link) return `[LINKED] ${node.link.sheet} | ${cellRefA1(node.link.row, node.link.col)}`;
     if (node.kind === 'calculated') {
@@ -113,7 +117,7 @@ const EditorCanvas = (() => {
         selectedValueId = node.id;
         renderInspector();
         highlightSelection();
-        const chip = document.querySelector(`#editor-canvas-body .value-chip[data-value-id="${node.id}"]`);
+        const [chip] = chipsFor(node.id);
         if (chip) chip.scrollIntoView({ block: 'center', behavior: 'smooth' });
       });
       list.appendChild(item);
@@ -273,11 +277,9 @@ const EditorCanvas = (() => {
         formulaTermIds = node.kind === 'calculated' ? [...node.formula.termIds] : [];
         clearHighlights();
         document.getElementById('editor-canvas-body').classList.add('dim-others');
-        const ownChip = document.querySelector(`#editor-canvas-body .value-chip[data-value-id="${selectedValueId}"]`);
-        if (ownChip) ownChip.classList.add('chip-selected');
+        chipsFor(selectedValueId).forEach(chip => chip.classList.add('chip-selected'));
         formulaTermIds.forEach(id => {
-          const chip = document.querySelector(`#editor-canvas-body .value-chip[data-value-id="${id}"]`);
-          if (chip) chip.classList.add('chip-term-highlight');
+          chipsFor(id).forEach(chip => chip.classList.add('chip-term-highlight'));
         });
         renderInspector();
       });
@@ -330,15 +332,14 @@ const EditorCanvas = (() => {
       const canvas = document.getElementById('editor-canvas-body');
       canvas.classList.add('dim-others');
 
-      const ownChip = document.querySelector(`#editor-canvas-body .value-chip[data-value-id="${selectedValueId}"]`);
-      if (ownChip) ownChip.classList.add('chip-selected');
+      chipsFor(selectedValueId).forEach(chip => chip.classList.add('chip-selected'));
 
       let first = null;
       node.formula.termIds.forEach(id => {
-        const chip = document.querySelector(`#editor-canvas-body .value-chip[data-value-id="${id}"]`);
-        if (!chip) return;
-        chip.classList.add('chip-term-highlight');
-        if (!first) first = chip;
+        chipsFor(id).forEach(chip => {
+          chip.classList.add('chip-term-highlight');
+          if (!first) first = chip;
+        });
       });
       if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }
@@ -354,10 +355,10 @@ const EditorCanvas = (() => {
       const idx = formulaTermIds.indexOf(id);
       if (idx === -1) {
         formulaTermIds.push(id);
-        chip.classList.add('chip-term-highlight');
+        chipsFor(id).forEach(c => c.classList.add('chip-term-highlight'));
       } else {
         formulaTermIds.splice(idx, 1);
-        chip.classList.remove('chip-term-highlight');
+        chipsFor(id).forEach(c => c.classList.remove('chip-term-highlight'));
       }
       renderInspector();
       return;

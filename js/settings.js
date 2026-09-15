@@ -316,10 +316,10 @@ const Settings = (() => {
     });
   }
 
-  function initProfilesSection() {
+  async function initProfilesSection() {
     loadProfiles();
     renderProfiles();
-    loadLocalProfiles();
+    await loadLocalProfiles();
 
     document.getElementById('add-profile-btn').addEventListener('click', () => openModal(null));
     document.getElementById('close-modal').addEventListener('click', closeModal);
@@ -332,9 +332,9 @@ const Settings = (() => {
     });
   }
 
-  function init() {
+  async function init() {
     initApiKeySection();
-    initProfilesSection();
+    await initProfilesSection();
   }
 
   return { init, getProfiles, getProfileById, loadApiKey, getDefaultProfileId };

@@ -83,7 +83,7 @@ function initCyclingLabel() {
 document.addEventListener('DOMContentLoaded', async () => {
   setupEnvironment();
 
-  Settings.init();
+  await Settings.init();
   Generator.init();
   VerifierChat.init();
   VerifierTab.init();
