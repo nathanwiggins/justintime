@@ -28,7 +28,7 @@ const Document = (() => {
     return (parts || []).map(part => {
       if ('text' in part) return new TextRun({ text: part.text, ...runStyle });
       const node = valueGraph.nodes[part.valueId];
-      return new TextRun({ text: `$${fmt(node ? node.amount : 0)}`, ...runStyle });
+      return new TextRun({ text: fmt(node ? node.amount : 0), ...runStyle });
     });
   }
 
