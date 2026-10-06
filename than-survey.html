@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Survey</title>
+  <style>
+    :root {
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --background: #f8fafc;
+      --card: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: var(--background);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .card {
+      width: min(100%, 520px);
+      background: var(--card);
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 42px;
+      box-shadow: 0 8px 30px rgba(15, 23, 42, 0.07);
+      text-align: center;
+    }
+    .eyebrow {
+      margin-bottom: 12px;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(25px, 5vw, 32px);
+      line-height: 1.2;
+      font-weight: 650;
+    }
+    .question {
+      margin: 14px 0 34px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+    .answers {
+      position: relative;
+      min-height: 58px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+    }
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 12px 28px;
+      min-width: 105px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+    #yes {
+      color: white;
+      background: var(--primary);
+    }
+    #yes:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+    #no {
+      color: #374151;
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+    #no.flee {
+      position: fixed;
+      transition: left 0.08s ease-out, top 0.08s ease-out;
+    }
+    .success {
+      display: none;
+      margin-top: 24px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      font-size: 14px;
+    }
+    .footer {
+      margin-top: 28px;
+      color: #9ca3af;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="eyebrow">Quick Survey</div>
+    <h1>Is Than doing a good job?</h1>
+    <p class="question">Please select the answer that best reflects your opinion.</p>
+    <div class="answers">
+      <button id="yes" type="button">Yes</button>
+      <button id="no" type="button">No</button>
+    </div>
+    <div class="success" id="success">Thank you for your feedback.</div>
+    <div class="footer">Your response is appreciated.</div>
+  </main>
+  <script>
+    const noButton = document.getElementById("no");
+    const yesButton = document.getElementById("yes");
+    const success = document.getElementById("success");
+
+    function moveNoButton() {
+      const margin = 16;
+      const buttonWidth = noButton.offsetWidth;
+      const buttonHeight = noButton.offsetHeight;
+      const maxX = Math.max(margin, window.innerWidth - buttonWidth - margin);
+      const maxY = Math.max(margin, window.innerHeight - buttonHeight - margin);
+      const x = margin + Math.random() * (maxX - margin);
+      const y = margin + Math.random() * (maxY - margin);
+      noButton.classList.add("flee");
+      noButton.style.left = x + "px";
+      noButton.style.top = y + "px";
+    }
+
+    noButton.addEventListener("mouseenter", moveNoButton);
+    noButton.addEventListener("focus", moveNoButton);
+
+    yesButton.addEventListener("click", () => {
+      success.style.display = "block";
+      yesButton.textContent = "Yes ✓";
+      noButton.style.display = "none";
+    });
+
+    window.addEventListener("resize", () => {
+      if (noButton.classList.contains("flee")) moveNoButton();
+    });
+  </script>
+</body>
+</html>
